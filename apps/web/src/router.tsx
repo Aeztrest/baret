@@ -16,8 +16,12 @@ import { routes } from "./routes.js";
  * measured).
  */
 type Head = { readonly title?: string; readonly description: string };
-/** Empty until a lazy page with its own head is ported (TASKS.md T2.4). */
-const HEAD: Partial<Record<keyof typeof routes, () => Promise<Head>>> = {};
+const HEAD: Partial<Record<keyof typeof routes, () => Promise<Head>>> = {
+  showcase: () =>
+    import("../../../packages/content/src/web/hub.content.js").then(({ hub }) => ({
+      description: hub.meta.description,
+    })),
+};
 
 /**
  * The route tree, built from the registry so a new page cannot be added to

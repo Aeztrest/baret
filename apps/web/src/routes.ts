@@ -5,7 +5,7 @@ import { defineRoutes } from "@baret/routes";
  * Every path the web app serves, declared once.
  *
  * Ported page by page from Baret-Metropolis apps/showcase (TASKS.md T2.4): the
- * landing and the not-found page first. The showcase hub, the six demo sites,
+ * landing, the not-found page and the showcase hub first. The six demo sites,
  * /agents, /docs, /partners and /install follow; until then their links (nav,
  * footer, landing cards) answer with the not-found page.
  *
@@ -28,6 +28,14 @@ export const routes = defineRoutes({
     load: () => import("./pages/HomePage.js"),
   },
 
+  showcase: {
+    path: "/showcase",
+    title: "Baret showcase",
+    label: "Showcase",
+    group: "marketing",
+    load: () => import("./pages/HubPage.js"),
+  },
+
   notFound: {
     path: "/*",
     title: "Not found",
@@ -39,16 +47,12 @@ export const routes = defineRoutes({
 
 export type WebRoute = keyof typeof routes;
 
-/** The showcase hub. Becomes `routes.showcase.path` when the hub lands. */
-export const SHOWCASE_PATH = "/showcase";
-
 /**
  * Pages the copy already links to that are not ported yet (TASKS.md T2.4). The
  * route test accepts a link to one of these and nothing else; each entry goes as
  * its page lands, and the list ends empty.
  */
 export const PENDING_PATHS: ReadonlySet<string> = new Set([
-  "/showcase",
   "/agents",
   "/docs",
   "/partners",

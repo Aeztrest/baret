@@ -2,8 +2,8 @@
  * @baret/content
  *
  * Every user-facing string in Baret. No markup, no styling, no logic. Today: the shared
- * strings (findings, rules, check results, common words, explain) and the web app's landing
- * (web/). The other web pages, the wallet's and the extension's come with those screens (TASKS.md T2.3, T2.4).
+ * strings (findings, rules, check results, common words, explain) and the web app's pages
+ * (web/: landing, showcase). The other web pages, the wallet's and the extension's come with those screens (TASKS.md T2.3, T2.4).
  */
 export type { FindingCode } from "@baret/core";
 export type { CheckContent } from "./shared/check.content.js";
@@ -18,3 +18,5 @@ export type { PolicyContent } from "./shared/policy.content.js";
 export { policy } from "./shared/policy.content.js";
 export type { HomeContent } from "./web/home.content.js";
 export { home } from "./web/home.content.js";
+export type { HubContent } from "./web/hub.content.js";
+export { hub } from "./web/hub.content.js";

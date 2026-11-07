@@ -5,8 +5,9 @@
 ## Pages
 
 - [Home](/): what Baret checks and how the verdict reads
+- [Showcase](/showcase): six demo sites on Monad testnet, each with an honest and an attack version of the same button
 
 ## Notes
 
-- More pages (the showcase of demo sites, agents, docs, install) are being moved to this site and are listed here as they go live.
+- More pages (the demo sites themselves, agents, docs, install) are being moved to this site and are listed here as they go live.
 - The demo sites imitate real products on purpose. They are not real services.
