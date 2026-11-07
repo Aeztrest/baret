@@ -1,0 +1,21 @@
+{
+  "chain": "eip155:10143",
+  "contracts": {
+    "PaymentGuardFactory": {
+      "address": "0xDe897d4dF6E1c34aB868948dE035AE29D32eA822",
+      "block": 68468744,
+      "txHash": null,
+      "source": "Baret-Metropolis contracts/src/PaymentGuardFactory.sol",
+      "sourceVerified": true,
+      "checkedOnChain": "2026-11-07"
+    },
+    "ReputationRegistry": {
+      "address": "0x7491Cb218A7b184ac50F9c2bfbd54C2a67Bfa411",
+      "block": 67604757,
+      "txHash": null,
+      "source": "Baret-Metropolis contracts/src/ReputationRegistry.sol",
+      "sourceVerified": false,
+      "checkedOnChain": "2026-11-07"
+    }
+  }
+}

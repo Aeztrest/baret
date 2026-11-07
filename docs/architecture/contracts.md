@@ -23,10 +23,16 @@ Addresses are data in `packages/chains/deployments/<chain-slug>.json`:
 {
   "chain": "eip155:10143",
   "contracts": {
-    "PaymentGuardFactory": { "address": "0x…", "deployedAt": 0, "txHash": "0x…", "commit": "<git sha>", "verified": true }
+    "PaymentGuardFactory": {
+      "address": "0x…", "block": 68468744, "txHash": null,
+      "source": "Baret-Metropolis contracts/src/PaymentGuardFactory.sol",
+      "sourceVerified": true, "checkedOnChain": "2026-11-07"
+    }
   }
 }
 ```
+
+Schema: `deploymentsSchema` in `packages/chains/src/index.ts`. Recorded so far: Monad testnet `PaymentGuardFactory` and `ReputationRegistry` (deployed by Metropolis; code checked on chain 2026-11-07).
 
 - Written by the deploy script output, reviewed in a PR, never typed by hand into an app.
 - Mainnet deployments require: audit report linked here, deployer key from a hardware wallet, owner = multisig.

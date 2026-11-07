@@ -1,0 +1,22 @@
+{
+  "id": "eip155:143",
+  "family": "evm",
+  "name": "Monad",
+  "network": "mainnet",
+  "envSlug": "MONAD",
+  "nativeAsset": { "id": "eip155:143/slip44:60", "symbol": "MON", "decimals": 18 },
+  "usdc": null,
+  "explorer": {
+    "tx": "https://monadexplorer.com/tx/{hash}",
+    "address": "https://monadexplorer.com/address/{address}"
+  },
+  "features": {
+    "simulation": "trace",
+    "x402": false,
+    "spendLimit": null,
+    "audit": false,
+    "rpcBatch": true
+  },
+  "policyFloors": { "strict": "0.5", "balanced": "0.1" },
+  "faucetUrl": null
+}

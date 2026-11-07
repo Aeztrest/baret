@@ -30,7 +30,7 @@ Detectors are **pure functions** of the context: no I/O inside a detector. All r
 - Asset: CAIP-19 — `eip155:143/erc20:0x…`, `eip155:143/slip44:…` (native), `stellar:pubnet/sep41:C…` / classic `stellar:pubnet/asset:USDC-G…`, `casper:casper/cep18:<package-hash>`.
 - Address comparison is family-aware (EVM checksum-insensitive; Stellar/Casper exact) and lives in the adapter (`adapter.normaliseAddress`).
 
-Exact asset namespaces for Stellar and Casper are confirmed in Phase 1 (`TASKS.md`), following the CAIP namespace registry where one exists.
+**Asset namespaces (decided 2026-11-07, T1.11).** Native assets use `slip44:<coin type>` with the coin type of the family's derivation path: `slip44:60` on every EVM chain (as wallets derive EVM keys), `slip44:148` for XLM, `slip44:506` for CSPR. Tokens: `erc20:<address>` / `erc721:<address>` (EVM), `sep41:<C… contract>` and `asset:<CODE>-<ISSUER>` for classic assets (Stellar), `cep18:<package hash>` (Casper). The Stellar and Casper forms are checked against the CAIP namespace registry when their adapters are ported (T3.1, T4.2).
 
 ## 3. Effects model — built (`packages/core/src/effects.ts`)
 

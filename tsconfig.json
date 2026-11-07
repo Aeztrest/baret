@@ -1,4 +1,8 @@
 {
   "files": [],
-  "references": [{ "path": "./tooling" }, { "path": "./packages/core" }]
+  "references": [
+    { "path": "./tooling" },
+    { "path": "./packages/core" },
+    { "path": "./packages/chains" }
+  ]
 }
