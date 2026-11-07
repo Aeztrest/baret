@@ -19,6 +19,15 @@
     },
     {
       "path": "../../packages/web-ui"
+    },
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/chains"
+    },
+    {
+      "path": "../../packages/demo-evm"
     }
   ]
 }

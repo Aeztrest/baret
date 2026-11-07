@@ -12,7 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@baret/chains": "workspace:*",
     "@baret/content": "workspace:*",
+    "@baret/core": "workspace:*",
+    "@baret/demo-evm": "workspace:*",
     "@baret/routes": "workspace:*",
     "@baret/ui": "workspace:*",
     "@baret/web-ui": "workspace:*",
