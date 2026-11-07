@@ -1,0 +1,133 @@
+/*
+ * The eyelet cursor. Only active while <html> carries `baret-cursor`, which
+ * Cursor.tsx sets on a fine, hovering pointer without reduced motion.
+ *
+ * Two fixed layers, each its own stacking context so its blend mode reaches
+ * the page: the dot (exact position) and the ring (spring-follow). Both use
+ * `difference` on white, so they read on chalk and on dark photos alike.
+ * Over a link or button the ring drops the blend, opens to 48 px and takes
+ * --fg: the scale says "pressable", and the viewport keeps its one orange.
+ * Only transform and opacity animate.
+ */
+
+/*
+ * Hide the native pointer everywhere except form fields, which keep their
+ * native caret (the custom cursor steps aside there, see the "field" state).
+ * Forced colours never hide it: the media query keeps the native cursor.
+ */
+@media not (forced-colors: active) {
+  html.baret-cursor,
+  html.baret-cursor
+    :not(input, textarea, select, [contenteditable="true"], [contenteditable="true"] *) {
+    /* biome-ignore lint/complexity/noImportantStyles: must beat every component's own cursor (cursor-pointer, cursor-grab) at any specificity, or the native pointer would draw on top of the eyelet. */
+    cursor: none !important;
+  }
+}
+
+.bc-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  will-change: transform;
+  mix-blend-mode: difference;
+}
+
+.bc-dot,
+.bc-caret,
+.bc-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  transition:
+    /* 120 ms cross-fade between dot, caret and ring: state changes never blink. */
+    opacity 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* No colour transition: the blend mode flips in one step, so the stroke must too. */
+}
+
+/* 6 px dot, centred on the hotspot. */
+.bc-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  background: #fff;
+}
+
+/* Over long-form copy the dot becomes a square 2 x 20 caret: still precise for selecting. */
+.bc-caret {
+  width: 2px;
+  height: 20px;
+  margin: -10px 0 0 -1px;
+  background: #fff;
+  transform: scaleY(0.3);
+}
+
+/* 32 px eyelet ring, 1 px stroke. */
+.bc-ring {
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border: 1px solid #fff;
+  border-radius: 9999px;
+  transform: scale(1);
+}
+
+/*
+ * States. Every state rule is scoped by [data-cursor-visible] so they share
+ * one specificity (0,3,1) and are written in ascending order; the
+ * press-over-link combination is the only (0,4,1) rule and comes last.
+ */
+html[data-cursor-visible] .bc-dot,
+html[data-cursor-visible] .bc-ring {
+  opacity: 1;
+}
+
+/* Copy: caret in, dot and ring out. */
+html[data-cursor-visible][data-cursor-state="text"] .bc-dot,
+html[data-cursor-visible][data-cursor-state="text"] .bc-ring {
+  opacity: 0;
+}
+html[data-cursor-visible][data-cursor-state="text"] .bc-caret {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* Form field: the native caret shows, ours hides. */
+html[data-cursor-visible][data-cursor-state="field"] :is(.bc-dot, .bc-ring, .bc-caret) {
+  opacity: 0;
+}
+
+/* Link or button: the ring opens to 48 px in the ink colour, no orange. */
+html[data-cursor-visible][data-cursor-state="link"] .bc-layer--ring {
+  mix-blend-mode: normal;
+}
+html[data-cursor-visible][data-cursor-state="link"] .bc-ring {
+  /* Over an orange-filled button, Cursor.tsx sets --bc-ring to its label colour. */
+  border-color: var(--bc-ring, var(--fg));
+  transform: scale(1.5);
+}
+/* The ring alone marks a control; a blended dot would turn blue on an orange fill. */
+html[data-cursor-visible][data-cursor-state="link"] .bc-dot {
+  transform: scale(0);
+}
+
+/* Pressing tightens the ring. */
+html[data-cursor-visible][data-cursor-press] .bc-ring {
+  transform: scale(0.75);
+}
+html[data-cursor-visible][data-cursor-press][data-cursor-state="link"] .bc-ring {
+  transform: scale(1.25);
+}
+
+/* Safety net: forced colours flip the dot to Canvas and lose the hotspot.
+   Cursor.tsx does not mount there; if it ever does, the native cursor stays
+   (see the media query at the top) and the layers are removed. */
+@media (forced-colors: active) {
+  .bc-layer {
+    display: none;
+  }
+}

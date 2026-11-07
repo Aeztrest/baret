@@ -20,6 +20,9 @@
       "path": "./packages/content"
     },
     {
+      "path": "./packages/web-ui"
+    },
+    {
       "path": "./packages/chain-evm"
     },
     {

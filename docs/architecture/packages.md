@@ -26,7 +26,7 @@ baret/
 │   ├── wallet-core/    keyring, sessions, the check-then-sign flow (no UI)
 │   ├── content/        every user-facing word, per language
 │   ├── ui/             design tokens + React components
-│   └── web-ui/         web-only layer (type, motion, layout) for apps/web
+│   └── web-ui/         web-only layer (type, motion, layout, fonts, check-result blocks) for apps/web
 ├── contracts/
 │   ├── evm/            Foundry
 │   ├── stellar/        Soroban (Rust workspace)

@@ -1,0 +1,29 @@
+/*
+ * The landing surface enter (BRAND section 08, landing table): 460 ms on the
+ * BRAND ease, 14 px rise, once. tokens.css owns the product default (160 ms,
+ * 6 px) and the rule that an element is hidden only while it carries
+ * data-reveal without data-in. Reveal.tsx adds data-reveal="surface" only
+ * after its observer is attached, so failed JS, print, reader mode and
+ * preview renderers always see the full page.
+ *
+ * The doubled attribute selector outranks the tokens.css rules on purpose.
+ */
+[data-reveal="surface"][data-reveal] {
+  transition:
+    opacity 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    translate 460ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-reveal="surface"][data-reveal]:not([data-in]) {
+  opacity: 0;
+  translate: 0 14px;
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  [data-reveal="surface"][data-reveal],
+  [data-reveal="surface"][data-reveal]:not([data-in]) {
+    opacity: 1;
+    translate: none;
+    transition: none;
+  }
+}

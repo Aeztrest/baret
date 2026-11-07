@@ -81,8 +81,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 
 ## Phase 2 — Frontend, agents and staging
 
-- [ ] **T2.1 Port `packages/ui`, `packages/web-ui`, `packages/content`** — re-key finding codes (ADR-0006).
-  → in progress: `packages/ui` ported 2026-11-07 (unchanged but for the network-colour comment and the test's Tailwind resolution; typecheck + Tailwind state test green). `content` shared strings ported 2026-11-07: findings re-keyed to v2 + 11 new entries, rules keyed by v2 paths (no hand-kept code lists), chain-neutral wording, copy linter in CI; x402 cap findings now carry `{asset}`. Page strings move with their apps. Next: `web-ui`.
+- [x] **T2.1 Port `packages/ui`, `packages/web-ui`, `packages/content`** — re-key finding codes (ADR-0006).
+  → in progress: `packages/ui` ported 2026-11-07 (unchanged but for the network-colour comment and the test's Tailwind resolution; typecheck + Tailwind state test green). `content` shared strings ported 2026-11-07: findings re-keyed to v2 + 11 new entries, rules keyed by v2 paths (no hand-kept code lists), chain-neutral wording, copy linter in CI; x402 cap findings now carry `{asset}`. Page strings move with their apps. `web-ui` ported 2026-11-07: unchanged but for CheckBlocks, whose panel and "What changes" strings moved from Metropolis showcase/hub and wallet/sign into a new chain-neutral `shared/check` content; `content` re-exports `FindingCode`; the explain client stays (its `/v1/explain` route comes with T2.7). 76 web-ui + content tests green.
 - [ ] **T2.2 `packages/wallet-core` + `chain-evm` wallet side** — keyring with per-family derivation, check-then-sign.
 - [ ] **T2.3 `apps/extension`** — port; family flags; EVM accounts and provider; per-chain policy.
 - [ ] **T2.4 `apps/web`** — port showcase (Monad scenarios), landing, install, `/agents`, developer portal from route schemas; chain filter.
