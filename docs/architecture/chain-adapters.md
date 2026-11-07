@@ -1,6 +1,6 @@
 # Chain adapters
 
-Status: **planned**
+Status: **in progress** (interfaces built in `packages/core/src/adapters.ts`; no adapter implements them yet)
 Last verified: 2026-11-07
 
 How a chain family plugs into Baret, and the checklist for adding a chain or a family. Interfaces live in `packages/core/adapters`; implementations in `packages/chain-<family>`.
@@ -16,7 +16,7 @@ Each `packages/chain-<family>` exports:
 
 They share only pure helpers (address normalisation, unit conversion). The wallet side must stay small enough for the extension bundle; it never imports simulation code.
 
-## 2. Engine adapter interface (draft)
+## 2. Engine adapter interface (the code in `packages/core/src/adapters.ts` is the authority)
 
 ```ts
 interface EngineAdapter<Req, Tx, Sim> {
@@ -40,7 +40,7 @@ Family request payloads (inside `request`):
 | Stellar | `{ kind: "xdr", transactionXdr }` · `{ kind: "auth-entry", entryXdr }` |
 | Casper | `{ kind: "transaction", transactionJson }` (Transaction V1) · `{ kind: "deploy", deployJson }` (legacy) |
 
-## 3. Wallet adapter interface (draft)
+## 3. Wallet adapter interface (loose until T2.2 ports the first one)
 
 ```ts
 interface WalletAdapter {

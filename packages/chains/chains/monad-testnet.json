@@ -1,0 +1,26 @@
+{
+  "id": "eip155:10143",
+  "family": "evm",
+  "name": "Monad testnet",
+  "network": "testnet",
+  "envSlug": "MONAD_TESTNET",
+  "nativeAsset": { "id": "eip155:10143/slip44:60", "symbol": "MON", "decimals": 18 },
+  "usdc": {
+    "id": "eip155:10143/erc20:0x534b2f3A21130d7a60830c2Df862319e593943A3",
+    "symbol": "USDC",
+    "decimals": 6
+  },
+  "explorer": {
+    "tx": "https://testnet.monadexplorer.com/tx/{hash}",
+    "address": "https://testnet.monadexplorer.com/address/{address}"
+  },
+  "features": {
+    "simulation": "trace",
+    "x402": true,
+    "spendLimit": "vault",
+    "audit": true,
+    "rpcBatch": true
+  },
+  "policyFloors": { "strict": "0.5", "balanced": "0.1" },
+  "faucetUrl": "https://faucet.monad.xyz"
+}

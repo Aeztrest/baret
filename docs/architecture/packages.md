@@ -1,6 +1,6 @@
 # Packages, import rules and conventions
 
-Status: **planned** (no package exists yet; this is the target layout)
+Status: **in progress** (built: `packages/core`, `packages/chains`; the rest is the target layout)
 Last verified: 2026-11-07
 
 Every app and package, what it may import, and the conventions that apply to all code. `pnpm docs:check` fails if an `apps/*` or `packages/*` directory is missing from the tables below.
@@ -47,8 +47,8 @@ baret/
 
 | Package | npm name | Published | Purpose | Doc |
 |---|---|---|---|---|
-| `packages/core` | `@baret/core` | yes (dependency of guard) | Identifiers, Effects, Finding, Verdict, GuardPolicy schemas; adapter interfaces | `docs/architecture/engine.md` |
-| `packages/chains` | `@baret/chains` | no | Registry of supported chains, features, deployments | `docs/chains/README.md` |
+| `packages/core` | `@baret/core` | yes (dependency of guard) — **built** | Identifiers, units, Effects, findings, GuardPolicy v2 + templates + v1 migration, Verdict, chain config schema, adapter interfaces | `docs/architecture/engine.md` |
+| `packages/chains` | `@baret/chains` | no — **built** | Registry of supported chains, features, deployments; `enabledChains(env)`, `policyContext(chain)` | `docs/chains/README.md` |
 | `packages/chain-evm` | `@baret/chain-evm` | no | EVM decode/simulate/effects/detectors + wallet ops (viem) | `docs/chains/evm.md` |
 | `packages/chain-stellar` | `@baret/chain-stellar` | no | Stellar adapter (`@stellar/stellar-sdk`) | `docs/chains/stellar.md` |
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |

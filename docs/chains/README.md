@@ -1,14 +1,14 @@
 # Supported chains
 
-Status: **planned**
+Status: **in progress** (registry built in `packages/chains`: Monad testnet and Monad; no adapter serves them yet)
 Last verified: 2026-11-07
 
 The support matrix. Every chain that has a file in `packages/chains/chains/` must have a row here (`pnpm docs:check`). Status values: `planned`, `in progress`, `live (testnet)`, `live (mainnet)`.
 
 | Chain | CAIP-2 | Family | Network | Simulation | Spend limit | x402 | Status | Phase |
 |---|---|---|---|---|---|---|---|---|
-| Monad testnet | `eip155:10143` | EVM | testnet | trace | PaymentGuard | yes | planned (live in legacy repo) | 1 |
-| Monad | `eip155:143` | EVM | mainnet | trace | PaymentGuard | yes | planned | 6 |
+| Monad testnet | `eip155:10143` | EVM | testnet | trace | PaymentGuard | yes | registry entry + deployments (factory, registry) checked on chain 2026-11-07 | 1 |
+| Monad | `eip155:143` | EVM | mainnet | trace | PaymentGuard | yes | registry entry (USDC and trace RPC to confirm; x402 off until then) | 6 |
 | Arc testnet | to confirm | EVM | testnet | trace (RPC provider to choose) | PaymentGuard | yes | planned | 5 |
 | Arc | `eip155:5042` (from hub README; confirm) | EVM | mainnet | trace (RPC provider to choose) | PaymentGuard | yes | planned | 6 |
 | Base Sepolia | `eip155:84532` | EVM | testnet | trace | PaymentGuard | yes | planned | 5 |

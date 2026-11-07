@@ -8,6 +8,10 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # Major TypeScript upgrades are a planned task (TASKS.md T1.13), not a weekly bump.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
     groups:
       dev-tooling:
         patterns: ["@biomejs/*", "typescript", "vitest", "@vitest/*", "@types/*"]
