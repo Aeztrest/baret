@@ -57,7 +57,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 
 - [x] **T1.1 Workspace scaffold** — root scripts (`build`, `typecheck`, `test`, `lint`), `biome.json` (from Metropolis), `vitest` workspace, `tsconfig` references; CI `checks` job turns on. Done when: an empty package passes CI.
   → done 2026-11-07: pnpm lockfile, Biome, Vitest projects, `tsc -b` references. The first project is `tooling/` itself: the docs/secrets checks and the doc-guard hook are type-checked (`checkJs`) and covered by 14 tests (`tooling/tooling.test.ts`).
-- [ ] **T1.2 `packages/core`** — CAIP ids, `Effects`, finding registry, `Verdict`, `GuardPolicy` v2 + templates + `migratePolicyV1`, adapter interfaces. Depends: T0.3.
+- [x] **T1.2 `packages/core`** — CAIP ids, `Effects`, finding registry, `Verdict`, `GuardPolicy` v2 + templates + `migratePolicyV1`, adapter interfaces. Depends: T0.3.
+  → done 2026-11-07 (branch `feat/core`): 10 modules, 21 tests incl. v1 → v2 template parity. Policy design settled while building: all family sections always present; `core.maxFee` replaces per-family fee fields; native floors come from the chain registry (`policyFloors`).
 - [ ] **T1.3 `packages/chains`** — registry file format + Monad testnet/mainnet + deployments imported from `Baret-Metropolis/docs/CONTRACTS.md` (each address checked on the explorer).
 - [ ] **T1.4 Import-rules script in `tooling/`** — enforces `docs/architecture/packages.md` §4 in CI.
 - [ ] **T1.5 `packages/chain-evm` engine side** — port decode, simulation, effects, EVM detectors with their tests (`docs/migration/porting-plan.md` §3).
