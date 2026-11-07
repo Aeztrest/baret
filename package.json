@@ -1,0 +1,30 @@
+{
+  "name": "baret",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Baret: a pre-signing transaction firewall and agent spend-limit layer for EVM, Stellar and Casper.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.1.3",
+  "engines": {
+    "node": ">=22.22.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "docs:check": "node tooling/docs-check.mjs",
+    "secrets:check": "node tooling/secrets-check.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm secrets:check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/node": "24.10.1",
+    "typescript": "6.0.3",
+    "vitest": "5.0.0"
+  }
+}

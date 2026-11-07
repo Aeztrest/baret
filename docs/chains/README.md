@@ -1,0 +1,22 @@
+# Supported chains
+
+Status: **planned**
+Last verified: 2026-11-07
+
+The support matrix. Every chain that has a file in `packages/chains/chains/` must have a row here (`pnpm docs:check`). Status values: `planned`, `in progress`, `live (testnet)`, `live (mainnet)`.
+
+| Chain | CAIP-2 | Family | Network | Simulation | Spend limit | x402 | Status | Phase |
+|---|---|---|---|---|---|---|---|---|
+| Monad testnet | `eip155:10143` | EVM | testnet | trace | PaymentGuard | yes | planned (live in legacy repo) | 1 |
+| Monad | `eip155:143` | EVM | mainnet | trace | PaymentGuard | yes | planned | 6 |
+| Arc testnet | to confirm | EVM | testnet | trace (RPC provider to choose) | PaymentGuard | yes | planned | 5 |
+| Arc | `eip155:5042` (from hub README; confirm) | EVM | mainnet | trace (RPC provider to choose) | PaymentGuard | yes | planned | 6 |
+| Base Sepolia | `eip155:84532` | EVM | testnet | trace | PaymentGuard | yes | planned | 5 |
+| Base | `eip155:8453` | EVM | mainnet | trace | PaymentGuard | yes | planned | 6 |
+| Stellar testnet | `stellar:testnet` | Stellar | testnet | preflight | MerchantSpendPolicy | yes | planned (live in legacy repo) | 3 |
+| Stellar | `stellar:pubnet` | Stellar | mainnet | preflight | MerchantSpendPolicy | yes | planned (deployed by legacy repo) | 3/6 |
+| Casper testnet | `casper:casper-test` | Casper | testnet | to research | PaymentGuard | yes | planned (live in legacy repo) | 4 |
+| Casper | `casper:casper` | Casper | mainnet | to research | PaymentGuard | yes | planned | 6 |
+| GOAT testnet3 | `eip155:48816` | EVM | testnet | trace (batching off) | PaymentGuard | — | backlog | later |
+
+Family docs: `docs/chains/evm.md`, `docs/chains/stellar.md`, `docs/chains/casper.md`. Later families (Solana from BLACKTHORN, Midnight) get a doc when an ADR adds them.

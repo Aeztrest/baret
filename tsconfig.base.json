@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+
+    /*
+     * Deliberately written to be TypeScript 7 clean while we are still on 6.x.
+     *
+     * TypeScript 7 (the native Go compiler) removed "baseUrl",
+     * moduleResolution "node" and "node10", target "es5" and
+     * downlevelIteration. None of them appear here, so the move to 7.x is a
+     * version bump rather than a migration.
+     *
+     * We stay on 6.0.3 for now because typescript-eslint still caps at
+     * "<6.1.0" and TypeScript 7 does not expose a stable programmatic API
+     * until 7.1. Revisit when that ships.
+     */
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  }
+}

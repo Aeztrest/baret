@@ -1,0 +1,10 @@
+Copyright (c) 2026 Ezgin Çapkan. All rights reserved.
+
+This repository and everything in it is proprietary and confidential, except
+where a file or package states another license. The packages published to npm
+under the @baret scope (packages/core, packages/guard, packages/agent-kit) are
+licensed under the MIT License; their license text is in each package's
+LICENSE file.
+
+No part of the proprietary code may be copied, modified, distributed or used
+without prior written permission of the copyright holder.

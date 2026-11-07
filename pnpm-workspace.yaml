@@ -1,0 +1,6 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+# A new package version must be this many minutes old before it can be installed
+# (supply-chain protection, as in the Metropolis repo). 4320 = 3 days.
+minimumReleaseAge: 4320
