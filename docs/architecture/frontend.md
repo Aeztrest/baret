@@ -1,7 +1,7 @@
 # Frontend: extension, web app, shared UI
 
-Status: **in progress** — `packages/ui`, `packages/web-ui` and the shared part of `packages/content` ported (2026-11-07); the web app and the extension next
-Last verified: 2026-11-07
+Status: **in progress** — `packages/ui`, `packages/web-ui`, `packages/routes` and the shared part of `packages/content` ported (2026-11-07); `apps/web` landing ported (2026-11-08), other pages and the extension next
+Last verified: 2026-11-08
 
 Owns `apps/extension`, `apps/web`, `packages/wallet-core`, `packages/ui`, `packages/web-ui`, `packages/content`.
 
@@ -47,7 +47,7 @@ Home (balances grouped by chain), account switcher (per family), network selecto
 
 ## 3. `apps/web` — public site
 
-Ported from `Baret-Metropolis/apps/showcase` (Vite + React). Contents:
+Ported from `Baret-Metropolis/apps/showcase` (Vite + React), page by page. **Ported:** the landing and the not-found page, with the build pipeline (prerender, per-route heads, sitemap), the Vercel middleware and `vercel.json`. The landing copy (`packages/content/src/web/home.content.ts`) is rewritten for multichain: Monad testnet named as the only live chain, Stellar and Casper as next, no provider named, numbers from the code; it is a draft the owner reviews before production. Links to pages not yet ported are listed in `PENDING_PATHS` (`apps/web/src/routes.ts`), and the route test accepts no other dead link. Contents when complete:
 
 - Landing + install page (links to the latest extension build).
 - **Threat showcase**: one scenario catalogue, filterable by chain. Each scenario = a fake dApp with a safe and a dangerous variant, running against real testnet contracts. Sources: Metropolis (SCRYBE, NOVASWAP, PIXELDROP, ORBITYIELD, CLAIMHUB, LAUNCHPAD on Monad), Baret-Stellar (7 demo dApps), CasperBaret (6 demo dApps). A scenario is shown only for chains whose capabilities can demonstrate it.
@@ -63,6 +63,7 @@ Deployed on Vercel; `/api/*` rewrites to the API of the environment (`docs/opera
 | `wallet-core` | Keyring, sessions, `check(request)` → verdict, `sign(request, verdict)`, per-account policy store | Rewritten around `WalletAdapter`s; Mera passkey account dropped for now |
 | `ui` | Tokens + components (light and dark) | none — **ported**; the network colour becomes per chain (T2.12) |
 | `web-ui` | Type, motion, layout, fonts and the check-result blocks (`CheckBlocks`) for the web app | **ported**; `CheckBlocks` reads the new chain-neutral `shared/check` content instead of showcase and wallet page strings; the `/v1/explain` client waits for its route (T2.7) |
+| `routes` | Route registry type, `buildHref`, registry and link checks (shared by the web app, the extension options page, a web wallet) | **ported** unchanged |
 | `content` | Every word: findings, policy fields, check results, screens (English; explanations can be asked in `tr`/`zh`) | **shared strings ported**: codes unified (ADR-0006), rules keyed by v2 paths, chain-neutral wording; which codes a rule decides comes from `FINDING_SPECS`, not from content |
 
 ## 5. Not taken over (now)

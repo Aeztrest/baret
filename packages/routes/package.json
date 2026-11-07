@@ -1,0 +1,13 @@
+{
+  "name": "@baret/routes",
+  "version": "0.2.0",
+  "private": true,
+  "description": "The route registry type, the href builder and the checks that keep the web app, the wallet and the extension in sync.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b"
+  }
+}

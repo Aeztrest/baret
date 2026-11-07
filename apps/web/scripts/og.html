@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  The share card, 1200 x 630 (IMPROVE G3, BRAND section 10): concrete ground
+  with a 40 px grid, the full lockup centred, one orange bar on the bottom
+  edge. scripts/og.mjs screenshots this file into public/og.png. Run it only
+  when the brand changes; the PNG is committed.
+
+  Lockup (BRAND section 02): mark + gap + wordmark in Big Shoulders Stencil
+  Display 900, caps, +4% tracking, mark height = cap height. The stencil cap
+  height is 0.8 em, so a 140 px wordmark has 112 px caps; the mark's viewBox
+  is cropped to the drawn hat (35 units tall) and set 112 px tall.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @font-face {
+        font-family: "Big Shoulders Stencil Display";
+        font-weight: 900;
+        src: url("../../../packages/web-ui/fonts/big-shoulders-stencil-display-900.woff2") format("woff2");
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      .card {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        background-color: #e6e6e1;
+        /* 40 px grid as hard 1 px lines, drawn as an SVG tile (no gradients). */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M0 .5H40M.5 0V40' stroke='%23121316' stroke-opacity='.09'/%3E%3C/svg%3E");
+      }
+      .lockup {
+        display: flex;
+        align-items: flex-end;
+        gap: 28px;
+      }
+      .mark {
+        display: block;
+        height: 112px;
+        width: auto;
+      }
+      .word {
+        font-family: "Big Shoulders Stencil Display", sans-serif;
+        font-weight: 900;
+        font-size: 140px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #121316;
+        line-height: 0.8;
+        text-box: trim-both cap alphabetic;
+        margin-right: -0.04em;
+      }
+      .bar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 12px;
+        background: #ff4f00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <div class="lockup">
+        <svg class="mark" viewBox="3 14 58 35" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M13 38C13 22.5 21 14 32 14s19 8.5 19 24Z" fill="#ff4f00" />
+          <rect x="21" y="27" width="22" height="4" fill="#e6e6e1" />
+          <path d="M6 41h52l3 3.5-3 4.5H6l-3-4.5Z" fill="#ff4f00" />
+        </svg>
+        <span class="word">Baret</span>
+      </div>
+      <div class="bar"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "Baret",
+  "short_name": "Baret",
+  "start_url": "/",
+  "display": "browser",
+  "theme_color": "#17181b",
+  "background_color": "#17181b",
+  "icons": [
+    { "src": "/mark.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/apple-touch-icon.png", "type": "image/png", "sizes": "180x180" }
+  ]
+}

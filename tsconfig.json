@@ -23,6 +23,9 @@
       "path": "./packages/web-ui"
     },
     {
+      "path": "./packages/routes"
+    },
+    {
       "path": "./packages/chain-evm"
     },
     {
@@ -30,6 +33,9 @@
     },
     {
       "path": "./apps/api"
+    },
+    {
+      "path": "./apps/web"
     }
   ]
 }

@@ -1,0 +1,12 @@
+# Baret
+
+> Baret is a security and policy layer that runs before a wallet, dApp or AI agent signs a transaction. It simulates the transaction, runs it through risk checks, applies the user's rules and returns a Safe, Caution or Blocked verdict with the reasons. For agents it adds an on-chain spending limit. Baret runs on Monad testnet today (chain id 10143); Stellar and Casper are next. Nothing is on mainnet.
+
+## Pages
+
+- [Home](/): what Baret checks and how the verdict reads
+
+## Notes
+
+- More pages (the showcase of demo sites, agents, docs, install) are being moved to this site and are listed here as they go live.
+- The demo sites imitate real products on purpose. They are not real services.
