@@ -215,6 +215,18 @@ export const policy = {
       hint: "Blocks a request that runs session code with your account's full authority. Many Casper apps use it for payable calls.",
       families: ["casper"],
     },
+    "near.blockDeleteAccount": {
+      group: "dangerous",
+      label: "Block deleting the account",
+      hint: "Blocks a request that deletes your account and sends everything in it to another account.",
+      families: ["near"],
+    },
+    "near.blockContractDeploy": {
+      group: "dangerous",
+      label: "Block deploying code",
+      hint: "Blocks a request that deploys contract code to an account, which then runs with that account's funds.",
+      families: ["near"],
+    },
 
     "core.maxLossPercent": {
       group: "limits",

@@ -1,0 +1,33 @@
+{
+  "id": "near:testnet",
+  "family": "near",
+  "name": "NEAR testnet",
+  "network": "testnet",
+  "envSlug": "NEAR_TESTNET",
+  "nativeAsset": {
+    "id": "near:testnet/slip44:397",
+    "symbol": "NEAR",
+    "decimals": 24
+  },
+  "usdc": {
+    "id": "near:testnet/nep141:3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af",
+    "symbol": "USDC",
+    "decimals": 6
+  },
+  "explorer": {
+    "tx": "https://testnet.nearblocks.io/txns/{hash}",
+    "address": "https://testnet.nearblocks.io/address/{address}"
+  },
+  "features": {
+    "simulation": "preflight",
+    "x402": false,
+    "spendLimit": "vault",
+    "audit": false,
+    "rpcBatch": false
+  },
+  "policyFloors": {
+    "strict": "0.5",
+    "balanced": "0.1"
+  },
+  "faucetUrl": "https://near-faucet.io"
+}

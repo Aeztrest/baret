@@ -5,7 +5,7 @@ import { baseUnitsSchema } from "./units.js";
 /**
  * GuardPolicy v2 (ADR-0006): the owner's rules, as pure data.
  *
- * `core` applies on every chain; `evm`, `stellar` and `casper` hold the rules only one
+ * `core` applies on every chain; `evm`, `stellar`, `casper` and `near` hold the rules only one
  * family has. Every section is always present, so a policy is complete on any chain and
  * a wallet can keep one policy per account per chain without merging defaults.
  *
@@ -97,6 +97,15 @@ export const casperPolicySchema = z
   })
   .strict();
 
+export const nearPolicySchema = z
+  .object({
+    /** DeleteAccount sends everything to a beneficiary and deletes the account. */
+    blockDeleteAccount: z.boolean(),
+    /** DeployContract replaces the code that runs on the account. */
+    blockContractDeploy: z.boolean(),
+  })
+  .strict();
+
 export const guardPolicySchema = z
   .object({
     version: z.literal(2),
@@ -104,6 +113,7 @@ export const guardPolicySchema = z
     evm: evmPolicySchema,
     stellar: stellarPolicySchema,
     casper: casperPolicySchema,
+    near: nearPolicySchema,
   })
   .strict();
 
@@ -141,6 +151,8 @@ export const POLICY_FIELDS = [
   "stellar.blockAccountMerge",
   "stellar.blockTrustlineRemoval",
   "casper.blockSessionCode",
+  "near.blockDeleteAccount",
+  "near.blockContractDeploy",
 ] as const;
 
 export type PolicyField = (typeof POLICY_FIELDS)[number];

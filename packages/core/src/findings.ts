@@ -78,6 +78,11 @@ export const FINDING_CODES = [
   "UNSIGNED_AUTH_ENTRY",
   // Casper only
   "SESSION_CODE_EXECUTION",
+  // NEAR (ADR-0011)
+  "ACCOUNT_DELETE_DETECTED",
+  "CONTRACT_DEPLOY_DETECTED",
+  "FUNCTION_CALL_KEY_ADDED",
+  "CHAIN_SIGNATURE_REQUEST",
 ] as const;
 
 export type FindingCode = (typeof FINDING_CODES)[number];
@@ -320,6 +325,21 @@ export const FINDING_SPECS = {
     rule: toggle("casper.blockSessionCode"),
     families: ["casper"],
   },
+
+  ACCOUNT_DELETE_DETECTED: {
+    severity: "critical",
+    rule: toggle("near.blockDeleteAccount"),
+    families: ["near"],
+  },
+  CONTRACT_DEPLOY_DETECTED: {
+    severity: "high",
+    rule: toggle("near.blockContractDeploy"),
+    families: ["near"],
+  },
+  // A key limited to one contract and a gas allowance: worth reading, never blocking on its own.
+  FUNCTION_CALL_KEY_ADDED: { severity: "low", rule: warning, families: ["near"] },
+  // A signature for another chain: the transaction it signs is not simulated here.
+  CHAIN_SIGNATURE_REQUEST: { severity: "medium", rule: warning, families: ["near"] },
 } as const satisfies Record<FindingCode, FindingSpec>;
 
 /**

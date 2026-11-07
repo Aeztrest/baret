@@ -8,6 +8,8 @@ import {
 import { z } from "zod";
 import monad from "../chains/monad.json" with { type: "json" };
 import monadTestnet from "../chains/monad-testnet.json" with { type: "json" };
+import near from "../chains/near.json" with { type: "json" };
+import nearTestnet from "../chains/near-testnet.json" with { type: "json" };
 import monadTestnetDeployments from "../deployments/monad-testnet.json" with { type: "json" };
 
 /**
@@ -62,7 +64,7 @@ export type DeployedContract = z.infer<typeof deployedContractSchema>;
 export type ShowcaseEntry = z.infer<typeof showcaseEntrySchema>;
 export type Deployments = z.infer<typeof deploymentsSchema>;
 
-const RAW_CHAINS: unknown[] = [monadTestnet, monad];
+const RAW_CHAINS: unknown[] = [monadTestnet, monad, nearTestnet, near];
 const RAW_DEPLOYMENTS: unknown[] = [monadTestnetDeployments];
 
 export const CHAINS: readonly ChainConfig[] = RAW_CHAINS.map((c) => chainConfigSchema.parse(c));

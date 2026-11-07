@@ -60,6 +60,10 @@ const base = (name: PolicyTemplateName): GuardPolicy => {
       // Payable calls on Casper run through session code, so only Strict blocks it.
       blockSessionCode: strict,
     },
+    near: {
+      blockDeleteAccount: true,
+      blockContractDeploy: !permissive,
+    },
   };
 };
 
