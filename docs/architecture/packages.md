@@ -1,6 +1,6 @@
 # Packages, import rules and conventions
 
-Status: **in progress** (built: `packages/core`, `packages/chains`; in progress: `packages/chain-evm`; the rest is the target layout)
+Status: **in progress** (built: `packages/core`, `packages/chains`, `packages/chain-evm` engine side, `packages/engine`; the rest is the target layout)
 Last verified: 2026-11-07
 
 Every app and package, what it may import, and the conventions that apply to all code. `pnpm docs:check` fails if an `apps/*` or `packages/*` directory is missing from the tables below.
@@ -52,7 +52,7 @@ baret/
 | `packages/chain-evm` | `@baret/chain-evm` | no — **in progress** | EVM decode/simulate/effects/detectors + wallet ops (viem) | `docs/chains/evm.md` |
 | `packages/chain-stellar` | `@baret/chain-stellar` | no | Stellar adapter (`@stellar/stellar-sdk`) | `docs/chains/stellar.md` |
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |
-| `packages/engine` | `@baret/engine` | no | Pipeline, universal detectors, policy evaluation | `docs/architecture/engine.md` |
+| `packages/engine` | `@baret/engine` | no — **built** | `createEngine`, `decide`; Metropolis parity tests | `docs/architecture/engine.md` |
 | `packages/providers` | `@baret/providers` | no | Optional data sources and LLM client | `docs/architecture/providers.md` |
 | `packages/guard` | `@baret/guard` | **yes** | Client for `/v1/analyze`, policy templates, verdict helpers | `docs/architecture/sdk.md` |
 | `packages/agent-kit` | `@baret/agent-kit` | **yes** | `AgentWallet`, signers, x402 buyer, `baret` CLI | `docs/architecture/sdk.md` |
@@ -90,7 +90,7 @@ A package may import only from the packages in its row (plus external libraries 
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core` | none directly |
 | `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing) | none directly |
 
-The script also fails on a package or app that has no row, so a new package cannot skip this table. Chain libraries it knows: `viem`, `ethers` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it.
+The script also fails on a package or app that has no row, so a new package cannot skip this table, and on a package with a `tsconfig.json` that the root `tsconfig.json` does not reference (otherwise `tsc -b` skips it silently; this happened to `chain-evm` and is how a type error reached `main`). Test files (`*.test.*`, `test/`) may import chain libraries to build fixtures; the `@baret` rule still applies to them. Chain libraries it knows: `viem`, `ethers` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it.
 
 Two more rules (not checked by the script yet):
 - `chain-<family>/engine` and `chain-<family>/wallet` are separate entry points. The extension bundles only `./wallet`; the API only `./engine`.

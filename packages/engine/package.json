@@ -1,0 +1,24 @@
+{
+  "name": "@baret/engine",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Baret's analysis entry point: validates a request, runs the chain family's adapter, decides under the owner's policy and returns a schema-checked verdict.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@baret/chains": "workspace:*",
+    "@baret/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@baret/chain-evm": "workspace:*",
+    "viem": "2.56.5"
+  }
+}

@@ -86,10 +86,13 @@ export const findingSchema = z
   })
   .strict();
 
-/** A rule that blocked: "Requested {actual}. Your rule allows {limit}." */
+/**
+ * A rule that blocked: "Requested {actual}. Your rule allows {limit}." `rule` is null for a
+ * fail-closed finding no rule can turn off (an unreadable signature, an unreadable 402).
+ */
 export const firedRuleSchema = z
   .object({
-    rule: z.enum(POLICY_FIELDS),
+    rule: z.enum(POLICY_FIELDS).nullable(),
     code: z.enum(FINDING_CODES),
     limit: z.string().nullable(),
     actual: z.string().nullable(),

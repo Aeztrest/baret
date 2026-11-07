@@ -1,6 +1,6 @@
 # Chain adapters
 
-Status: **in progress** (interfaces built in `packages/core/src/adapters.ts`; no adapter implements them yet)
+Status: **in progress** (Phase 1 interface built in `packages/core/src/adapters.ts`; implemented by the EVM adapter)
 Last verified: 2026-11-07
 
 How a chain family plugs into Baret, and the checklist for adding a chain or a family. Interfaces live in `packages/core/adapters`; implementations in `packages/chain-<family>`.
@@ -17,6 +17,9 @@ Each `packages/chain-<family>` exports:
 They share only pure helpers (address normalisation, unit conversion). The wallet side must stay small enough for the extension bundle; it never imports simulation code.
 
 ## 2. Engine adapter interface (the code in `packages/core/src/adapters.ts` is the authority)
+
+**Phase 1 shape (D9).** Today the interface is coarse: `analyze(input) → { drafts, estimatedChanges, allowances, sources, pinnedAt, simulation, confidence }` plus `requestSchema` and `health`. The adapter runs its family's whole analysis; the engine decides. The fine-grained steps below are the target the interface grows into with the second family (T3.7), when the universal detectors move to the engine and need core `Effects`.
+
 
 ```ts
 interface EngineAdapter<Req, Tx, Sim> {

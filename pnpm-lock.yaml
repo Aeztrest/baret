@@ -51,6 +51,22 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
+  packages/engine:
+    dependencies:
+      '@baret/chains':
+        specifier: workspace:*
+        version: link:../chains
+      '@baret/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@baret/chain-evm':
+        specifier: workspace:*
+        version: link:../chain-evm
+      viem:
+        specifier: 2.56.5
+        version: 2.56.5(typescript@6.0.3)(zod@4.6.7)
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':

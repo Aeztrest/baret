@@ -1,6 +1,6 @@
 # Engine: pipeline, effects, detectors, policy, verdict
 
-Status: **in progress** — the types (`packages/core`) are built and tested; the pipeline (`packages/engine`) is not built yet (TASKS.md T1.6)
+Status: **in progress** — EVM done in code, not deployed: `packages/core` types, `packages/engine` (`createEngine`, `decide`) and the EVM adapter pass Metropolis's 87 end-to-end scenarios (parity). Stellar and Casper adapters not built.
 Last verified: 2026-11-07
 
 Owns: `packages/core` (the types) and `packages/engine` (the pipeline). The adapter side of each step is in `docs/architecture/chain-adapters.md`.
@@ -106,4 +106,8 @@ Source of truth: `verdictSchema` in `packages/core/src/analyze.ts` (with the `/v
 
 ## 7. Not built yet
 
-`packages/engine` (pipeline, universal detectors, policy evaluation) and every family adapter. Port order: `docs/migration/porting-plan.md`.
+Universal detectors in the engine (they are in the EVM adapter, D9 → T3.7); Stellar and Casper adapters; signed attestations. Port order: `docs/migration/porting-plan.md`.
+
+## 8. What runs today (Phase 1)
+
+`createEngine({ adapters, chains, verdictTtlSeconds })` → `engine.analyze(body)`: validates the request (`analyzeRequestSchema`) → resolves the enabled chain and its family adapter → validates the family payload → fills the policy from the template and `policyContext(chain)` → `adapter.analyze()` (the EVM adapter runs Metropolis's whole pipeline: pin, decode, simulate, effects, reads, sources, detectors, policy rules) → `decide()` → suggestions, confidence → `verdictSchema.parse()`. Errors: `InvalidRequestError`, `ChainUnsupportedError`, `ChainUnavailableError` (`packages/core/src/errors.ts`).

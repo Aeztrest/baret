@@ -3,6 +3,8 @@
   "references": [
     { "path": "./tooling" },
     { "path": "./packages/core" },
-    { "path": "./packages/chains" }
+    { "path": "./packages/chains" },
+    { "path": "./packages/chain-evm" },
+    { "path": "./packages/engine" }
   ]
 }
