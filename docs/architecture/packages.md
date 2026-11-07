@@ -69,7 +69,7 @@ baret/
 | `contracts/stellar` | Soroban (Rust) | `docs/architecture/contracts.md`, `docs/chains/stellar.md` |
 | `contracts/casper` | Odra (Rust) | `docs/architecture/contracts.md`, `docs/chains/casper.md` |
 
-## 4. Import rules (to be enforced in CI by an import-rules script in `tooling/`, `TASKS.md` T1.4)
+## 4. Import rules (enforced in CI by `tooling/import-rules.mjs`, which holds the machine copy of this table: change both together)
 
 A package may import only from the packages in its row (plus external libraries listed).
 
@@ -84,12 +84,15 @@ A package may import only from the packages in its row (plus external libraries 
 | `agent-kit` | `core`, `guard`, `chains`, `chain-*/wallet` | via adapters only |
 | `wallet-core` | `core`, `guard`, `chains`, `chain-*/wallet` | via adapters only |
 | `content` | `core` (codes only) | none |
-| `ui`, `web-ui` | `content` | none |
+| `ui` | `content` | none |
+| `web-ui` | `content`, `ui` | none |
 | `apps/api` | `engine`, `providers`, `chains`, `core`, `content` | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core` | none directly |
 | `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing) | none directly |
 
-Two more rules:
+The script also fails on a package or app that has no row, so a new package cannot skip this table. Chain libraries it knows: `viem`, `ethers` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it.
+
+Two more rules (not checked by the script yet):
 - `chain-<family>/engine` and `chain-<family>/wallet` are separate entry points. The extension bundles only `./wallet`; the API only `./engine`.
 - Shared code never contains `if (family === "evm")`. A difference between families is a method on the adapter interface.
 

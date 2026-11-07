@@ -13,11 +13,11 @@ The single task list for the project. Every session reads "Now" and "Waiting on 
 
 ## Now
 
-**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.2 (`packages/core`), T1.3 (`packages/chains`), T1.4 (import rules). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
+**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.5 (EVM adapter, engine side), then T1.6 (engine pipeline + parity). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
 
 ## Waiting on a decision (owner)
 
-Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aeztrest/baret`, private), D3 (proprietary core + MIT SDKs).
+Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aeztrest/baret`, private), D3 (proprietary core + MIT SDKs), D8 (no GitHub Pro: no branch protection on the private repo; the PR-only rule in `CLAUDE.md` plus green CI is the gate, and the owner allows Claude to merge its own PRs once CI is green — architecture decisions, deploys, contract deploys and spending still need the owner).
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
@@ -25,7 +25,6 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
 | D5 | LLM provider for `/v1/explain` and `/v1/policy/draft` | KIMI (legacy) / Qwen / Claude / none in v1 | decide before T2.7 |
 | D6 | Shared store for production (limits, caches, API keys) | Render Redis (Key Value) + Postgres / Upstash / Supabase | Render Key Value + Render Postgres: one vendor, one dashboard |
 | D7 | x402 settlement chain for Baret's own paid API | Base / Arc / Stellar | decide in Phase 6 with fee data |
-| D8 | Branch protection on the private repo | GitHub Pro (~$4/month) / company org on GitHub Team (~$4/user/month) / stay without until the company exists | GitHub Pro now: protection for `main` and `release`, required CI checks; the script is ready (`gh api …/branches/main/protection`) |
 
 ## Phase 0 — Foundation
 
@@ -61,7 +60,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
   → done 2026-11-07 (branch `feat/core`): 10 modules, 21 tests incl. v1 → v2 template parity. Policy design settled while building: all family sections always present; `core.maxFee` replaces per-family fee fields; native floors come from the chain registry (`policyFloors`).
 - [x] **T1.3 `packages/chains`** — registry file format + Monad testnet/mainnet + deployments imported from `Baret-Metropolis/docs/CONTRACTS.md` (each address checked on the explorer).
   → done 2026-11-07 (branch `feat/chains`): Monad testnet + Monad entries; testnet `PaymentGuardFactory`, `ReputationRegistry` and USDC (6 decimals) checked with `eth_getCode` / `decimals()` on the public RPC (chain id 10143). Demo-site contracts come with the showcase (T2.4).
-- [ ] **T1.4 Import-rules script in `tooling/`** — enforces `docs/architecture/packages.md` §4 in CI.
+- [x] **T1.4 Import-rules script in `tooling/`** — enforces `docs/architecture/packages.md` §4 in CI.
+  → done 2026-11-07: `tooling/import-rules.mjs` (`pnpm imports:check`, CI docs job), 5 tests. Enforces the @baret import table and keeps chain libraries inside their own adapter.
 - [ ] **T1.5 `packages/chain-evm` engine side** — port decode, simulation, effects, EVM detectors with their tests (`docs/migration/porting-plan.md` §3).
 - [ ] **T1.6 `packages/engine`** — pipeline, universal detectors, policy evaluation; **parity test** replaying Metropolis scenario fixtures (`apps/server/scripts/export-scenarios.ts`) with expected decisions.
 - [ ] **T1.7 `packages/providers`** — reputation registry reader, Nansen (optional), threat feed.
