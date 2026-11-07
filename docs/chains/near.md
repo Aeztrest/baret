@@ -1,6 +1,6 @@
 # NEAR family
 
-Status: **in progress** (ADR-0011, 2026-11-08; built for NEAR HACKATHON 2026, deadline 2026-11-14)
+Status: **in progress** — core family, registry, vault contract (tests in CI) and the engine adapter built 2026-11-08; not deployed (ADR-0011; NEAR HACKATHON 2026, deadline 2026-11-14)
 Last verified: 2026-11-08
 
 Package: `packages/chain-near`. Contract: `contracts/near`. Chains: `near:testnet`, `near:mainnet`.
@@ -19,7 +19,7 @@ Package: `packages/chain-near`. Contract: `contracts/near`. Chains: `near:testne
 | Step | How |
 |---|---|
 | decode | A transaction as JSON (`signerId`, `receiverId`, `actions`) or base64 borsh. Actions: Transfer, FunctionCall (method, args, deposit, gas), AddKey (full access or function call key with receiver, methods, allowance), DeleteKey, DeleteAccount (beneficiary), DeployContract, CreateAccount, Stake. Known methods are decoded from their JSON args: NEP-141 `ft_transfer`, `ft_transfer_call`, `storage_deposit`; the vault's `execute_transfer`; Chain Signatures `sign`. |
-| simulate | **Preflight only**: NEAR has no public transaction simulation. RPC reads: signer and receiver accounts (exist, balance, code hash), the signer's access keys, NEP-141 `ft_balance_of`. The verdict says `simulation: "preflight"`. |
+| simulate | **Preflight only**: NEAR has no public transaction simulation. RPC reads pinned to one final block: signer and receiver accounts (exist, balance, code), NEP-141 `ft_balance_of`, and for a call to a Baret vault its `get_policy` and `get_remaining`, from which the vault's own refusal (`E_…`) is predicted before signing (`SIMULATION_FAILED` with `details.reason`). The verdict says `simulation: "preflight"`, `confidence: "medium"`. |
 | effects | Native and NEP-141 balance changes the actions state; deposits attached to calls; access key changes as authority changes; account deletion; contract deployment. |
 | family detectors | full access key added (AUTHORITY_CHANGE), function call key added (FUNCTION_CALL_KEY_ADDED), DeleteAccount (ACCOUNT_DELETE_DETECTED), DeployContract (CONTRACT_DEPLOY_DETECTED), a Chain Signatures request (CHAIN_SIGNATURE_REQUEST, with the derivation path and target chain when readable), deposit to an account with no contract or an unknown one (universal codes). |
 

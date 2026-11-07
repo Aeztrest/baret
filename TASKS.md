@@ -35,9 +35,11 @@ Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goe
   → done 2026-11-08: family, namespace, `near` policy section in every template, 4 codes with content (shared placeholders plus `{path}`), 2 rule rows; 528 tests and the 87 parity scenarios green; `pre-hackathon` = `bbb5eac`.
 - [x] **TN.2 Registry** — `near:testnet` (and `near:mainnet` for Intents) chain entries; RPC env names.
   → done 2026-11-08: `near-testnet.json`, `near.json` (preflight, vault, USDC from Circle checked with `ft_metadata`); env slugs `NEAR_TESTNET`, `NEAR_MAINNET`.
-- [ ] **TN.3 Vault contract** (`contracts/near`, Rust near-sdk) — deposit, policy, agents, pause, `execute_transfer` (NEAR + NEP-141), limits per transfer and per rolling day, allowlists, error codes; unit tests; CI job. Testnet deploy needs the owner's yes.
+- [~] **TN.3 Vault contract** (`contracts/near`, Rust near-sdk) — deposit, policy, agents, pause, `execute_transfer` (NEAR + NEP-141), limits per transfer and per rolling day, allowlists, error codes; unit tests; CI job. Testnet deploy needs the owner's yes.
+  → 2026-11-08: `contracts/near/vault` written with 14 unit tests and its CI job (Linux: fmt, test, cargo-near wasm build; Windows lacks NASM for near-sdk's test runtime). Deploy waits for the owner.
 - [ ] **TN.4 Function call key flow** — script that adds an agent key limited to the vault's `execute_transfer` with an allowance.
-- [ ] **TN.5 `packages/chain-near` engine** — decode (JSON + borsh), preflight over RPC, effects, family detectors, adapter registered in `apps/api`; staging serves `near:testnet`.
+- [~] **TN.5 `packages/chain-near` engine** — decode (JSON + borsh), preflight over RPC, effects, family detectors, adapter registered in `apps/api`; staging serves `near:testnet`.
+  → 2026-11-08: adapter built (12 tests: transfers, keys, delete/deploy, vault refusal prediction, NEP-141, unknown contract, Chain Signatures, reported account, x402) and registered in `apps/api`. Staging needs `CHAIN_NEAR_TESTNET_RPC_URL` on Render (owner).
 - [ ] **TN.6 Agent demo** — TypeScript agent: asks `/v1/analyze`, then calls the vault with its function call key; four scenarios (normal payment, over the limit refused on chain, receiver not allowed, a full access key addition blocked before signing).
 - [ ] **TN.7 Chain Signatures** — the vault forwards an approved request to the MPC contract; one payment on an EVM testnet limited by the NEAR policy.
 - [ ] **TN.8 NEAR Intents check** — read a `dry: true` quote before signing, apply the policy (mainnet, small amounts).

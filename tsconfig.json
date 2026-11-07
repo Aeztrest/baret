@@ -29,6 +29,9 @@
       "path": "./packages/chain-evm"
     },
     {
+      "path": "./packages/chain-near"
+    },
+    {
       "path": "./packages/demo-evm"
     },
     {

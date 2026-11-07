@@ -1,0 +1,42 @@
+name: Contracts (NEAR)
+
+on:
+  pull_request:
+    paths: ["contracts/near/**", ".github/workflows/contracts-near.yml"]
+  push:
+    branches: [main]
+    paths: ["contracts/near/**", ".github/workflows/contracts-near.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vault:
+    name: fmt, clippy, test, wasm build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: contracts/near
+    steps:
+      - uses: actions/checkout@v7
+      # near-sdk 5.30 needs Rust 1.95+; cargo-near picks the wasm target NEAR's runtime accepts.
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown, wasm32v1-none
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/near
+      - run: cargo fmt --check
+      - run: cargo test --locked
+      - name: Install cargo-near
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
+      - name: Build the wasm
+        working-directory: contracts/near/vault
+        run: cargo near build non-reproducible-wasm --locked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: baret-near-vault-wasm
+          path: contracts/near/target/near/baret_near_vault/*.wasm

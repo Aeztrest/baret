@@ -1,0 +1,20 @@
+{
+  "name": "@baret/chain-near",
+  "version": "0.2.0",
+  "private": true,
+  "description": "The NEAR chain family adapter (ADR-0011): decode, preflight over RPC, effects and NEAR detectors (./engine).",
+  "type": "module",
+  "exports": {
+    "./engine": "./src/engine/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@baret/chains": "workspace:*",
+    "@baret/core": "workspace:*",
+    "near-api-js": "7.4.0",
+    "zod": "4.6.7"
+  }
+}
