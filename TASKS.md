@@ -59,7 +59,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
   → done 2026-11-07: pnpm lockfile, Biome, Vitest projects, `tsc -b` references. The first project is `tooling/` itself: the docs/secrets checks and the doc-guard hook are type-checked (`checkJs`) and covered by 14 tests (`tooling/tooling.test.ts`).
 - [x] **T1.2 `packages/core`** — CAIP ids, `Effects`, finding registry, `Verdict`, `GuardPolicy` v2 + templates + `migratePolicyV1`, adapter interfaces. Depends: T0.3.
   → done 2026-11-07 (branch `feat/core`): 10 modules, 21 tests incl. v1 → v2 template parity. Policy design settled while building: all family sections always present; `core.maxFee` replaces per-family fee fields; native floors come from the chain registry (`policyFloors`).
-- [ ] **T1.3 `packages/chains`** — registry file format + Monad testnet/mainnet + deployments imported from `Baret-Metropolis/docs/CONTRACTS.md` (each address checked on the explorer).
+- [x] **T1.3 `packages/chains`** — registry file format + Monad testnet/mainnet + deployments imported from `Baret-Metropolis/docs/CONTRACTS.md` (each address checked on the explorer).
+  → done 2026-11-07 (branch `feat/chains`): Monad testnet + Monad entries; testnet `PaymentGuardFactory`, `ReputationRegistry` and USDC (6 decimals) checked with `eth_getCode` / `decimals()` on the public RPC (chain id 10143). Demo-site contracts come with the showcase (T2.4).
 - [ ] **T1.4 Import-rules script in `tooling/`** — enforces `docs/architecture/packages.md` §4 in CI.
 - [ ] **T1.5 `packages/chain-evm` engine side** — port decode, simulation, effects, EVM detectors with their tests (`docs/migration/porting-plan.md` §3).
 - [ ] **T1.6 `packages/engine`** — pipeline, universal detectors, policy evaluation; **parity test** replaying Metropolis scenario fixtures (`apps/server/scripts/export-scenarios.ts`) with expected decisions.
@@ -67,7 +68,10 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [ ] **T1.8 `apps/api`** — `/health`, `/health/ready`, `/v1/chains`, `/v1/analyze`, `/v1/policy/templates`; env schema; `.env.example`; built JS start.
 - [ ] **T1.9 `packages/guard` 0.2.0** — client over `core`; README quickstart.
 - [ ] **T1.10 `contracts/evm`** — port Foundry project (PaymentGuard, factory, registry) + `contracts-evm.yml`.
-- [ ] **T1.11 CAIP-19 namespaces for Stellar and Casper assets** — decide and write in `docs/architecture/engine.md` §2.
+- [x] **T1.11 CAIP-19 namespaces for Stellar and Casper assets** — decide and write in `docs/architecture/engine.md` §2.
+  → decided 2026-11-07: `slip44:<coin type>` for natives (60 on all EVM, 148, 506), `erc20`/`erc721`, `sep41` + `asset:CODE-ISSUER`, `cep18`. Re-check against the CAIP registry in T3.1 / T4.2.
+- [ ] **T1.12 Monad mainnet: canonical USDC and a trace-capable RPC** — the registry entry has `usdc: null` and x402 off until both are confirmed.
+- [ ] **T1.13 TypeScript 7 upgrade** — Dependabot PR #5 bumps TypeScript 6 → 7 (and Biome, Vitest) and fails CI. Do it as its own task: read the TS 7 migration notes, fix, then merge #5 or replace it. Until then Dependabot ignores TypeScript majors.
 
 ## Phase 2 — Frontend, agents and staging
 
