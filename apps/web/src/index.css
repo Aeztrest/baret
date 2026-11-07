@@ -1,0 +1,18 @@
+/*
+ * The only stylesheet the showcase loads. Tokens, the Tailwind build and the
+ * base layer all come from @baret/ui, which is consumed as source so a token
+ * change hot-reloads here immediately.
+ */
+@import "@baret/ui/tokens.css";
+
+/* Sources outside this app's own tree have to be declared for Tailwind to
+   scan them for class names. */
+@source "../../../packages/ui/src";
+@source "../../../packages/web-ui/src";
+
+/* A demo site's Baret bar is fixed to the foot of the screen (48 px and the
+   safe area): anything scrolled or tabbed to stops above it, never under it
+   (WCAG 2.4.11). */
+html:has([data-demo-bar]) {
+  scroll-padding-bottom: calc(3rem + 1rem + env(safe-area-inset-bottom));
+}

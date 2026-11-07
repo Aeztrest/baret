@@ -45,3 +45,7 @@ services:
         sync: false
       - key: BARET_CORS_ORIGINS
         sync: false
+      # The same value as BARET_EDGE_SECRET on the Vercel project: marks requests
+      # that come through the web app's /api rewrite (apps/web/middleware.ts).
+      - key: BARET_EDGE_SECRET
+        sync: false

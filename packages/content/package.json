@@ -9,7 +9,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./shared/*.content": "./src/shared/*.content.ts"
+    "./shared/*.content": "./src/shared/*.content.ts",
+    "./web/*.content": "./src/web/*.content.ts"
   },
   "scripts": {
     "typecheck": "tsc -b",

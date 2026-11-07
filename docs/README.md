@@ -53,7 +53,7 @@ When you change a path on the left, update the docs on the right in the same com
 | `packages/chain-casper/**` | `docs/chains/casper.md` |
 | `packages/providers/**` | `docs/architecture/providers.md`, `docs/operations/environments.md` |
 | `packages/guard/**`, `packages/agent-kit/**` | `docs/architecture/sdk.md`, the package README, `CHANGELOG` via changeset |
-| `packages/wallet-core/**`, `packages/ui/**`, `packages/web-ui/**`, `packages/content/**` | `docs/architecture/frontend.md` |
+| `packages/wallet-core/**`, `packages/ui/**`, `packages/web-ui/**`, `packages/routes/**`, `packages/content/**` | `docs/architecture/frontend.md` |
 | `apps/api/**` | `docs/architecture/api.md`; env → `docs/operations/environments.md` |
 | `apps/extension/**`, `apps/web/**` | `docs/architecture/frontend.md` |
 | `contracts/**` | `docs/architecture/contracts.md`, `docs/chains/<family>.md` |

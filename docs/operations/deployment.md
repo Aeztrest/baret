@@ -1,6 +1,6 @@
 # Deployment
 
-Status: **in progress** — staging API **live** on Render (https://baret-api-staging.onrender.com, from `render.yaml`, 2026-11-07); production API, Vercel and store publishing not set up yet
+Status: **in progress** — staging API **live** on Render (https://baret-api-staging.onrender.com, from `render.yaml`, 2026-11-07); web app ready for Vercel (landing, 2026-11-08), project being recreated by the owner; production API and store publishing not set up yet
 Last verified: 2026-11-07
 
 Where each piece runs and how it gets there. Variables: `docs/operations/environments.md`. Pipeline: `docs/operations/ci-cd.md`.
@@ -23,11 +23,23 @@ Blueprint `render.yaml` at the repo root (pattern from `Baret-Metropolis/render.
 
 ## 2. Vercel — `apps/web`
 
-**Today:** the owner's Vercel account has a project `baret` linked to this repository (created 2026-11-07). Until `apps/web` exists, the root `vercel.json` turns off Git deployments, so pull requests do not get a failing Vercel check. When `apps/web` is ported (T2.4) the project's Root Directory becomes `apps/web`, whose own `vercel.json` then applies, and the root file is removed.
+**Today:** `apps/web` has the landing (T2.4) and its own `apps/web/vercel.json`; the root `vercel.json` that kept Git deployments off is removed. The owner deleted the first Vercel project (2026-11-08) and creates it again with these settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `apps/web` ("Include files outside the root directory" on, the default) |
+| Framework preset | Vite (also set in `vercel.json`) |
+| Install / build / output | from `vercel.json`: `cd ../.. && pnpm install --frozen-lockfile`, `cd ../.. && pnpm --filter @baret/web build`, `dist` |
+| Node.js version | 22.x |
+| Production branch | `main` while staging is the only environment; `release` once T2.6 ships the release workflow and a production API exists |
+| Env `BARET_EDGE_SECRET` | a long random value; the same value on Render `baret-api-staging` |
+| Env `BARET_SITE_URL` | optional; without it the build uses the project's production domain (`VERCEL_PROJECT_PRODUCTION_URL`) |
+
+`vercel.json` deploys only `main` and `release` (no per-PR previews: CI is the PR gate) and skips a build when nothing under `apps/web`, `packages/` or the lockfile changed. `/api/*` rewrites to `https://baret-api-staging.onrender.com`; a production rewrite comes with the production API (the rewrite is static, so per-environment targets need middleware or a second project, decided with T2.6). `middleware.ts` marks each `/api` request with `x-baret-edge` (the secret) and `x-baret-client` (the visitor's address), which `apps/api` trusts only with the matching secret.
 
 
 - One Vercel project, root `apps/web`, `vercel.json` with install/build from the monorepo root (pattern from `Baret-Metropolis/apps/showcase/vercel.json`), security headers, long cache for hashed assets.
-- Production branch: `release`. `main` → staging domain. PRs → previews pointing at the staging API.
+- Target: production branch `release`, `main` → staging domain.
 - `/api/*` rewrites to the API of the same environment, so the browser talks to one origin.
 - Domains: to decide (`TASKS.md`).
 

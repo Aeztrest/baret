@@ -1,7 +1,7 @@
 # Packages, import rules and conventions
 
-Status: **in progress** (built: `packages/core`, `packages/chains`, `packages/chain-evm` engine side, `packages/engine`; the rest is the target layout)
-Last verified: 2026-11-07
+Status: **in progress** (built: `packages/core`, `packages/chains`, `packages/chain-evm` engine side, `packages/engine`, `packages/guard`, `packages/ui`, `packages/web-ui`, `packages/routes`, `apps/api`; `apps/web` landing; the rest is the target layout)
+Last verified: 2026-11-08
 
 Every app and package, what it may import, and the conventions that apply to all code. `pnpm docs:check` fails if an `apps/*` or `packages/*` directory is missing from the tables below.
 
@@ -26,7 +26,8 @@ baret/
 │   ├── wallet-core/    keyring, sessions, the check-then-sign flow (no UI)
 │   ├── content/        every user-facing word, per language
 │   ├── ui/             design tokens + React components
-│   └── web-ui/         web-only layer (type, motion, layout, fonts, check-result blocks) for apps/web
+│   ├── web-ui/         web-only layer (type, motion, layout, fonts, check-result blocks) for apps/web
+│   └── routes/         route registry type, href builder, link checks (no React)
 ├── contracts/
 │   ├── evm/            Foundry
 │   ├── stellar/        Soroban (Rust workspace)
@@ -41,7 +42,7 @@ baret/
 |---|---|---|
 | `apps/api` | The engine over HTTP (Phase 1 routes **built**); later MCP, x402 seller | `docs/architecture/api.md` |
 | `apps/extension` | Multichain wallet with the check before every signature | `docs/architecture/frontend.md` |
-| `apps/web` | Public site: landing, per-chain threat showcase, `/agents`, developer portal | `docs/architecture/frontend.md` |
+| `apps/web` | Public site: landing, per-chain threat showcase, `/agents`, developer portal (**landing built**, other pages being ported) | `docs/architecture/frontend.md` |
 
 ## 3. Packages
 
@@ -57,9 +58,10 @@ baret/
 | `packages/guard` | `@baret/guard` | **yes** — **built** (0.2.0, not yet published) | Client for `/v1/analyze`, verdict helpers; re-exports `@baret/core` | `docs/architecture/sdk.md` |
 | `packages/agent-kit` | `@baret/agent-kit` | **yes** | `AgentWallet`, signers, x402 buyer, `baret` CLI | `docs/architecture/sdk.md` |
 | `packages/wallet-core` | `@baret/wallet-core` | no | Keyring (seed → accounts per family), sessions, check-then-sign | `docs/architecture/frontend.md` |
-| `packages/content` | `@baret/content` | no — **shared strings built** (pages come with their apps) | Words for findings, policy rules, common screens | `docs/architecture/frontend.md` |
+| `packages/content` | `@baret/content` | no — **shared strings and the landing built** (other pages come with their apps) | Words for findings, policy rules, common screens | `docs/architecture/frontend.md` |
 | `packages/ui` | `@baret/ui` | no — **built** (ported) | Design tokens (Tailwind v4), shadcn-based components, Baret primitives | `docs/architecture/frontend.md` |
-| `packages/web-ui` | `@baret/web-ui` | no | Web-only signature layer | `docs/architecture/frontend.md` |
+| `packages/web-ui` | `@baret/web-ui` | no — **built** (ported) | Web-only signature layer | `docs/architecture/frontend.md` |
+| `packages/routes` | `@baret/routes` | no — **built** (ported) | Route registry type, `buildHref`, registry and link checks | `docs/architecture/frontend.md` |
 
 ## 3b. Contracts
 
@@ -86,9 +88,10 @@ A package may import only from the packages in its row (plus external libraries 
 | `content` | `core` (codes only) | none |
 | `ui` | `content` | none |
 | `web-ui` | `content`, `ui` | none |
+| `routes` | — | none |
 | `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
-| `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core` | none directly |
-| `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing) | none directly |
+| `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core`, `routes` | none directly |
+| `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes` | none directly |
 
 The script also fails on a package or app that has no row, so a new package cannot skip this table, and on a package with a `tsconfig.json` that the root `tsconfig.json` does not reference (otherwise `tsc -b` skips it silently; this happened to `chain-evm` and is how a type error reached `main`). Test files (`*.test.*`, `test/`) may import chain libraries to build fixtures; the `@baret` rule still applies to them. Chain libraries it knows: `viem`, `ethers` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it.
 

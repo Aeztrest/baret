@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      The ground before the first CSS byte, so no white frame flashes:
+      graphite, or concrete when the theme resolves to light. Only <html> is
+      painted: body is transparent until the token rule gives it the ground.
+      It sits in the `base` layer (same order Tailwind declares) so the token
+      rules that load later still win; an unlayered rule would beat them.
+    -->
+    <style>
+      @layer theme, base, components, utilities;
+      @layer base {
+        html {
+          background: #17181b;
+        }
+        @media (prefers-color-scheme: light) {
+          :root:not([data-theme="dark"]) {
+            background: #e6e6e1;
+          }
+        }
+        :root[data-theme="light"] {
+          background: #e6e6e1;
+        }
+      }
+    </style>
+    <!--
+      The static head for link-preview bots (title, description, og:*,
+      twitter:card) and the LCP image preload. scripts/head.mjs writes it from
+      @baret/content and assets.ts; main.tsx removes the static title,
+      description, og:* and twitter:* tags before React mounts, so RootLayout's
+      per-route ones stay the only ones.
+    -->
+    <!-- baret:head -->
+    <meta name="theme-color" content="#17181b" />
+    <link rel="icon" type="image/svg+xml" href="/mark.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <!--
+      Self-hosted faces (src/fonts.css). Only the display face is preloaded:
+      the opener plate is set in its 800 weight with display=optional, and a
+      late swap would re-wrap the plate and shift the first screen.
+    -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/fonts/big-shoulders-display-800.woff2"
+    />
+    <link rel="stylesheet" href="/src/fonts.css" />
+    <!--
+      Every route is prerendered into #root of its own file, which carries
+      its path in data-prerender (scripts/prerender.mjs; "*" is the 404). A
+      host may answer an unknown path with this file, and a query string
+      (?view=, ?filter=) changes what the page shows, so unless the URL is
+      the one the markup was made for, it stays hidden until main.tsx swaps
+      in the right page.
+    -->
+    <style>
+      [data-prerender-hidden] #root > * {
+        display: none;
+      }
+    </style>
+    <script>
+      (() => {
+        const made = document.documentElement.dataset.prerender;
+        const path = location.pathname.replace(/\/+$/, "") || "/";
+        const same = made === "*" || made === path;
+        if (!same || location.search !== "") document.documentElement.dataset.prerenderHidden = "";
+      })();
+    </script>
+    <script>
+      // Resolve the theme before first paint so the page never flashes the
+      // wrong ground. Absent attribute means follow the operating system.
+      try {
+        const stored = localStorage.getItem("baret.theme");
+        if (stored === "dark" || stored === "light") {
+          document.documentElement.dataset.theme = stored;
+        }
+      } catch {}
+    </script>
+    <!--
+      Structured data. The description is home.meta.description word for word;
+      the absolute url needs BARET_SITE_URL, so scripts/head.mjs is the place
+      to add it (and to write this block from @baret/content).
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Baret",
+        "description": "Baret simulates every transaction before you or your AI agent signs it, checks it against your rules, and explains the verdict in plain words. On Monad testnet today, Stellar and Casper next.",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "Chrome, Firefox",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <p style="margin: 0; padding: 12px 16px; font: 15px/1.5 system-ui, sans-serif">
+        Baret needs JavaScript to run its live checks.
+      </p>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -3,3 +3,9 @@
 *.webp binary
 *.pdf binary
 *.wasm binary
+*.avif binary
+*.jpg binary
+*.jpeg binary
+*.woff2 binary
+*.mp4 binary
+*.webm binary

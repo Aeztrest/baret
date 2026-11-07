@@ -1,0 +1,5 @@
+/*
+ * The self-hosted faces, shared with the wallet (packages/web-ui). Linked
+ * from index.html on its own, so the faces never wait on the app's CSS.
+ */
+@import "@baret/web-ui/styles/fonts.css";

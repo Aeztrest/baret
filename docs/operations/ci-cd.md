@@ -9,8 +9,8 @@ GitHub Actions is the gate: nothing reaches staging or production unless CI is g
 
 | Branch / ref | Deploys to | How |
 |---|---|---|
-| PR branches (`feat/…`, `fix/…`, `docs/…`, `chore/…`) | Vercel preview (web) | automatic per PR |
-| `main` | **staging**: Render `baret-api-staging` (testnets; live), Vercel staging domain (not yet) | Render `autoDeployTrigger: checksPass` (works: the deployed commit is shown by `/health`); Vercel branch domain |
+| PR branches (`feat/…`, `fix/…`, `docs/…`, `chore/…`) | none (CI is the gate; `apps/web/vercel.json` builds only `main` and `release`) | — |
+| `main` | **staging**: Render `baret-api-staging` (testnets; live), Vercel (`apps/web`, production branch `main` until T2.6) | Render `autoDeployTrigger: checksPass` (works: the deployed commit is shown by `/health`); Vercel branch domain |
 | `release` | **production**: Render `baret-api`, Vercel production domain | only moved by the release workflow |
 | tag `vX.Y.Z` | release workflow | see §3 |
 

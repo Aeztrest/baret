@@ -287,7 +287,6 @@ export const common = {
         links: [
           { label: "Partners", href: "/partners" },
           { label: "How it works", href: "/docs" },
-          { label: "Source", href: "https://github.com/HackerFetch/Baret-Metropolis" },
         ],
       },
     ],
@@ -313,6 +312,8 @@ export const common = {
   /** The corner ribbon on a fake showcase site. */
   demo: {
     ribbon: "Demo site",
+    /** The ribbon's link back to the showcase hub. */
+    back: "Back to the showcase",
     /** Accessible name of the landmark that holds the ribbon. */
     label: "Baret showcase",
   },

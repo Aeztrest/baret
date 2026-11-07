@@ -1,0 +1,5 @@
+# Baret. The demo sites carry <meta name="robots" content="noindex">
+# from RootLayout: they imitate real products on purpose. The build appends the
+# Sitemap line once BARET_SITE_URL is set (scripts/route-heads.mjs).
+User-agent: *
+Allow: /

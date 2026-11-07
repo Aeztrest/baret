@@ -38,7 +38,7 @@ Last verified: 2026-11-07
 | `BARET_VERDICT_TTL_SECONDS` | no | default 30 |
 | `BARET_PROXY_DIRECT_HOPS` | staging, production | X-Forwarded-For entries the host's proxy adds on a direct request; unset: Fastify's `req.ip` (`apps/api/src/client.ts`) |
 | `BARET_PROXY_EDGE_HOPS` | with the web app | entries on a request through the web app's rewrite |
-| `BARET_EDGE_SECRET` | with the web app | shared secret the web app's edge sends in `x-baret-edge` |
+| `BARET_EDGE_SECRET` | with the web app | shared secret the web app's edge sends in `x-baret-edge`; same value on the Vercel project |
 | `BARET_ATTESTATION_KEY` | no | ed25519 key for signed verdicts (planned) |
 | `NANSEN_API_KEY`, `NANSEN_MODE`, `NANSEN_LABELS_DAILY_LIMIT` | no | reputation (EVM) |
 | `CLEANVERSE_*` | no | compliance |
@@ -49,7 +49,11 @@ Last verified: 2026-11-07
 
 | Variable | Description |
 |---|---|
-| `VITE_BARET_API_URL` (web) | API base; in Vercel normally `/api` (rewrite) |
+| `VITE_BARET_API_URL` (web) | API base; in Vercel normally `/api` (rewrite). Not read yet: the landing calls no API |
+| `BARET_EDGE_SECRET` (web, Vercel runtime) | read by `apps/web/middleware.ts`; must equal the API's |
+| `BARET_SITE_URL` (web) | absolute site URL for canonical, og:url, sitemap; on Vercel defaults to the production domain |
+| `BARET_REQUIRE_SITE_URL` (web) | `1` makes a build without a site URL fail (a Vercel production build always does) |
+| `BARET_SOURCEMAPS` (web) | `1` writes hidden source maps (off by default) |
 | `WXT_BARET_API_URL` (extension) | API base embedded in the build |
 | `VITE_ENABLED_FAMILIES` / `WXT_ENABLED_FAMILIES` | `evm,stellar,casper` — which families a build exposes |
 
