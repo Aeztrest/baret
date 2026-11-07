@@ -11,11 +11,15 @@
   },
   "scripts": {
     "typecheck": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify": "tsx scripts/verify-live.ts"
   },
   "dependencies": {
     "@baret/chains": "workspace:*",
     "@baret/core": "workspace:*",
     "viem": "2.56.5"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
   }
 }

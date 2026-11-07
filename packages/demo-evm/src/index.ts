@@ -19,4 +19,5 @@ export {
   SITES_ABI,
 } from "./builders.js";
 export { callRequest, type DemoRules, paymentRequest } from "./request.js";
+export { demoScenarios, hourlyCap, type Scenario } from "./scenarios.js";
 export { agentPayments, type DemoPayment, type DemoTypedData, payment, scrybe } from "./x402.js";
