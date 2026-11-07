@@ -52,6 +52,7 @@
  *   {country}    the country on a verified identity
  *   {tier}       the verification level on a verified identity
  *   {count}      a number of things
+ *   {path}       a Chain Signatures derivation path (which derived key signs)
  * Findings that compare numbers always quote both sides.
  *
  * Which rule decides each code is not repeated here: it is FINDING_SPECS in @baret/core.
@@ -72,11 +73,13 @@ type Placeholder =
   | "expected"
   | "country"
   | "tier"
-  | "count";
+  | "count"
+  | "path";
 
 type Emitter =
   | "stellar"
   | "casper"
+  | "near"
   | "simulation"
   | "approvals"
   | "programs"
@@ -630,6 +633,39 @@ export const findings = {
     body: "This request runs session code with your account's full authority, not a call to a deployed contract.",
     why: "Session code can do anything your key can do. Many Casper apps use it for payable calls, which is why only Strict blocks it.",
     fix: "Sign only if this is the app you meant to use and its code is published.",
+  },
+
+  // NEAR only (ADR-0011) -------------------------------------------------------
+
+  ACCOUNT_DELETE_DETECTED: {
+    emitter: "near",
+    values: ["recipient"],
+    title: "This deletes your account",
+    body: "This request deletes your account and sends everything in it to {recipient}.",
+    why: "A deleted account cannot be recovered. Its balance goes to {recipient}, whoever that is.",
+    fix: "Do not sign unless you meant to close this account and you know {recipient}.",
+  },
+  CONTRACT_DEPLOY_DETECTED: {
+    emitter: "near",
+    values: ["address"],
+    title: "This replaces the code on an account",
+    body: "This request deploys new contract code to {address}. Whatever that code does, it then does with the account's funds.",
+    why: "New code can move everything the account holds. Apps rarely ask a person to deploy code.",
+    fix: "Sign only if you wrote or reviewed the code and meant to deploy it.",
+  },
+  FUNCTION_CALL_KEY_ADDED: {
+    emitter: "near",
+    values: ["contract", "amount", "asset"],
+    title: "A limited key for {contract}",
+    body: "This request adds a key that can call {contract} for you, with up to {amount} {asset} for fees. It cannot move your other funds.",
+    why: "Apps add keys like this so you do not sign every call. Check that {contract} is the app you are using.",
+  },
+  CHAIN_SIGNATURE_REQUEST: {
+    emitter: "near",
+    values: ["path", "contract"],
+    title: "A signature for another chain",
+    body: "This request asks {contract} to sign a transaction on another chain with the key at path {path}.",
+    why: "Baret checks the NEAR side of this request. The transaction on the other chain is signed, not simulated here.",
   },
 } as const satisfies Record<FindingCode, Finding>;
 

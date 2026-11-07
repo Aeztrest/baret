@@ -13,7 +13,7 @@ Last verified: 2026-11-07
 
 ## 2. Naming
 
-- Chain variables: `CHAIN_<SLUG>_<NAME>`, where `<SLUG>` is the `envSlug` in the chain's registry file: `MONAD_TESTNET`, `MONAD`, `ARC_TESTNET`, `ARC`, `BASE_SEPOLIA`, `BASE`, `STELLAR_TESTNET`, `STELLAR`, `CASPER_TEST`, `CASPER`.
+- Chain variables: `CHAIN_<SLUG>_<NAME>`, where `<SLUG>` is the `envSlug` in the chain's registry file: `MONAD_TESTNET`, `MONAD`, `ARC_TESTNET`, `ARC`, `BASE_SEPOLIA`, `BASE`, `STELLAR_TESTNET`, `STELLAR`, `CASPER_TEST`, `CASPER`, `NEAR_TESTNET`, `NEAR_MAINNET`.
 - Application variables: `BARET_*`. Provider variables: the provider's name (`NANSEN_*`, `KIMI_*`).
 - Contract addresses are **not** variables; they come from `packages/chains/deployments/`.
 - Legacy names not used: `MONAD_TESTNET_*`, `DELTAG_*`, generic `RPC_URL` / `CHAIN_ID`.

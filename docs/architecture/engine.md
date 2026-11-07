@@ -25,12 +25,12 @@ Detectors are **pure functions** of the context: no I/O inside a detector. All r
 
 ## 2. Identifiers — built (`packages/core/src/ids.ts`)
 
-- Chain: CAIP-2 — `eip155:10143` (Monad testnet), `eip155:143` (Monad), `stellar:testnet`, `stellar:pubnet`, `casper:casper-test`, `casper:casper`.
-- Account: CAIP-10 — `eip155:143:0xabc…`, `stellar:pubnet:G…` / `C…`, `casper:casper:<account-hash or public key>`.
-- Asset: CAIP-19 — `eip155:143/erc20:0x…`, `eip155:143/slip44:…` (native), `stellar:pubnet/sep41:C…` / classic `stellar:pubnet/asset:USDC-G…`, `casper:casper/cep18:<package-hash>`.
+- Chain: CAIP-2 — `eip155:10143` (Monad testnet), `eip155:143` (Monad), `stellar:testnet`, `stellar:pubnet`, `casper:casper-test`, `casper:casper`, `near:testnet`, `near:mainnet` (ADR-0011).
+- Account: CAIP-10 — `eip155:143:0xabc…`, `stellar:pubnet:G…` / `C…`, `casper:casper:<account-hash or public key>`, `near:testnet:alice.testnet` (`_` written `%5F`).
+- Asset: CAIP-19 — `eip155:143/erc20:0x…`, `eip155:143/slip44:…` (native), `stellar:pubnet/sep41:C…` / classic `stellar:pubnet/asset:USDC-G…`, `casper:casper/cep18:<package-hash>`, `near:testnet/nep141:<token-contract>`.
 - Address comparison is family-aware (EVM checksum-insensitive; Stellar/Casper exact) and lives in the adapter (`adapter.normaliseAddress`).
 
-**Asset namespaces (decided 2026-11-07, T1.11).** Native assets use `slip44:<coin type>` with the coin type of the family's derivation path: `slip44:60` on every EVM chain (as wallets derive EVM keys), `slip44:148` for XLM, `slip44:506` for CSPR. Tokens: `erc20:<address>` / `erc721:<address>` (EVM), `sep41:<C… contract>` and `asset:<CODE>-<ISSUER>` for classic assets (Stellar), `cep18:<package hash>` (Casper). The Stellar and Casper forms are checked against the CAIP namespace registry when their adapters are ported (T3.1, T4.2).
+**Asset namespaces (decided 2026-11-07, T1.11).** Native assets use `slip44:<coin type>` with the coin type of the family's derivation path: `slip44:60` on every EVM chain (as wallets derive EVM keys), `slip44:148` for XLM, `slip44:506` for CSPR, `slip44:397` for NEAR. Tokens: `erc20:<address>` / `erc721:<address>` (EVM), `sep41:<C… contract>` and `asset:<CODE>-<ISSUER>` for classic assets (Stellar), `cep18:<package hash>` (Casper). The Stellar and Casper forms are checked against the CAIP namespace registry when their adapters are ported (T3.1, T4.2).
 
 ## 3. Effects model — built (`packages/core/src/effects.ts`)
 
@@ -83,6 +83,7 @@ Ported codes are unified across families (ADR-0006). Each code has one entry in 
 | EVM | `NFT_OPERATOR_GRANTED`, `PERMIT_SIGNATURE_DETECTED`, `SIGNED_ORDER_DETECTED`, `ORDER_PAYS_NOTHING`, `DELEGATECALL_DETECTED`, `SELFDESTRUCT_CALL`, `ACCOUNT_CODE_DELEGATION` (EIP-7702), `CALL_TO_ADDRESS_WITHOUT_CODE` |
 | Stellar | `ACCOUNT_MERGE_DETECTED`, `MASTER_KEY_REMOVED`, `TRUSTLINE_CHANGE_DETECTED`, `TRUSTLINE_REMOVED`, `UNLIMITED_TRUSTLINE`, `UNSIGNED_AUTH_ENTRY`; later `SEP10_*`, `SEP6_*` |
 | Casper | `SESSION_CODE_EXECUTION` (arbitrary wasm runs with the account's authority — new), associated-key changes map to `AUTHORITY_CHANGE` |
+| NEAR (ADR-0011) | `ACCOUNT_DELETE_DETECTED` (`near.blockDeleteAccount`), `CONTRACT_DEPLOY_DETECTED` (`near.blockContractDeploy`), `FUNCTION_CALL_KEY_ADDED` (warning), `CHAIN_SIGNATURE_REQUEST` (warning); a full access key added or removed maps to `AUTHORITY_CHANGE` |
 
 Adding a code: registry entry + content words + detector + test + this table, in one PR.
 
@@ -90,7 +91,7 @@ Adding a code: registry entry + content words + detector + test + this table, in
 
 Source of truth: `packages/core/src/policy.ts` (schema), `packages/core/src/policy-templates.ts` (templates), `packages/core/src/migrate.ts` (v1 → v2). This section only explains the design; read the code for the fields.
 
-- **Shape.** `{ version: 2, core, evm, stellar, casper }`. `core` applies on every chain; each family section holds the rules only that family has. **All sections are always present**, so a policy is complete on any chain and needs no merging of defaults.
+- **Shape.** `{ version: 2, core, evm, stellar, casper, near }`. `core` applies on every chain; each family section holds the rules only that family has. **All sections are always present**, so a policy is complete on any chain and needs no merging of defaults.
 - **Assets are named, amounts are base units.** Floors (`core.minPostBalances`) and x402 caps (`core.x402.caps`) are per CAIP-19 asset, in base units. No rule assumes USDC or a native symbol.
 - **Fees.** `core.maxFee` (native base units) works on every chain; `evm.maxGas` (gas units) is kept for EVM. Both feed `EXCESSIVE_FEE`.
 - **Rule names.** Findings and fired rules name rules by dotted path (`core.x402.caps`, `evm.blockPermit`); the list is `POLICY_FIELDS`, kept equal to the schema by a test.

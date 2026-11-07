@@ -128,5 +128,6 @@ export function migratePolicyV1(input: unknown, ctx: MigrationContext): GuardPol
     },
     stellar: { ...balanced.stellar },
     casper: { ...balanced.casper },
+    near: { ...balanced.near },
   };
 }

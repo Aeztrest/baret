@@ -3,15 +3,17 @@ import { z } from "zod";
 /**
  * Chain-agnostic identifiers (ADR-0002).
  *
- *   chain    CAIP-2   eip155:10143 · stellar:pubnet · casper:casper-test
- *   account  CAIP-10  eip155:10143:0xabc… · stellar:pubnet:G… · casper:casper:01ab…
- *   asset    CAIP-19  eip155:143/erc20:0x… · stellar:pubnet/sep41:C… · casper:casper/cep18:…
+ *   chain    CAIP-2   eip155:10143 · stellar:pubnet · casper:casper-test · near:testnet
+ *   account  CAIP-10  eip155:10143:0xabc… · stellar:pubnet:G… · casper:casper:01ab… ·
+ *                     near:testnet:alice.testnet (an `_` in a NEAR account id is written %5F)
+ *   asset    CAIP-19  eip155:143/erc20:0x… · stellar:pubnet/sep41:C… · casper:casper/cep18:… ·
+ *                     near:testnet/nep141:usdc.testnet
  *
  * Shapes follow the CAIP specifications. Which asset namespaces each family uses is
  * decided in the adapters and documented in docs/architecture/engine.md §2.
  */
 
-export const FAMILIES = ["evm", "stellar", "casper"] as const;
+export const FAMILIES = ["evm", "stellar", "casper", "near"] as const;
 export type Family = (typeof FAMILIES)[number];
 
 /** CAIP-2 namespace → chain family. A namespace not listed here is not supported. */
@@ -19,6 +21,7 @@ export const NAMESPACE_FAMILY = {
   eip155: "evm",
   stellar: "stellar",
   casper: "casper",
+  near: "near",
 } as const satisfies Record<string, Family>;
 export type Namespace = keyof typeof NAMESPACE_FAMILY;
 

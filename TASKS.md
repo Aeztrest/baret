@@ -31,8 +31,10 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
 
 Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goes **public** before the deadline (D2 changes; D3 licence unchanged); NEAR becomes a chain family now (ADR-0011); scope = vault, function call key, adapter, agent demo, Chain Signatures, NEAR Intents check, web panel, Agent Market listing; tracks `security` + `agents`. Still open with the owner: K3 (mainnet prize account), K4 (hosted demo, Render plan), K5 (X account). The submission itself (form, X post, making the repo public) needs the owner's yes each time.
 
-- [ ] **TN.1 Core: the `near` family** — `FAMILIES`, CAIP namespace, `near` policy section (`blockDeleteAccount`, `blockContractDeploy`), finding codes (`ACCOUNT_DELETE_DETECTED`, `CONTRACT_DEPLOY_DETECTED`, `FUNCTION_CALL_KEY_ADDED`, `CHAIN_SIGNATURE_REQUEST`), content, templates, parity tests still green. Tag `pre-hackathon` on the commit before it.
-- [ ] **TN.2 Registry** — `near:testnet` (and `near:mainnet` for Intents) chain entries; RPC env names.
+- [x] **TN.1 Core: the `near` family** — `FAMILIES`, CAIP namespace, `near` policy section (`blockDeleteAccount`, `blockContractDeploy`), finding codes (`ACCOUNT_DELETE_DETECTED`, `CONTRACT_DEPLOY_DETECTED`, `FUNCTION_CALL_KEY_ADDED`, `CHAIN_SIGNATURE_REQUEST`), content, templates, parity tests still green. Tag `pre-hackathon` on the commit before it.
+  → done 2026-11-08: family, namespace, `near` policy section in every template, 4 codes with content (shared placeholders plus `{path}`), 2 rule rows; 528 tests and the 87 parity scenarios green; `pre-hackathon` = `bbb5eac`.
+- [x] **TN.2 Registry** — `near:testnet` (and `near:mainnet` for Intents) chain entries; RPC env names.
+  → done 2026-11-08: `near-testnet.json`, `near.json` (preflight, vault, USDC from Circle checked with `ft_metadata`); env slugs `NEAR_TESTNET`, `NEAR_MAINNET`.
 - [ ] **TN.3 Vault contract** (`contracts/near`, Rust near-sdk) — deposit, policy, agents, pause, `execute_transfer` (NEAR + NEP-141), limits per transfer and per rolling day, allowlists, error codes; unit tests; CI job. Testnet deploy needs the owner's yes.
 - [ ] **TN.4 Function call key flow** — script that adds an agent key limited to the vault's `execute_transfer` with an allowance.
 - [ ] **TN.5 `packages/chain-near` engine** — decode (JSON + borsh), preflight over RPC, effects, family detectors, adapter registered in `apps/api`; staging serves `near:testnet`.
