@@ -1,23 +1,21 @@
 import { common } from "@baret/content";
 import { Mark } from "@baret/ui";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useMotionValueEvent, useScroll } from "motion/react";
 import { type JSX, useEffect, useId, useRef, useState } from "react";
 import { NavLink } from "react-router";
-import { NEW_TAB } from "../components/NewTabLink.js";
 import { routes, warm } from "../routes.js";
 import { MobileMenu } from "./MobileMenu.js";
 import { NAV, ROW } from "./nav.js";
 
 /**
- * The marketing header (Meric's revision, 2026-10-13): the logo, five page
- * links and one primary action, the web wallet.
+ * The marketing header: the logo, the page links and one primary action,
+ * installing the extension.
  *
- * - The logo always goes to https://usebaret.com, from every page.
+ * - The logo always goes to this site's front page, from every page.
  * - The page links move within the tab; the current page has an underline
  *   and aria-current. From 1024 px they sit in the bar; below, a menu
  *   button opens them in a sheet (MobileMenu: focus trap, Escape).
- * - "Open wallet" leaves the site, so it opens a new tab.
  * - The bar is an opaque plate (BRAND: no glass). It takes the tone of the
  *   band beneath it (graphite over a [data-band="dark"] surface) and gains a
  *   soft shadow once the page has scrolled.
@@ -93,7 +91,7 @@ export function SiteHeader({ pathname }: { pathname: string }): JSX.Element {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <WalletAction dark={dark} />
+          <PrimaryAction dark={dark} />
           <button
             ref={toggleRef}
             type="button"
@@ -127,29 +125,26 @@ export function SiteHeader({ pathname }: { pathname: string }): JSX.Element {
 }
 
 /**
- * The one primary action: the web wallet on its own domain, so a new tab.
- * A solid plate in the header's ink (never orange: the page's hero and
- * closing buttons stay the only orange in their viewport). The long label
+ * The one primary action: install the extension, a page of this site, so the
+ * same tab. A solid plate in the header's ink (never orange: the page's hero
+ * and closing buttons stay the only orange in their viewport). The long label
  * from 640 px, the short one on phones.
  */
-function WalletAction({ dark }: { dark: boolean }): JSX.Element {
-  const { wallet, newTab } = common.nav;
+function PrimaryAction({ dark }: { dark: boolean }): JSX.Element {
+  const { cta } = common.nav;
   const face = dark
     ? "bg-chalk text-ink hover:bg-white"
     : "bg-[color:var(--fg)] text-[color:var(--ground)] hover:bg-[color:var(--fg)]/85";
   return (
     <a
-      href={wallet.href}
-      {...NEW_TAB}
+      href={cta.href}
       className="group inline-flex min-h-11 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-[color:var(--accent)]"
     >
       <span
         className={`chamfer-sm inline-flex h-9 items-center gap-1.5 px-3 font-display text-sm font-extrabold uppercase tracking-[0.08em] transition-[background-color,scale] duration-150 ease-out group-active:scale-[0.97] motion-reduce:group-active:scale-100 ${face}`}
       >
-        <span className="hidden sm:inline">{wallet.label}</span>
-        <span className="sm:hidden">{wallet.short}</span>
-        <ArrowUpRight aria-hidden="true" className="size-4" strokeWidth={2} />
-        <span className="sr-only"> {newTab}</span>
+        <span className="hidden sm:inline">{cta.label}</span>
+        <span className="sm:hidden">{cta.short}</span>
       </span>
     </a>
   );

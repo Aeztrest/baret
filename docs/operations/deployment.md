@@ -23,7 +23,7 @@ Blueprint `render.yaml` at the repo root (pattern from `Baret-Metropolis/render.
 
 ## 2. Vercel — `apps/web`
 
-**Today:** `apps/web` has the landing (T2.4) and its own `apps/web/vercel.json`; the root `vercel.json` that kept Git deployments off is removed. The owner deleted the first Vercel project (2026-11-08) and creates it again with these settings:
+**Today:** `apps/web` has the landing (T2.4) and its own `apps/web/vercel.json`; the root `vercel.json` that kept Git deployments off is removed. The owner deleted the first Vercel project and created it again on 2026-11-08 with these settings; it serves https://baret-nine.vercel.app (checked live the same day: landing, 404, sitemap, `/api/health` through the rewrite with `viaEdge: true`):
 
 | Setting | Value |
 |---|---|
