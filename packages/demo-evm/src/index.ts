@@ -11,6 +11,8 @@ export {
   DEMO_CHAIN_ID,
   DEMO_FAUCET,
   explorerTx,
+  NOVASWAP,
+  SCRYBE,
 } from "./addresses.js";
 export {
   agentCalls,

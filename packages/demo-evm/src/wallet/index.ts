@@ -5,6 +5,16 @@
  * sites/kit/wallet without the Baret web wallet's window.
  */
 export type { Address, Hex } from "viem";
+// The few viem helpers the sites' screens need, so apps/web never imports viem itself (ADR-0010).
+export {
+  formatUnits,
+  getAddress,
+  isAddress,
+  parseEther,
+  parseUnits,
+  toHex,
+  zeroAddress,
+} from "viem";
 export {
   BARET_EXTENSION_RDNS,
   type ConnectError,
