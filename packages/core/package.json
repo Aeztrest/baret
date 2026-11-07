@@ -16,7 +16,9 @@
   },
   "scripts": {
     "typecheck": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node ../../tooling/clean.mjs dist && tsc -p tsconfig.build.json",
+    "prepack": "pnpm build"
   },
   "dependencies": {
     "zod": "4.6.7"
@@ -25,5 +27,16 @@
     "dist",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  }
 }

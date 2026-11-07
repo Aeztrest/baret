@@ -11,6 +11,9 @@
       "path": "./packages/chains"
     },
     {
+      "path": "./packages/guard"
+    },
+    {
       "path": "./packages/chain-evm"
     },
     {
