@@ -58,7 +58,7 @@ baret/
 | `packages/agent-kit` | `@baret/agent-kit` | **yes** | `AgentWallet`, signers, x402 buyer, `baret` CLI | `docs/architecture/sdk.md` |
 | `packages/wallet-core` | `@baret/wallet-core` | no | Keyring (seed → accounts per family), sessions, check-then-sign | `docs/architecture/frontend.md` |
 | `packages/content` | `@baret/content` | no | Words for findings, policy fields, screens; languages | `docs/architecture/frontend.md` |
-| `packages/ui` | `@baret/ui` | no | Design tokens, React components | `docs/architecture/frontend.md` |
+| `packages/ui` | `@baret/ui` | no — **built** (ported) | Design tokens (Tailwind v4), shadcn-based components, Baret primitives | `docs/architecture/frontend.md` |
 | `packages/web-ui` | `@baret/web-ui` | no | Web-only signature layer | `docs/architecture/frontend.md` |
 
 ## 3b. Contracts
