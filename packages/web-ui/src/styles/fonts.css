@@ -1,0 +1,88 @@
+/*
+ * Self-hosted faces (IMPROVE E5, BRAND section 05). Latin subset, one file
+ * per weight (the display face shares one, see below), served from /fonts
+ * under the same family names the tokens already use. The files live in
+ * packages/web-ui/fonts; the webUiFonts() plugin (vite.mjs) serves them in
+ * dev and writes them to dist/fonts. Each app links this sheet from its
+ * index.html through its own src/fonts.css.
+ *
+ * The display face uses `optional`: the opener plate is set in it, and a late
+ * swap would re-wrap the plate and shift the first screen. index.html
+ * preloads its 800 weight (the opener line). The others use `swap` with a
+ * metric-matched local fallback, so the swap does not move the text. The
+ * fallbacks are separate families ("Instrument Sans Fallback", "JetBrains
+ * Mono Fallback"); the token stacks name them right after the real face.
+ * Overrides: size-adjust = avg char width ratio; ascent and descent = the
+ * face's hhea metrics divided by that ratio (Capsize method).
+ */
+
+/*
+ * One display file for every weight the page asks for (700, 800, 900). The
+ * 700 and 900 faces were only used below the fold (marquee chips, stat
+ * numbers) yet were fetched with the first screen, and with `optional` a late
+ * file was dropped on slow links anyway. The weight range maps all three to
+ * the preloaded 800 file: one request, no faux bold. (A variable 700..900
+ * file was weighed and rejected: 35 KB on the critical preload, not 14 KB.)
+ */
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-weight: 700 900;
+  font-display: optional;
+  src: url("/fonts/big-shoulders-display-800.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Big Shoulders Stencil Display";
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/big-shoulders-stencil-display-900.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Instrument Sans";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/instrument-sans-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/instrument-sans-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Instrument Sans";
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/instrument-sans-600.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-500.woff2") format("woff2");
+}
+
+/* Metric-matched fallbacks. Arial avg width 0.447 em against 0.4615;
+   Menlo and Courier New match JetBrains Mono's 0.6 em advance. */
+@font-face {
+  font-family: "Instrument Sans Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Liberation Sans");
+  size-adjust: 103.25%;
+  ascent-override: 93.95%;
+  descent-override: 24.21%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "JetBrains Mono Fallback";
+  src: local("Menlo"), local("Courier New"), local("Liberation Mono");
+  size-adjust: 100%;
+  ascent-override: 102%;
+  descent-override: 30%;
+  line-gap-override: 0%;
+}

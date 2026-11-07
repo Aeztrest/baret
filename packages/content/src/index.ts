@@ -2,9 +2,12 @@
  * @baret/content
  *
  * Every user-facing string in Baret. No markup, no styling, no logic. Today: the shared
- * strings (findings, rules, common words, explain). The web app's, the wallet's and the
+ * strings (findings, rules, check results, common words, explain). The web app's, the wallet's and the
  * extension's pages come with those apps (TASKS.md T2.3, T2.4).
  */
+export type { FindingCode } from "@baret/core";
+export type { CheckContent } from "./shared/check.content.js";
+export { check } from "./shared/check.content.js";
 export type { Common } from "./shared/common.content.js";
 export { common } from "./shared/common.content.js";
 export type { ExplainContent } from "./shared/explain.content.js";
