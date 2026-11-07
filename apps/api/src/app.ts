@@ -33,6 +33,11 @@ export function sendError(reply: FastifyReply, status: number, code: string, mes
   return reply.code(status).send({ error: { code, message } });
 }
 
+function forwardedHops(header: string | string[] | undefined): number {
+  const value = Array.isArray(header) ? header.join(",") : (header ?? "");
+  return value.split(",").filter((part) => part.trim() !== "").length;
+}
+
 export async function buildApp(deps: ApiDeps): Promise<FastifyInstance> {
   const { config, engine } = deps;
   const app = Fastify({
@@ -90,10 +95,16 @@ export async function buildApp(deps: ApiDeps): Promise<FastifyInstance> {
     }
   });
 
+  /**
+   * `forwardedHops`: how many addresses this request's X-Forwarded-For carried — a count,
+   * nothing else. It tells an operator how many proxies stand in front of the API on each
+   * path, which is what BARET_PROXY_DIRECT_HOPS / _EDGE_HOPS must be set to (T2.11).
+   */
   app.get("/health", async (req) => ({
     status: "ok",
     engineVersion: ENGINE_VERSION,
     commit: deps.commit ?? null,
+    forwardedHops: forwardedHops(req.headers["x-forwarded-for"]),
     viaEdge: viaEdge(req, config.proxyTrust),
   }));
 
