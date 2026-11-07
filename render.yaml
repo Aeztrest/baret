@@ -31,6 +31,11 @@ services:
         value: info
       # The chain is served only when its RPC URL is set. A keyed provider (Alchemy) is
       # better than the public RPC's limits; its trace calls go to the public node below.
+      # X-Forwarded-For entries Render's proxies add on a direct request, measured on
+      # 2026-11-07 with /health forwardedHops (3; a forged entry only adds on the left).
+      # The client is the entry this many places from the right (apps/api/src/client.ts).
+      - key: BARET_PROXY_DIRECT_HOPS
+        value: "3"
       - key: CHAIN_MONAD_TESTNET_RPC_URL
         sync: false
       - key: CHAIN_MONAD_TESTNET_TRACE_RPC_URL

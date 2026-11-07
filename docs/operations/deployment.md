@@ -17,7 +17,7 @@ Blueprint `render.yaml` at the repo root (pattern from `Baret-Metropolis/render.
 - Region Frankfurt. `autoDeployTrigger: checksPass`. `buildFilter` on `apps/api/**`, `packages/**`, lockfile, `render.yaml`.
 - Build: `pnpm install --frozen-lockfile --filter @baret/api...` then `pnpm --filter @baret/api build`. Start: `node apps/api/dist/main.js` (built JS, not `tsx`). Checked 2026-11-07 in a fresh clone: 110 packages installed, bundle built, the server started and `/health/ready` was ready against Monad testnet.
 - Set up by the owner on 2026-11-07 (Render → New → Blueprint → `Aeztrest/baret`). Checked live the same day: `/health` reports the deployed commit (`517f94e` = `main`), `/health/ready` ready with trace on Monad testnet, security headers present; the drainer's sink and the NovaSwap drainer approval Blocked, a plain transfer Safe; `@baret/guard` from its packed tarball got the same answers.
-- Not done: the proxy-hop setting for per-client rate limits behind Render (T2.11).
+- Per-client rate limits behind Render: `BARET_PROXY_DIRECT_HOPS=3` in `render.yaml`, measured 2026-11-07 with `/health` `forwardedHops` (3 entries on a direct request; forged entries only add on the left) (T2.11).
 - `healthCheckPath: /health`. Secrets are `sync: false` and entered in the Render dashboard.
 - Free plan sleeps (first request 30–60 s; Metropolis G-03). Warm it before demos or use a paid plan.
 

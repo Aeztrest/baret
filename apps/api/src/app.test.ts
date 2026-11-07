@@ -11,6 +11,7 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { buildApp } from "./app.js";
+import { clientOf } from "./client.js";
 import { loadConfig } from "./config.js";
 
 const MONAD = getChain("eip155:10143") as ChainConfig;
@@ -140,6 +141,23 @@ describe("GET /health", () => {
     });
     expect(res.json()).toMatchObject({ status: "ok", forwardedHops: 2 });
     expect(res.body).not.toContain("1.2.3.4");
+  });
+});
+
+describe("clientOf behind Render (3 proxy entries, measured)", () => {
+  const trust = { directHops: 3, edgeHops: null, edgeSecret: null };
+  const req = (xff: string) =>
+    ({ headers: { "x-forwarded-for": xff }, ip: "x", socket: { remoteAddress: "peer" } }) as never;
+
+  it("takes the entry three places from the right", () => {
+    expect(clientOf(req("203.0.113.9, 10.0.0.1, 10.0.0.2"), trust)).toBe("203.0.113.9");
+  });
+
+  it("ignores what a caller forges on the left", () => {
+    expect(clientOf(req("6.6.6.6, 203.0.113.9, 10.0.0.1, 10.0.0.2"), trust)).toBe("203.0.113.9");
+    expect(clientOf(req("7.7.7.7, 6.6.6.6, 203.0.113.9, 10.0.0.1, 10.0.0.2"), trust)).toBe(
+      "203.0.113.9",
+    );
   });
 });
 
