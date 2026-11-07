@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@baret/chain-evm": "workspace:*",
+    "@baret/chain-near": "workspace:*",
     "@baret/chains": "workspace:*",
     "@baret/core": "workspace:*",
     "@baret/engine": "workspace:*",

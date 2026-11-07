@@ -1,6 +1,6 @@
 # Contracts and deployments
 
-Status: **in progress** — EVM ported (`contracts/evm`: PaymentGuard, PaymentGuardFactory, ReputationRegistry, 29 tests, own CI job); Stellar and Casper not yet
+Status: **in progress** — EVM ported (`contracts/evm`: PaymentGuard, PaymentGuardFactory, ReputationRegistry, 29 tests, own CI job); Stellar and Casper not yet; NEAR vault built (ADR-0011)
 Last verified: 2026-11-07
 
 ## 1. Per family
@@ -10,6 +10,7 @@ Last verified: 2026-11-07
 | EVM | `contracts/evm` | Foundry | `PaymentGuard` (one token, per-merchant per-tx cap, rolling 24 h cap, pause, payment reference), `PaymentGuardFactory`, `ReputationRegistry`; later `ReputationOracleReceiver`, `CompliantPaymentGuard` | Vault owned by the user's account; the agent key can only `pay()` within caps | `Baret-Metropolis/contracts` |
 | Stellar | `contracts/stellar` | Soroban SDK (Rust) | `merchant-spend-policy` | **Non-custodial**: a policy signer on the user's passkey-kit smart wallet; funds never leave the wallet; multi-tenant, one deployment for all wallets | `Baret-Stellar/contracts/contracts/merchant-spend-policy` |
 | Casper | `contracts/casper` | Odra (Rust) | `PaymentGuard`, `Cep18x402` | Vault + CEP-18 token with `transfer_with_authorization` | `CasperBaret/contracts` |
+| NEAR | `contracts/near` | near-sdk 5.30 (Rust), cargo-near | `vault` (built 2026-11-08, not deployed) | Vault owned by the user; per-asset limits per transfer and per rolling day, receiver allowlist, pause; the agent's function call key reaches only `execute_transfer`; later forwards approved requests to Chain Signatures | new (ADR-0011) |
 
 Not ported: Metropolis `SealedStore`, demo contracts (`contracts/src/demo/*` are ported only with the showcase scenarios that use them), Stellar legacy `payment-guard` (superseded).
 
@@ -41,7 +42,7 @@ A testnet file may also carry a `showcase` section: the contracts and wallets th
 
 ## 3. CI
 
-Each family has its own job (path-filtered): EVM `forge fmt --check`, `forge build --sizes`, `forge test` (`.github/workflows/contracts-evm.yml`, built); Stellar `cargo fmt --check`, `clippy -D warnings`, `cargo test`, wasm build; Casper `cargo odra test` (toolchain pinned in `rust-toolchain`).
+Each family has its own job (path-filtered): EVM `forge fmt --check`, `forge build --sizes`, `forge test` (`.github/workflows/contracts-evm.yml`, built); Stellar `cargo fmt --check`, `clippy -D warnings`, `cargo test`, wasm build; Casper `cargo odra test` (toolchain pinned in `rust-toolchain`); NEAR `cargo fmt --check`, `cargo test`, `cargo near build` on Rust 1.95 (`.github/workflows/contracts-near.yml`, built).
 
 ## 4. Current legacy deployments (reference only, not ours until re-verified)
 

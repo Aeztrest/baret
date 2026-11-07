@@ -5,7 +5,13 @@ import {
   OnchainRegistrySource,
   ViemEvmRpc,
 } from "@baret/chain-evm/engine";
-import { getDeployment, knownAddresses } from "@baret/chains";
+import {
+  createNearAdapter,
+  JsonNearRpc,
+  MPC_CONTRACTS,
+  type NearDeps,
+} from "@baret/chain-near/engine";
+import { getDeployment, getShowcase, knownAddresses } from "@baret/chains";
 import type { ChainConfig } from "@baret/core";
 import { createEngine } from "@baret/engine";
 
@@ -60,17 +66,39 @@ function evmDepsFor(chain: ChainConfig): EvmDeps {
   return deps;
 }
 
+const nearDeps = new Map<string, NearDeps>();
+
+/** One NEAR chain's RPC and lists (ADR-0011). Reported accounts come from the showcase data. */
+function nearDepsFor(chain: ChainConfig): NearDeps {
+  const cached = nearDeps.get(chain.id);
+  if (cached) return cached;
+  const ep = endpoints.get(chain.id) as ChainEndpoints;
+  const showcase = Object.values(getShowcase(chain.id));
+  const deps: NearDeps = {
+    rpc: new JsonNearRpc(ep.rpcUrl, config.requestTimeoutMs),
+    knownContracts: knownAddresses(chain.id),
+    flagged: new Map(
+      showcase.filter((e) => e.reported).map((e) => [e.address, e.reportedAs ?? "REPORTED"]),
+    ),
+    mpcContracts: MPC_CONTRACTS[chain.id] ?? [],
+  };
+  nearDeps.set(chain.id, deps);
+  return deps;
+}
+
 const evm = createEvmAdapter(evmDepsFor);
+const near = createNearAdapter(nearDepsFor);
+const adapters = { evm, near } as const;
 const engine = createEngine({
-  adapters: { evm },
-  chains: config.chains.map((c) => c.chain).filter((c) => c.family === "evm"),
+  adapters,
+  chains: config.chains.map((c) => c.chain).filter((c) => c.family in adapters),
   verdictTtlSeconds: config.verdictTtlSeconds,
 });
 
 const app = await buildApp({
   config,
   engine,
-  health: (chain) => evm.health(chain),
+  health: (chain) => (chain.family === "near" ? near : evm).health(chain),
   commit: process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? null,
 });
 

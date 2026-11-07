@@ -10,9 +10,20 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/core" },
-    { "path": "../../packages/chains" },
-    { "path": "../../packages/chain-evm" },
-    { "path": "../../packages/engine" }
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/chains"
+    },
+    {
+      "path": "../../packages/chain-evm"
+    },
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/chain-near"
+    }
   ]
 }

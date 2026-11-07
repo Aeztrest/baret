@@ -29,6 +29,7 @@ Last verified: 2026-11-07
 | `CHAIN_<SLUG>_RPC_URL` | enables the chain | main RPC (EVM JSON-RPC, Stellar RPC, Casper node RPC) |
 | `CHAIN_<SLUG>_TRACE_RPC_URL` | EVM, no | node for `debug_traceCall` when the main RPC lacks it |
 | `CHAIN_<SLUG>_HORIZON_URL` | Stellar | Horizon endpoint |
+| `CHAIN_NEAR_TESTNET_RPC_URL`, `CHAIN_NEAR_MAINNET_RPC_URL` | NEAR | JSON-RPC endpoint (e.g. `https://rpc.testnet.near.org`); setting it serves the chain |
 | `CHAIN_<SLUG>_SPECULATIVE_URL` | Casper, no | speculative execution endpoint (if Phase 4 confirms one) |
 | `CHAIN_<SLUG>_INDEXER_URL` | no | indexer GraphQL for `/v1/audit/*` |
 | `BARET_API_KEYS` | production | comma-separated static keys |

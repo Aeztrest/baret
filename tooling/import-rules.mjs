@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 const ROOT =
   process.env.IMPORT_RULES_ROOT ?? resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const CHAIN_ADAPTERS = ["chain-evm", "chain-stellar", "chain-casper"];
+const CHAIN_ADAPTERS = ["chain-evm", "chain-stellar", "chain-casper", "chain-near"];
 
 /** @type {Record<string, string[]>} workspace dir → @baret packages it may import */
 const RULES = {
@@ -30,6 +30,7 @@ const RULES = {
   "packages/chain-evm": ["core", "chains"],
   "packages/chain-stellar": ["core", "chains"],
   "packages/chain-casper": ["core", "chains"],
+  "packages/chain-near": ["core", "chains"],
   "packages/providers": ["core"],
   "packages/engine": ["core", "chains", "providers", ...CHAIN_ADAPTERS],
   "packages/guard": ["core"],
@@ -62,6 +63,7 @@ const CHAIN_LIBRARIES = {
   "chain-evm": ["viem", "ethers", "@ethersproject", "@wagmi/core"],
   "chain-stellar": ["@stellar/stellar-sdk", "@stellar/stellar-base", "@stellar/freighter-api"],
   "chain-casper": ["casper-js-sdk", "@make-software/csprclick-core-client"],
+  "chain-near": ["near-api-js", "@near-js"],
 };
 
 /**

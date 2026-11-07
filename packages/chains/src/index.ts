@@ -43,6 +43,13 @@ export const showcaseEntrySchema = z
     address: z.string().min(1),
     kind: z.enum(["contract", "account"]),
     listed: z.boolean(),
+    /** On Baret's reported list for chains with no on-chain registry yet (NEAR). */
+    reported: z.boolean().optional(),
+    /** The reason code a reported entry carries. */
+    reportedAs: z
+      .string()
+      .regex(/^[A-Z][A-Z0-9_]*$/)
+      .optional(),
     role: z.string().min(1),
     source: z.string().min(1).nullable(),
     checkedOnChain: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
