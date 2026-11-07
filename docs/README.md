@@ -32,6 +32,7 @@ How the docs are organised, which doc owns which code, and the rules that keep t
 | `docs/chains/evm.md` | EVM family (Monad, Arc, Base, …) |
 | `docs/chains/stellar.md` | Stellar family |
 | `docs/chains/casper.md` | Casper family |
+| `docs/chains/near.md` | NEAR family (ADR-0011) |
 | `docs/operations/ci-cd.md` | GitHub Actions, branches, releases |
 | `docs/operations/deployment.md` | Render, Vercel, extension, npm, contracts |
 | `docs/operations/environments.md` | Environments and every environment variable |
@@ -51,6 +52,7 @@ When you change a path on the left, update the docs on the right in the same com
 | `packages/chain-evm/**` | `docs/chains/evm.md` |
 | `packages/chain-stellar/**` | `docs/chains/stellar.md` |
 | `packages/chain-casper/**` | `docs/chains/casper.md` |
+| `packages/chain-near/**`, `contracts/near/**` | `docs/chains/near.md` |
 | `packages/providers/**` | `docs/architecture/providers.md`, `docs/operations/environments.md` |
 | `packages/guard/**`, `packages/agent-kit/**` | `docs/architecture/sdk.md`, the package README, `CHANGELOG` via changeset |
 | `packages/wallet-core/**`, `packages/ui/**`, `packages/web-ui/**`, `packages/routes/**`, `packages/content/**` | `docs/architecture/frontend.md` |

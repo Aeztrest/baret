@@ -19,6 +19,7 @@ One file per decision: `NNNN-short-title.md`. An ADR is never edited to reverse 
 | [0008](0008-hosting-and-environments.md) | Vercel + Render + GitHub Actions; `main` = staging, `release` = production | Accepted |
 | [0009](0009-docs-as-code.md) | Docs as code, enforced by CI and a session hook | Accepted |
 | [0010](0010-demo-packages-per-family.md) | Demo sites keep their chain code in a demo package per family | Accepted |
+| [0011](0011-near-family.md) | NEAR is a chain family, built first for the NEAR HACKATHON | Accepted |
 
 ## Template
 

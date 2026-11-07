@@ -17,6 +17,8 @@ The support matrix. Every chain that has a file in `packages/chains/chains/` mus
 | Stellar | `stellar:pubnet` | Stellar | mainnet | preflight | MerchantSpendPolicy | yes | planned (deployed by legacy repo) | 3/6 |
 | Casper testnet | `casper:casper-test` | Casper | testnet | to research | PaymentGuard | yes | planned (live in legacy repo) | 4 |
 | Casper | `casper:casper` | Casper | mainnet | to research | PaymentGuard | yes | planned | 6 |
+| NEAR testnet | `near:testnet` | NEAR | testnet | preflight | vault (`contracts/near`) | planned | in progress (ADR-0011, NEAR HACKATHON) | N |
+| NEAR | `near:mainnet` | NEAR | mainnet | preflight | vault | — | planned (Intents quotes only for the hackathon) | N/6 |
 | GOAT testnet3 | `eip155:48816` | EVM | testnet | trace (batching off) | PaymentGuard | — | backlog | later |
 
-Family docs: `docs/chains/evm.md`, `docs/chains/stellar.md`, `docs/chains/casper.md`. Later families (Solana from BLACKTHORN, Midnight) get a doc when an ADR adds them.
+Family docs: `docs/chains/evm.md`, `docs/chains/stellar.md`, `docs/chains/casper.md`, `docs/chains/near.md`. Later families (Solana from BLACKTHORN, Midnight) get a doc when an ADR adds them.
