@@ -1,0 +1,42 @@
+# Render Blueprint for the Baret API (apps/api). docs/operations/deployment.md §1.
+# Render → New → Blueprint → this repository. Values marked `sync: false` are secrets or
+# per-environment choices: they are entered in the Render dashboard, never here.
+services:
+  - type: web
+    name: baret-api-staging
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    # Deploy only commits whose GitHub checks passed: CI is the gate (ADR-0008).
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/**
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - package.json
+        - render.yaml
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --filter @baret/api... && pnpm --filter @baret/api build
+    # The esbuild bundle, not tsx (apps/api/scripts/build.mjs).
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: BARET_ENV
+        value: staging
+      - key: LOG_LEVEL
+        value: info
+      # The chain is served only when its RPC URL is set. A keyed provider (Alchemy) is
+      # better than the public RPC's limits; its trace calls go to the public node below.
+      - key: CHAIN_MONAD_TESTNET_RPC_URL
+        sync: false
+      - key: CHAIN_MONAD_TESTNET_TRACE_RPC_URL
+        value: https://testnet-rpc.monad.xyz
+      # Staging may stay open (empty); production requires keys.
+      - key: BARET_API_KEYS
+        sync: false
+      - key: BARET_CORS_ORIGINS
+        sync: false
