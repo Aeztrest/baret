@@ -1,0 +1,44 @@
+{
+  "name": "@baret/ui",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Baret design tokens and components shared by the web app and the extension. Consumed as TypeScript source, never built.",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css",
+    "./components/*": "./src/components/*.tsx",
+    "./primitives/*": "./src/primitives/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "cmdk": "1.1.1",
+    "cn": "^0.3.0",
+    "lucide-react": "1.46.0",
+    "next-themes": "^0.4.6",
+    "radix-ui": "1.6.7",
+    "sonner": "2.0.8",
+    "tailwind-merge": "3.7.0"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "4.3.3"
+  }
+}

@@ -82,6 +82,7 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 ## Phase 2 — Frontend, agents and staging
 
 - [ ] **T2.1 Port `packages/ui`, `packages/web-ui`, `packages/content`** — re-key finding codes (ADR-0006).
+  → in progress: `packages/ui` ported 2026-11-07 (unchanged but for the network-colour comment and the test's Tailwind resolution; typecheck + Tailwind state test green). Next: `content` (re-key codes and policy fields to v2), then `web-ui`.
 - [ ] **T2.2 `packages/wallet-core` + `chain-evm` wallet side** — keyring with per-family derivation, check-then-sign.
 - [ ] **T2.3 `apps/extension`** — port; family flags; EVM accounts and provider; per-chain policy.
 - [ ] **T2.4 `apps/web`** — port showcase (Monad scenarios), landing, install, `/agents`, developer portal from route schemas; chain filter.
@@ -89,6 +90,7 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
   → in progress 2026-11-07: `render.yaml` (`baret-api-staging`, free plan, Frankfurt, deploy on green checks) merged and checked in a clean clone. Staging API **live** 2026-11-07: https://baret-api-staging.onrender.com (owner created the Blueprint); checked live (deployed commit = `main`, ready with trace, drainer cases Blocked, plain transfer Safe, SDK tarball against it). Vercel: project `baret` exists (owner); Git deployments are off via the root `vercel.json` until `apps/web` (T2.4), then Root Directory → `apps/web`.
 - [x] **T2.11 Per-client rate limits behind Render** — measure how many X-Forwarded-For entries Render's proxy adds (a `forwardedHops` count on `/health`, as Metropolis had), then set `BARET_PROXY_DIRECT_HOPS` on the service. Until then every visitor may share one bucket (Metropolis G-01).
   → done 2026-11-07: `/health` `forwardedHops` (#20) measured 3 on a direct request (4 and 5 with one and two forged entries); `BARET_PROXY_DIRECT_HOPS=3` in `render.yaml`; unit test of the measured shape. The web app's edge hops are set with T2.4.
+- [ ] **T2.12 Per-chain network colour** — Metropolis has one network colour (Monad violet) that states "you are on this network". Add a `brandColor` to each chain registry entry and a `--color-network` token the UI sets per chain.
 - [ ] **T2.6 Release pipeline** — changesets, `release.yml`, `chain-check.yml`, extension zips on releases.
 - [ ] **T2.7 `/v1/explain`, `/v1/policy/draft`, `/mcp`, `/v1/audit/*`** — depends D5; audit needs the Envio indexer (decide its location, porting plan §3).
 - [ ] **T2.8 `packages/agent-kit` (EVM) + CLI** — port; x402 buyer (EIP-3009).

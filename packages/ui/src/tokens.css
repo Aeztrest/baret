@@ -1,0 +1,658 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: the reduced-motion reset
+   has to beat any animation a component sets. That is the point of it. */
+/*
+ * Baret design tokens. The single source of truth for every surface:
+ * apps/web and apps/extension. Ported from Baret-Metropolis (BRAND.md BK-001
+ * Rev 02); the brand section lives in docs/architecture/frontend.md.
+ *
+ * Tailwind CSS v4: there is no tailwind.config.js. Everything a utility class
+ * can reach is declared inside @theme below. Values outside @theme are plain
+ * custom properties for hand-written CSS.
+ *
+ * The identity in one line: materials, one signal, and the network.
+ *   Ground is poured concrete, not white. Cards are chalk. Type is ink.
+ *   The one accent is International Orange. The network's own colour (Monad
+ *   violet below, the first chain) states a fact about the network and is never
+ *   a call to action. Per-chain network colours: TASKS.md T2.12.
+ */
+
+@import "tailwindcss";
+
+/*
+ * Drive dark mode from a data attribute rather than a class. It reads better
+ * in devtools and it cannot collide with a utility named "dark".
+ *
+ * The attribute has three states: absent means follow the operating system,
+ * which is where most viewers are. Do not remove the media query below just
+ * because this variant exists; they cover different states.
+ */
+@custom-variant dark {
+  /* An explicit choice, either direction. */
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  /* No choice made and the operating system is dark. This branch is the one
+     most viewers land in, and a single-selector variant would have skipped it
+     entirely: overriding the dark variant replaces prefers-color-scheme rather
+     than adding to it. */
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Radix state, mapped once.
+ *
+ * The re-skinned shadcn components were written against bare state attributes
+ * (data-checked, data-active, data-open, data-horizontal). Radix 1.x emits
+ * data-state="checked|active|open|..." and data-orientation instead, so those
+ * classes matched nothing: a switch never looked on and a tab never looked
+ * current. Each variant below keeps the bare form and adds the Radix one, so
+ * every existing class starts working without touching a component.
+ * `state-on` / `state-off` are the names to reach for in new code.
+ */
+@custom-variant data-checked (&:is([data-checked]:not([data-checked="false"]), [data-state="checked"]));
+@custom-variant data-unchecked (&:is([data-unchecked]:not([data-unchecked="false"]), [data-state="unchecked"]));
+@custom-variant data-active (&:is([data-active]:not([data-active="false"]), [data-state="active"]));
+@custom-variant data-open (&:is([data-open]:not([data-open="false"]), [data-state="open"], [data-state="delayed-open"], [data-state="instant-open"]));
+@custom-variant data-closed (&:is([data-closed]:not([data-closed="false"]), [data-state="closed"]));
+@custom-variant data-horizontal (&:is([data-horizontal], [data-orientation="horizontal"]));
+@custom-variant data-vertical (&:is([data-vertical], [data-orientation="vertical"]));
+@custom-variant state-on (&:is([data-state="checked"], [data-state="on"], [data-state="active"]));
+@custom-variant state-off (&:is([data-state="unchecked"], [data-state="off"], [data-state="inactive"]));
+
+@theme {
+  /* ── Materials ─────────────────────────────────────────────────────── */
+  --color-concrete: #e6e6e1;
+  --color-concrete-deep: #d9d9d2;
+  --color-chalk: #f8f8f5;
+  --color-ink: #121316;
+  --color-graphite: #17181b;
+  --color-graphite-card: #1f2024;
+  --color-manila: #f3efe4;
+  --color-manila-dark: #2a2620;
+
+  /* ── The one signal ────────────────────────────────────────────────── */
+  --color-orange: #ff4f00;
+  --color-orange-deep: #e44600;
+  --color-orange-bright: #ff5a0f;
+
+  /* ── The network, and only the network ─────────────────────────────── */
+  --color-violet: #836ef9;
+  --color-violet-bright: #9c8bfb;
+
+  /* ── State. Never decoration. ──────────────────────────────────────── */
+  --color-ok: #0f8a5f;
+  --color-ok-bright: #34c48c;
+  --color-warn: #c27400;
+  --color-warn-bright: #f0a030;
+  --color-bad: #d3210a;
+  --color-bad-bright: #ff5a3d;
+  --color-live: #0b7a8c;
+  --color-live-bright: #3bc0d4;
+
+  /* ── Semantic roles that are ours alone ────────────────────────────── */
+  /* Everything shadcn also names lives in the bridge at the bottom of this
+     file, so there is one definition per name. The four state colours and the
+     network colour have no shadcn equivalent, so they are declared here.
+     Note `accent` is deliberately absent: shadcn owns that word and means
+     something quieter by it. Our orange is `primary`. */
+  --color-network: var(--network);
+  --color-tag: var(--tag-paper);
+  --color-safe: var(--safe);
+  --color-caution: var(--caution);
+  --color-blocked: var(--blocked);
+  --color-watching: var(--watching);
+
+  /* ── Type ──────────────────────────────────────────────────────────── */
+  --font-stencil: "Big Shoulders Stencil Display", "Big Shoulders Display", Impact, sans-serif;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Display sizes carry their own line height. Body uses Tailwind defaults. */
+  --text-display-2xl: 4rem;
+  --text-display-2xl--line-height: 0.9;
+  --text-display-2xl--font-weight: 900;
+  --text-display-2xl--letter-spacing: 0.02em;
+
+  --text-display-xl: 2.75rem;
+  --text-display-xl--line-height: 1;
+  --text-display-xl--font-weight: 800;
+
+  --text-display-l: 2rem;
+  --text-display-l--line-height: 1;
+  --text-display-l--font-weight: 800;
+  --text-display-l--letter-spacing: 0.02em;
+
+  --text-display-m: 1.5rem;
+  --text-display-m--line-height: 1.05;
+  --text-display-m--font-weight: 700;
+  --text-display-m--letter-spacing: 0.03em;
+
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1.4;
+  --text-label--font-weight: 500;
+  --text-label--letter-spacing: 0.08em;
+
+  /* ── Rhythm. 4, 8, 12, 16, 24, 32, 48, 64, 96. No 5, 7, 10, 18. ───── */
+  --spacing: 0.25rem;
+
+  /* ── Corners. Square everywhere. The chamfer is not a radius. ──────── */
+  /* The whole named scale is pinned to zero, because @theme extends Tailwind's
+     defaults rather than replacing them. Any component that reaches for
+     rounded-md or rounded-xl gets a square corner and nobody has to remember.
+     `rounded-full` is a static utility and is untouched, which is correct: an
+     eyelet, a radio dot and a slider thumb are all genuinely round. */
+  /* The unprefixed one. shadcn reaches for it inside calc(). */
+  --radius: 0;
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+  --radius-pill: 9999px;
+
+  /* ── Motion. Nothing moves unless a state changed. ─────────────────── */
+  --ease-out-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-count: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Light is the default. Every role is defined here first, so a value that
+ * only exists inside a dark block can never leak an undefined colour.
+ * ════════════════════════════════════════════════════════════════════════ */
+:root,
+[data-scope="baret"] {
+  color-scheme: light;
+
+  --ground: #e6e6e1;
+  --ground-deep: #d9d9d2;
+  --surface: #f8f8f5;
+
+  --fg: #121316;
+  --fg-muted: rgb(18 19 22 / 0.72);
+  /* 0.62 keeps faint text at 4.5:1 or more on ground (4.80), ground-deep
+     (4.58) and surface (5.09), still a step below muted. */
+  --fg-faint: rgb(18 19 22 / 0.62);
+  --fg-ghost: rgb(18 19 22 / 0.34);
+
+  --rule: rgb(18 19 22 / 0.14);
+  --rule-strong: rgb(18 19 22 / 0.28);
+  /* Rest border of a control (segmented choices, selects): about 3:1 on ground. */
+  --control-edge: rgb(18 19 22 / 0.55);
+
+  --accent: #ff4f00;
+  --accent-deep: #e44600;
+  --accent-dim: rgb(255 79 0 / 0.1);
+  --on-accent: #121316;
+
+  --network: #836ef9;
+  --network-dim: rgb(131 110 249 / 0.12);
+
+  --tag-paper: #f3efe4;
+
+  --safe: #0f8a5f;
+  --safe-dim: rgb(15 138 95 / 0.1);
+  --caution: #c27400;
+  --caution-dim: rgb(194 116 0 / 0.1);
+  --blocked: #d3210a;
+  --blocked-dim: rgb(211 33 10 / 0.08);
+  --watching: #0b7a8c;
+  --watching-dim: rgb(11 122 140 / 0.1);
+
+  /* Tag ink. Text on the tag paper needs 4.5:1; the bright hues above stay
+     for edges, dots and fills. Light only: the dark hues already pass. */
+  --safe-ink: #0b6e4c;
+  --caution-ink: #8a5300;
+  --blocked-ink: #b21b07;
+  --watching-ink: #08606e;
+  --network-ink: #5b47d6;
+
+  --chamfer: 10px;
+  --chamfer-sm: 8px;
+
+  --grain-blend: multiply;
+  --grain-opacity: 0.9;
+}
+
+/* The unstamped document. Most viewers are here, so only tokens change. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),
+  :root:not([data-theme="light"]) [data-scope="baret"] {
+    color-scheme: dark;
+
+    --ground: #17181b;
+    --ground-deep: #121316;
+    --surface: #1f2024;
+
+    --fg: #edede8;
+    --fg-muted: rgb(237 237 232 / 0.74);
+    --fg-faint: rgb(237 237 232 / 0.56);
+    --fg-ghost: rgb(237 237 232 / 0.38);
+
+    --rule: rgb(237 237 232 / 0.12);
+    --rule-strong: rgb(237 237 232 / 0.26);
+    --control-edge: rgb(237 237 232 / 0.55);
+
+    --accent: #ff5a0f;
+    --accent-deep: #ff6d2b;
+    --accent-dim: rgb(255 90 15 / 0.14);
+    --on-accent: #121316;
+
+    --network: #9c8bfb;
+    --network-dim: rgb(156 139 251 / 0.16);
+
+    --tag-paper: #2a2620;
+
+    --safe: #34c48c;
+    --safe-dim: rgb(52 196 140 / 0.12);
+    --caution: #f0a030;
+    --caution-dim: rgb(240 160 48 / 0.12);
+    --blocked: #ff5a3d;
+    --blocked-dim: rgb(255 90 61 / 0.12);
+    --watching: #3bc0d4;
+    --watching-dim: rgb(59 192 212 / 0.12);
+    --safe-ink: var(--safe);
+    --caution-ink: var(--caution);
+    --blocked-ink: var(--blocked);
+    --watching-ink: var(--watching);
+    --network-ink: var(--network);
+
+    --grain-blend: screen;
+    --grain-opacity: 0.35;
+  }
+}
+
+/* The explicit choice wins in both directions. */
+:root[data-theme="dark"],
+:root[data-theme="dark"] [data-scope="baret"] {
+  color-scheme: dark;
+
+  --ground: #17181b;
+  --ground-deep: #121316;
+  --surface: #1f2024;
+
+  --fg: #edede8;
+  --fg-muted: rgb(237 237 232 / 0.74);
+  --fg-faint: rgb(237 237 232 / 0.56);
+  --fg-ghost: rgb(237 237 232 / 0.38);
+
+  --rule: rgb(237 237 232 / 0.12);
+  --rule-strong: rgb(237 237 232 / 0.26);
+  --control-edge: rgb(237 237 232 / 0.55);
+
+  --accent: #ff5a0f;
+  --accent-deep: #ff6d2b;
+  --accent-dim: rgb(255 90 15 / 0.14);
+  --on-accent: #121316;
+
+  --network: #9c8bfb;
+  --network-dim: rgb(156 139 251 / 0.16);
+
+  --tag-paper: #2a2620;
+
+  --safe: #34c48c;
+  --safe-dim: rgb(52 196 140 / 0.12);
+  --caution: #f0a030;
+  --caution-dim: rgb(240 160 48 / 0.12);
+  --blocked: #ff5a3d;
+  --blocked-dim: rgb(255 90 61 / 0.12);
+  --watching: #3bc0d4;
+  --watching-dim: rgb(59 192 212 / 0.12);
+  --safe-ink: var(--safe);
+  --caution-ink: var(--caution);
+  --blocked-ink: var(--blocked);
+  --watching-ink: var(--watching);
+  --network-ink: var(--network);
+
+  --grain-blend: screen;
+  --grain-opacity: 0.35;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * shadcn token bridge.
+ *
+ * Components generated by the shadcn CLI read a fixed set of names. Aliasing
+ * them onto ours means a freshly added component already looks like Baret, and
+ * there is still exactly one place a colour is defined.
+ *
+ * `inline` is required. It makes a utility emit the referenced variable rather
+ * than the value at definition time, which is what keeps runtime theme
+ * switching working.
+ * ════════════════════════════════════════════════════════════════════════ */
+@theme inline {
+  --color-background: var(--ground);
+  --color-foreground: var(--fg);
+
+  --color-card: var(--surface);
+  --color-card-foreground: var(--fg);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--fg);
+
+  /* The only two places the orange is allowed to arrive from shadcn. */
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-ring: var(--accent);
+
+  --color-secondary: var(--ground-deep);
+  --color-secondary-foreground: var(--fg);
+  --color-muted: var(--ground-deep);
+  --color-muted-foreground: var(--fg-muted);
+
+  /* Not our accent. In shadcn this is the quiet surface behind a hovered menu
+     item. Mapping it to the orange would paint every hover state. */
+  --color-accent: var(--ground-deep);
+  --color-accent-foreground: var(--fg);
+
+  --color-destructive: var(--blocked);
+  --color-destructive-foreground: var(--surface);
+
+  --color-border: var(--rule);
+  --color-input: var(--rule-strong);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Base. Kept deliberately short. Anything that could be a component is one.
+ * ════════════════════════════════════════════════════════════════════════ */
+@layer base {
+  * {
+    border-color: var(--rule);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* The sticky header is 56px. Anything scrolled or tabbed to lands 16px
+       below it, never underneath it (WCAG 2.4.11). An app without that
+       header sets --scroll-offset on :root. */
+    scroll-padding-top: var(--scroll-offset, calc(56px + 16px));
+  }
+
+  /* The grey rounded flash iOS and Android paint on tap sits on top of the
+     press state and breaks the square-corner rule. */
+  a,
+  button,
+  summary,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* No paragraph ends on a one-word line. Browsers without it wrap as before. */
+  p,
+  li,
+  figcaption,
+  dd {
+    text-wrap: pretty;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Paper grain. The only texture in the system, and the reason we can ban
+     gradients without the surfaces going flat. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    mix-blend-mode: var(--grain-blend);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+  }
+
+  /* Numbers that can change line up. */
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* The chamfer. Tags carry 10px, buttons 8px. Nothing else is cut. */
+  .chamfer {
+    clip-path: polygon(0 0, calc(100% - var(--chamfer)) 0, 100% var(--chamfer), 100% 100%, 0 100%);
+  }
+
+  .chamfer-sm {
+    clip-path: polygon(0 0, calc(100% - var(--chamfer-sm)) 0, 100% var(--chamfer-sm), 100% 100%, 0 100%);
+  }
+
+  /* The 80px background grid used on the options page and the marketing hero. */
+  .grid-paper {
+    background-image: linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .live-pulse {
+    animation: baret-pulse 1600ms ease-in-out infinite;
+  }
+}
+
+@keyframes baret-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* The tag swinging into place when a verdict lands. Rotates at the eyelet. */
+@keyframes baret-tag-hang {
+  from {
+    transform: rotate(-3deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Cap-height trim for caps text: the label sits on its hairline instead of a
+   pixel low. Progressive: browsers without text-box keep today's box. */
+@utility trim-caps {
+  @supports (text-box: trim-both cap alphabetic) {
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Route handover. A 160ms root crossfade between in-app pages, opted into
+ * per link (react-router `viewTransition`). Browsers without View
+ * Transitions just swap.
+ * ════════════════════════════════════════════════════════════════════════ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+  animation-timing-function: ease-out;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Reveal. The hidden state exists only once script has marked the element
+ * with data-reveal and an observer is watching it, so failed JS, print,
+ * reader mode and preview renderers always see the full page.
+ * ════════════════════════════════════════════════════════════════════════ */
+[data-reveal] {
+  transition:
+    opacity 160ms ease-out,
+    translate 160ms ease-out;
+}
+
+[data-reveal]:not([data-in]) {
+  opacity: 0;
+  translate: 0 6px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Disclosure. A native <details> opens with a short height ease where the
+ * browser can animate to auto (Chromium) and instantly everywhere else.
+ * interpolate-size is scoped to details, never :root, so no other height
+ * transition in the product changes behaviour.
+ * ════════════════════════════════════════════════════════════════════════ */
+details::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 160ms ease-out,
+    content-visibility 160ms allow-discrete;
+}
+
+details[open]::details-content {
+  block-size: auto;
+}
+
+@supports (interpolate-size: allow-keywords) {
+  details {
+    interpolate-size: allow-keywords;
+  }
+}
+
+/* Every motion above settles instantly for a viewer who asked for less, and
+   nothing is ever hidden on paper. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  details::details-content {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  [data-reveal] {
+    opacity: 1 !important;
+    translate: none !important;
+    transition: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Forced colours (Windows High Contrast). The system repaints every colour,
+ * so whatever carried meaning by colour alone has to carry it by shape.
+ * ════════════════════════════════════════════════════════════════════════ */
+@media (forced-colors: active) {
+  /* Only the current page is underlined; the rest stop looking current. */
+  [data-nav-item] {
+    border-bottom-color: Canvas;
+  }
+
+  [data-nav-item][aria-current="page"] {
+    border-bottom-color: Highlight;
+  }
+
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  /* The three verdicts differ by edge shape, not just hue. */
+  [data-tone="safe"],
+  [data-kind="safe"] {
+    border-left-style: solid;
+  }
+
+  [data-tone="caution"],
+  [data-kind="caution"] {
+    border-left-style: double;
+    border-left-width: 6px;
+  }
+
+  [data-tone="blocked"],
+  [data-kind="blocked"] {
+    border-left-style: solid;
+    border-left-width: 8px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * More contrast, on request. Muted text and rules are alpha tokens, so this
+ * is one place. Light first, then both dark entry points, in the same order
+ * and specificity as the theme blocks above.
+ * ════════════════════════════════════════════════════════════════════════ */
+@media (prefers-contrast: more) {
+  :root,
+  [data-scope="baret"] {
+    --fg-muted: rgb(18 19 22 / 0.86);
+    --fg-faint: rgb(18 19 22 / 0.72);
+    --rule: rgb(18 19 22 / 0.32);
+    --rule-strong: rgb(18 19 22 / 0.56);
+    --control-edge: rgb(18 19 22 / 0.72);
+  }
+
+  :root[data-theme="dark"],
+  :root[data-theme="dark"] [data-scope="baret"] {
+    --fg-muted: rgb(237 237 232 / 0.88);
+    --fg-faint: rgb(237 237 232 / 0.74);
+    --rule: rgb(237 237 232 / 0.3);
+    --rule-strong: rgb(237 237 232 / 0.54);
+    --control-edge: rgb(237 237 232 / 0.72);
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]),
+  :root:not([data-theme="light"]) [data-scope="baret"] {
+    --fg-muted: rgb(237 237 232 / 0.88);
+    --fg-faint: rgb(237 237 232 / 0.74);
+    --rule: rgb(237 237 232 / 0.3);
+    --rule-strong: rgb(237 237 232 / 0.54);
+    --control-edge: rgb(237 237 232 / 0.72);
+  }
+}
