@@ -1,0 +1,29 @@
+{
+  "name": "@baret/core",
+  "version": "0.2.0",
+  "description": "Baret's shared contract: chain identifiers, effects, findings, the GuardPolicy v2 schema, the verdict and the chain adapter interfaces. No chain library inside.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aeztrest/baret.git",
+    "directory": "packages/core"
+  },
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

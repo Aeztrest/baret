@@ -1,6 +1,6 @@
 # Engine: pipeline, effects, detectors, policy, verdict
 
-Status: **planned** (ported from `Baret-Metropolis/apps/server/src` and generalised; see `docs/migration/porting-plan.md`)
+Status: **in progress** — the types (`packages/core`) are built and tested; the pipeline (`packages/engine`) is not built yet (TASKS.md T1.6)
 Last verified: 2026-11-07
 
 Owns: `packages/core` (the types) and `packages/engine` (the pipeline). The adapter side of each step is in `docs/architecture/chain-adapters.md`.
@@ -23,7 +23,7 @@ Owns: `packages/core` (the types) and `packages/engine` (the pipeline). The adap
 
 Detectors are **pure functions** of the context: no I/O inside a detector. All reads happen in steps 2–6.
 
-## 2. Identifiers (`packages/core/ids`)
+## 2. Identifiers — built (`packages/core/src/ids.ts`)
 
 - Chain: CAIP-2 — `eip155:10143` (Monad testnet), `eip155:143` (Monad), `stellar:testnet`, `stellar:pubnet`, `casper:casper-test`, `casper:casper`.
 - Account: CAIP-10 — `eip155:143:0xabc…`, `stellar:pubnet:G…` / `C…`, `casper:casper:<account-hash or public key>`.
@@ -32,9 +32,9 @@ Detectors are **pure functions** of the context: no I/O inside a detector. All r
 
 Exact asset namespaces for Stellar and Casper are confirmed in Phase 1 (`TASKS.md`), following the CAIP namespace registry where one exists.
 
-## 3. Effects model (`packages/core/effects`)
+## 3. Effects model — built (`packages/core/src/effects.ts`)
 
-The contract between adapters and everything else. Draft shape:
+The contract between adapters and everything else. The code is the authority; the sketch below shows the idea:
 
 ```ts
 type Effects = {
@@ -56,7 +56,7 @@ Rule: if a family has a concept with no field here, it is added to the model (AD
 
 ## 4. Detectors and finding codes
 
-Ported codes are unified across families (proposed in ADR-0006). Each code has one entry in the registry (`packages/core/findings`): kind (toggle / threshold / fail-closed / warning), the policy field that controls it, the families that can emit it, its value placeholders. Words for each code: `packages/content`.
+Ported codes are unified across families (ADR-0006). Each code has one entry in the registry (`packages/core/src/findings.ts`, built): kind (toggle / threshold / fail-closed / warning), the policy field that controls it, the families that can emit it, its value placeholders. Words for each code: `packages/content`.
 
 ### 4.1 Universal detectors (`packages/engine/detectors`, work on `Effects`)
 
@@ -84,62 +84,24 @@ Ported codes are unified across families (proposed in ADR-0006). Each code has o
 
 Adding a code: registry entry + content words + detector + test + this table, in one PR.
 
-## 5. Policy (`GuardPolicy` v2, `packages/core/policy`)
+## 5. Policy (`GuardPolicy` v2) — built
 
-The v1 policy (Metropolis) is flat and EVM-shaped (`minPostUsdcBalance`, `maxGas`, `minNansenTrustLevel`). v2 separates what applies everywhere from what is family-specific, and names assets instead of assuming USDC:
+Source of truth: `packages/core/src/policy.ts` (schema), `packages/core/src/policy-templates.ts` (templates), `packages/core/src/migrate.ts` (v1 → v2). This section only explains the design; read the code for the fields.
 
-```ts
-type GuardPolicy = {
-  version: 2;
-  core: {
-    requireSuccessfulSimulation: boolean;
-    allowWarnings: boolean;
-    blockKnownMalicious: boolean;
-    blockRiskyContracts: boolean;
-    blockUnknownContractExposure: boolean;
-    blockUnlimitedApprovals: boolean;
-    blockAuthorityChanges: boolean;
-    maxLossPercent: number | null;
-    minPostBalances: { asset: Caip19; min: string }[];   // base units
-    minReputationTrust: "new" | "known" | "trusted";
-    compliance: { required: boolean; allowedCountries: string[]; minTier: number | null };
-    x402: { requireMemo: boolean; allowedAssets: Caip19[]; allowedMerchantOrigins: string[];
-            caps: { asset: Caip19; perTx: string | null; perHour: string | null; perDay: string | null }[] };
-  };
-  evm?:     { blockSetApprovalForAll: boolean; blockPermit: boolean; blockSelfdestruct: boolean;
-              blockDelegatecall: boolean; blockCodeDelegation: boolean; maxGas: number | null };
-  stellar?: { blockTrustlineRemoval: boolean; blockAccountMerge: boolean; maxFeeStroops: string | null };
-  casper?:  { blockSessionCode: boolean; maxPaymentMotes: string | null };
-};
-```
+- **Shape.** `{ version: 2, core, evm, stellar, casper }`. `core` applies on every chain; each family section holds the rules only that family has. **All sections are always present**, so a policy is complete on any chain and needs no merging of defaults.
+- **Assets are named, amounts are base units.** Floors (`core.minPostBalances`) and x402 caps (`core.x402.caps`) are per CAIP-19 asset, in base units. No rule assumes USDC or a native symbol.
+- **Fees.** `core.maxFee` (native base units) works on every chain; `evm.maxGas` (gas units) is kept for EVM. Both feed `EXCESSIVE_FEE`.
+- **Rule names.** Findings and fired rules name rules by dotted path (`core.x402.caps`, `evm.blockPermit`); the list is `POLICY_FIELDS`, kept equal to the schema by a test.
+- **Templates.** `strict`, `balanced` (default), `permissive` are chain-free; `createPolicy(name, chain)` fills in the chain's payment assets, their x402 caps (template caps are in whole dollar units: strict 1/5/20, balanced 5/25/100, permissive 50/250/1000 per tx/hour/day) and the native floor (`policyFloors` in the chain's registry entry, because 0.1 MON is not 0.1 XLM). Casper's `blockSessionCode` is on only in Strict: payable calls on Casper run through session code.
+- **Parity.** Each Metropolis v1 template, migrated, equals the v2 template of the same name in `core` and `evm` (test in `packages/core/src/core.test.ts`).
+- **Migration.** `migratePolicyV1(v1, { chain, native, usdc })`. Stellar and Casper sections take Balanced defaults. Without the chain's USDC, v1 caps cannot be expressed and are dropped: payments are then refused, never loosened.
+- **Scope:** a wallet keeps one policy per account per chain. The API never stores a policy.
+- **Decision:** a finding blocks when its registry kind says so under the policy (toggle on, threshold broken, fail-closed data missing, or a warning with `core.allowWarnings: false`). Severity is display only; it never decides.
 
-- **Templates** `strict`, `balanced` (default), `permissive` are defined once and filled per chain (the chain's canonical USDC, native asset) by `policyTemplate(name, chain)`.
-- **Scope:** a wallet keeps one policy per account per chain, created from the account's default template. The API never stores a policy.
-- **Decision:** a finding blocks when its registry kind says so under this policy (toggle on, threshold broken, fail-closed data missing, or a warning with `allowWarnings: false`). Severity is display only; it never decides.
-- **Migration:** `migratePolicyV1(v1, chain)` converts Metropolis policies (used by `@baret/guard` 0.1.x users and saved wallet rules).
+## 6. Verdict — built
 
-## 6. Verdict (`packages/core/verdict`)
-
-```ts
-type Verdict = {
-  decision: "safe" | "caution" | "blocked";
-  findings: { code; severity: "low"|"medium"|"high"|"critical"; values; blocking: boolean; details? }[];
-  firedRules: { rule; code; limit; actual }[];
-  suggestions: { code; values }[];
-  confidence: "high" | "medium" | "low";
-  estimatedChanges: BalanceChange[];
-  allowances: Allowance[];
-  sources: { name; status: "ok" | "unavailable" | "skipped" }[];
-  chain: Caip2;
-  pinnedAt: { kind: "block" | "ledger" | "state-root"; value: string };
-  expiresAt: number;               // signers refuse an expired verdict
-  meta: { requestId; engineVersion; adapterVersion };
-  attestation?: { alg: "ed25519"; keyId; signature };   // planned: lets an agent prove a check ran (Stellar legacy had this)
-};
-```
-
-`safe` = no findings; `caution` = findings, none blocking; `blocked` = at least one blocking finding.
+Source of truth: `verdictSchema` in `packages/core/src/analyze.ts` (with the `/v1/analyze` request envelope). The schema itself enforces the decision rule: `safe` exactly when there are no findings, `blocked` exactly when at least one finding blocks, otherwise `caution`. `meta.simulation` says how the chain was read (`trace`, `preflight`, `speculative`, `none`). `expiresAt` is Unix seconds; signers refuse an expired verdict. Planned, not built: `attestation` (a signed verdict an agent can show; the Stellar legacy repo had one).
 
 ## 7. Not built yet
 
-Everything in this file. Port order: `docs/migration/porting-plan.md`.
+`packages/engine` (pipeline, universal detectors, policy evaluation) and every family adapter. Port order: `docs/migration/porting-plan.md`.

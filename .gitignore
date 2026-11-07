@@ -15,6 +15,7 @@ target/
 cache/
 coverage/
 *.tsbuildinfo
+dist-types/
 .vite/
 vite.config.ts.timestamp-*
 
