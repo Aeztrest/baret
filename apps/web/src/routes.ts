@@ -5,7 +5,7 @@ import { defineRoutes } from "@baret/routes";
  * Every path the web app serves, declared once.
  *
  * Ported page by page from Baret-Metropolis apps/showcase (TASKS.md T2.4): the
- * landing, the not-found page and the showcase hub first. The six demo sites,
+ * landing, the not-found page, the showcase hub and the six demo sites first.
  * /agents, /docs, /partners and /install follow; until then their links (nav,
  * footer, landing cards) answer with the not-found page.
  *
@@ -36,6 +36,54 @@ export const routes = defineRoutes({
     load: () => import("./pages/HubPage.js"),
   },
 
+  scrybe: {
+    path: "/scrybe",
+    title: "Scrybe",
+    label: "Scrybe",
+    group: "demo",
+    load: () => import("./sites/ScrybePage.js"),
+  },
+
+  novaswap: {
+    path: "/novaswap",
+    title: "NovaSwap",
+    label: "NovaSwap",
+    group: "demo",
+    load: () => import("./sites/NovaSwapPage.js"),
+  },
+
+  pixeldrop: {
+    path: "/pixeldrop",
+    title: "PixelDrop",
+    label: "PixelDrop",
+    group: "demo",
+    load: () => import("./sites/PixelDropPage.js"),
+  },
+
+  orbityield: {
+    path: "/orbityield",
+    title: "OrbitYield",
+    label: "OrbitYield",
+    group: "demo",
+    load: () => import("./sites/OrbitYieldPage.js"),
+  },
+
+  claimhub: {
+    path: "/claimhub",
+    title: "ClaimHub",
+    label: "ClaimHub",
+    group: "demo",
+    load: () => import("./sites/ClaimHubPage.js"),
+  },
+
+  launchpad: {
+    path: "/launchpad",
+    title: "LaunchPad",
+    label: "LaunchPad",
+    group: "demo",
+    load: () => import("./sites/LaunchPadPage.js"),
+  },
+
   notFound: {
     path: "/*",
     title: "Not found",
@@ -57,12 +105,6 @@ export const PENDING_PATHS: ReadonlySet<string> = new Set([
   "/docs",
   "/partners",
   "/install",
-  "/scrybe",
-  "/novaswap",
-  "/pixeldrop",
-  "/orbityield",
-  "/claimhub",
-  "/launchpad",
 ]);
 
 /** The six demo paths, so the layout knows when to drop the marketing chrome. */

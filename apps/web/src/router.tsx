@@ -21,6 +21,28 @@ const HEAD: Partial<Record<keyof typeof routes, () => Promise<Head>>> = {
     import("../../../packages/content/src/web/hub.content.js").then(({ hub }) => ({
       description: hub.meta.description,
     })),
+  scrybe: () =>
+    import("../../../packages/content/src/web/scrybe.content.js").then(({ scrybe }) => scrybe.meta),
+  novaswap: () =>
+    import("../../../packages/content/src/web/novaswap.content.js").then(
+      ({ novaswap }) => novaswap.meta,
+    ),
+  pixeldrop: () =>
+    import("../../../packages/content/src/web/pixeldrop.content.js").then(
+      ({ pixeldrop }) => pixeldrop.meta,
+    ),
+  orbityield: () =>
+    import("../../../packages/content/src/web/orbityield.content.js").then(
+      ({ orbityield }) => orbityield.meta,
+    ),
+  claimhub: () =>
+    import("../../../packages/content/src/web/claimhub.content.js").then(
+      ({ claimhub }) => claimhub.meta,
+    ),
+  launchpad: () =>
+    import("../../../packages/content/src/web/launchpad.content.js").then(
+      ({ launchpad }) => launchpad.meta,
+    ),
 };
 
 /**

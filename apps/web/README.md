@@ -2,7 +2,7 @@
 
 Baret's public site (Vite, React 19, React Router data mode, Tailwind v4, React Compiler). Deployed on Vercel; every route is prerendered at build time and hydrated in the browser.
 
-Ported from the Metropolis showcase app, page by page (TASKS.md T2.4). Today: the landing (`/`), the showcase hub (`/showcase`) and the not-found page. The demo sites, `/agents`, `/docs`, `/partners` and `/install` follow; until then the links to them are listed in `PENDING_PATHS` (`src/routes.ts`) and answer with the not-found page.
+Ported from the Metropolis showcase app, page by page (TASKS.md T2.4). Today: the landing (`/`), the showcase hub (`/showcase`), the six demo sites (`/scrybe`, `/novaswap`, `/pixeldrop`, `/orbityield`, `/claimhub`, `/launchpad`) and the not-found page. `/agents`, `/docs`, `/partners` and `/install` follow; until then the links to them are listed in `PENDING_PATHS` (`src/routes.ts`) and answer with the not-found page.
 
 ```sh
 pnpm --filter @baret/web dev      # http://localhost:5173, /api proxied to apps/api on :8080

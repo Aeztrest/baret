@@ -93,3 +93,9 @@ export const DEMO = {
     otherWallet: at("OtherWallet"),
   },
 } as const;
+
+/** NovaSwap's addresses, with the drainers' sink: the shape the NovaSwap site reads. */
+export const NOVASWAP = { ...DEMO.novaswap, sink: DEMO.sink, chainId: DEMO.chainId } as const;
+
+/** Scrybe's merchant: its site, its payee and its price. */
+export const SCRYBE = DEMO.scrybe;

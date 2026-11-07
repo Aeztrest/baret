@@ -1,4 +1,11 @@
 import type { AnalyzeRequest, Verdict } from "@baret/core";
+import {
+  callRequest,
+  type DemoPayment,
+  type DemoRules,
+  type DemoTx,
+  paymentRequest,
+} from "@baret/demo-evm";
 import { FAILED } from "@baret/web-ui/lib/check";
 import type { CheckApproval, CheckChange, CheckResult } from "@baret/web-ui/lib/check-types";
 
@@ -43,6 +50,24 @@ export async function analyze(
  * shows as 0 (no "-0"); a negative or fractional `decimals` throws, which
  * the caller turns into FAILED.
  */
+/** A demo call, checked under Balanced unless `rules` says otherwise; the sender's changes show. */
+export function analyzeCall(
+  tx: DemoTx,
+  signal: AbortSignal,
+  rules?: DemoRules,
+): Promise<CheckResult> {
+  return analyze(callRequest(tx, rules), tx.from, signal);
+}
+
+/** A demo x402 payment, checked under `rules`; the signer's changes show. */
+export function analyzePayment(
+  built: DemoPayment,
+  rules: DemoRules,
+  signal: AbortSignal,
+): Promise<CheckResult> {
+  return analyze(paymentRequest(built, rules), built.typedData.signer, signal);
+}
+
 export function displayAmount(raw: bigint, decimals: number): string {
   if (!Number.isInteger(decimals) || decimals < 0) throw new RangeError("decimals");
   const sign = raw < 0n ? "-" : "";
