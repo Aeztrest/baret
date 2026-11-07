@@ -4,7 +4,14 @@
  * payments, and the `/v1/analyze` bodies for them. The only place outside
  * packages/chain-evm that may import viem.
  */
-export { DEMO, DEMO_CHAIN, DEMO_CHAIN_ID } from "./addresses.js";
+export {
+  DEMO,
+  DEMO_ACCOUNT,
+  DEMO_CHAIN,
+  DEMO_CHAIN_ID,
+  DEMO_FAUCET,
+  explorerTx,
+} from "./addresses.js";
 export {
   agentCalls,
   claimhub,

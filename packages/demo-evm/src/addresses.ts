@@ -22,6 +22,19 @@ const usdcId = getChain(DEMO_CHAIN)?.usdc?.id;
 const usdc = usdcId ? parseCaip19(usdcId) : null;
 if (!usdcId || !usdc) throw new Error(`demo-evm: ${DEMO_CHAIN} has no USDC in the registry`);
 
+const chain = getChain(DEMO_CHAIN);
+
+/** The explorer page of a transaction on the demo chain (chain registry). */
+export function explorerTx(hash: string): string {
+  return chain?.explorer.tx.replace("{hash}", hash) ?? "";
+}
+
+/** The demo chain's faucet (chain registry), or null. */
+export const DEMO_FAUCET: string | null = chain?.faucetUrl ?? null;
+
+/** Baret's demo account: what a check simulates from for a visitor with no wallet. */
+export const DEMO_ACCOUNT = at("DemoAccount");
+
 export const DEMO = {
   chain: DEMO_CHAIN,
   chainId: DEMO_CHAIN_ID,

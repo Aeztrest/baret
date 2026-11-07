@@ -162,6 +162,14 @@
       "role": "Agents: a wallet the 402 did not name (wrong payee). Nobody holds its key",
       "source": null,
       "checkedOnChain": "2026-11-08"
+    },
+    "DemoAccount": {
+      "address": "0x5aE13F1028144842f0384d09091067D6184F8197",
+      "kind": "account",
+      "listed": false,
+      "role": "Baret's demo account: \"Check it live\" simulates from it for a visitor with no wallet. Holds test MON; its key is with the owner",
+      "source": null,
+      "checkedOnChain": "2026-11-08"
     }
   }
 }
