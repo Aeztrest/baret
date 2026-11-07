@@ -13,7 +13,7 @@ import type { AnchorHTMLAttributes, JSX, ReactNode } from "react";
  */
 export const NEW_TAB = { target: "_blank", rel: "noopener noreferrer" } as const;
 
-/** True for an href that leaves usebaret.com (or the dev server). */
+/** True for an href that leaves this site (absolute or protocol-relative, or mailto). */
 export function isExternal(href: string): boolean {
   return /^(https?:)?\/\//.test(href) || href.startsWith("mailto:");
 }

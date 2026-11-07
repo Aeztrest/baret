@@ -248,11 +248,11 @@ export const common = {
       { label: "Partners", href: "/partners" },
       { label: "Install", href: "/install" },
     ],
-    cta: { label: "Install the extension", href: "/install" },
-    /** The header's one primary action: the web wallet, on its own domain. */
-    wallet: { label: "Open wallet", short: "Wallet", href: "https://wallet.usebaret.com" },
-    /** The logo always leads to the live site's front page. */
-    home: { label: "Baret home", href: "https://usebaret.com" },
+    /** The header's one primary action. Metropolis pointed it at its passkey web
+     *  wallet, which the multichain build does not carry (docs/architecture/frontend.md §5). */
+    cta: { label: "Install the extension", short: "Install", href: "/install" },
+    /** The logo leads to this site's front page. */
+    home: { label: "Baret home", href: "/" },
     /** The phone menu button and its sheet. */
     menu: { open: "Open the menu", close: "Close the menu", label: "Menu" },
     /** Read after a link that opens a new tab, for screen readers. */
@@ -272,7 +272,6 @@ export const common = {
         links: [
           { label: "Showcase", href: "/showcase" },
           { label: "Install", href: "/install" },
-          { label: "Web wallet", href: "https://wallet.usebaret.com" },
         ],
       },
       {

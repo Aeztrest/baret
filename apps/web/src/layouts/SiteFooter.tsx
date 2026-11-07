@@ -9,8 +9,8 @@ import { ROW } from "./nav.js";
 /**
  * The marketing footer: the brand block and three link groups. Footer links
  * are navigation, so a page of this site opens in the same tab; a link that
- * leaves the site (the web wallet, the source) opens a new tab and says so.
- * The logo goes to https://usebaret.com, like the header's.
+ * leaves the site opens a new tab and says so. The logo goes to this site's
+ * front page, like the header's.
  */
 export function SiteFooter(): JSX.Element {
   return (

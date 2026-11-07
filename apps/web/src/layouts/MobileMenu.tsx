@@ -1,9 +1,8 @@
 import { common } from "@baret/content";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { m } from "motion/react";
 import { type JSX, useEffect, useRef } from "react";
 import { NavLink } from "react-router";
-import { NEW_TAB } from "../components/NewTabLink.js";
 import { warm } from "../routes.js";
 import { NAV } from "./nav.js";
 
@@ -129,13 +128,10 @@ export function MobileMenu({
           </ul>
           <div className="py-6">
             <a
-              href={common.nav.wallet.href}
-              {...NEW_TAB}
+              href={common.nav.cta.href}
               className={`chamfer-sm flex h-12 items-center justify-center gap-2 font-display text-base font-extrabold uppercase tracking-[0.08em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-[color:var(--accent)] ${dark ? "bg-chalk text-ink" : "bg-[color:var(--fg)] text-[color:var(--ground)]"}`}
             >
-              {common.nav.wallet.label}
-              <ArrowUpRight aria-hidden="true" className="size-4" strokeWidth={2} />
-              <span className="sr-only"> {common.nav.newTab}</span>
+              {common.nav.cta.label}
             </a>
           </div>
         </nav>
