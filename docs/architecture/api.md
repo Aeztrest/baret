@@ -13,7 +13,7 @@ Fastify + TypeScript, Zod for every request and response, pino logs (JSON), `@fa
 
 | Method | Path | Purpose | Phase |
 |---|---|---|---|
-| GET | `/health` | Liveness + running commit — **built** | 1 |
+| GET | `/health` | Liveness, running commit, `forwardedHops` (count of X-Forwarded-For entries, to set the proxy hops) — **built** | 1 |
 | GET | `/health/ready` | Per enabled chain: RPC reachable, right chain, simulation mode — **built** (provider flags come with T1.7) | 1 |
 | GET | `/v1/chains` | Enabled chains and their capabilities (`docs/architecture/chain-adapters.md` §6) — **built** | 1 |
 | POST | `/v1/analyze` | One transaction / message → `Verdict` — **built** | 1 |

@@ -132,6 +132,17 @@ describe("POST /v1/analyze", () => {
   });
 });
 
+describe("GET /health", () => {
+  it("counts the X-Forwarded-For entries, and only counts them", async () => {
+    const res = await (await start()).inject({
+      url: "/health",
+      headers: { "x-forwarded-for": "1.2.3.4, 10.0.0.1" },
+    });
+    expect(res.json()).toMatchObject({ status: "ok", forwardedHops: 2 });
+    expect(res.body).not.toContain("1.2.3.4");
+  });
+});
+
 describe("chains and templates", () => {
   it("lists the served chains with their features", async () => {
     const res = await (await start()).inject({ url: "/v1/chains" });
