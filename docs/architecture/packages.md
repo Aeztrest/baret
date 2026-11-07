@@ -39,7 +39,7 @@ baret/
 
 | App | Purpose | Doc |
 |---|---|---|
-| `apps/api` | The engine over HTTP and MCP; auth, limits, x402 seller | `docs/architecture/api.md` |
+| `apps/api` | The engine over HTTP (Phase 1 routes **built**); later MCP, x402 seller | `docs/architecture/api.md` |
 | `apps/extension` | Multichain wallet with the check before every signature | `docs/architecture/frontend.md` |
 | `apps/web` | Public site: landing, per-chain threat showcase, `/agents`, developer portal | `docs/architecture/frontend.md` |
 
@@ -86,7 +86,7 @@ A package may import only from the packages in its row (plus external libraries 
 | `content` | `core` (codes only) | none |
 | `ui` | `content` | none |
 | `web-ui` | `content`, `ui` | none |
-| `apps/api` | `engine`, `providers`, `chains`, `core`, `content` | none directly |
+| `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core` | none directly |
 | `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing) | none directly |
 

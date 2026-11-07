@@ -1,10 +1,23 @@
 {
   "files": [],
   "references": [
-    { "path": "./tooling" },
-    { "path": "./packages/core" },
-    { "path": "./packages/chains" },
-    { "path": "./packages/chain-evm" },
-    { "path": "./packages/engine" }
+    {
+      "path": "./tooling"
+    },
+    {
+      "path": "./packages/core"
+    },
+    {
+      "path": "./packages/chains"
+    },
+    {
+      "path": "./packages/chain-evm"
+    },
+    {
+      "path": "./packages/engine"
+    },
+    {
+      "path": "./apps/api"
+    }
   ]
 }

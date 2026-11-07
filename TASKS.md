@@ -13,7 +13,7 @@ The single task list for the project. Every session reads "Now" and "Waiting on 
 
 ## Now
 
-**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.7 (providers), T1.8 (`apps/api`), T1.9 (`@baret/guard` 0.2.0), T1.10 (EVM contracts). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
+**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.7 (providers), T1.9 (`@baret/guard` 0.2.0), T1.10 (EVM contracts); then Phase 2 (staging deploy). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
 
 ## Waiting on a decision (owner)
 
@@ -68,7 +68,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
   Note from porting: Metropolis's `decide()` let a fail-closed finding with no rule fall to `allowWarnings`. In v2 `SIGNATURE_NOT_UNDERSTOOD` and `X402_SHAPE_INVALID` are fail-closed with no field, so `decide()` must block them always, and `firedRules[].rule` needs a value for them (make it nullable or add a pseudo field) — decide and test in T1.6.
   → done 2026-11-07: `createEngine` + `decide` (fail-closed fix applied; `firedRules[].rule` is nullable). **Parity: Metropolis's 87 end-to-end scenarios pass** through a v1 ↔ v2 layer (`packages/engine/test/parity`). Found by parity: the lookalike detector still read the v1 payee field. Found with it: the root `tsconfig.json` did not reference `chain-evm` (and `engine`), so `tsc -b` had skipped them since #12; fixed, and `tooling/import-rules.mjs` now fails on an unreferenced typed package.
 - [ ] **T1.7 `packages/providers`** — reputation registry reader, Nansen (optional), threat feed.
-- [ ] **T1.8 `apps/api`** — `/health`, `/health/ready`, `/v1/chains`, `/v1/analyze`, `/v1/policy/templates`; env schema; `.env.example`; built JS start.
+- [x] **T1.8 `apps/api`** — `/health`, `/health/ready`, `/v1/chains`, `/v1/analyze`, `/v1/policy/templates`; env schema; `.env.example`; built JS start.
+  → done 2026-11-07: Fastify app (CORS, per-client limits, headers, keys, `{ error: { code, message } }`), `config.ts`, esbuild bundle, 10 tests. **Checked live** against Monad testnet with the bundle: Safe transfer; NovaSwap drainer approval Blocked (`APPROVAL_UNLIMITED`, `KNOWN_MALICIOUS_ADDRESS` from the on-chain registry). The first smoke run caught an unresolvable external (`viem`) in the bundle: fixed in `scripts/build.mjs`, and CI now runs `pnpm build`.
 - [ ] **T1.9 `packages/guard` 0.2.0** — client over `core`; README quickstart.
 - [ ] **T1.10 `contracts/evm`** — port Foundry project (PaymentGuard, factory, registry) + `contracts-evm.yml`.
 - [x] **T1.11 CAIP-19 namespaces for Stellar and Casper assets** — decide and write in `docs/architecture/engine.md` §2.

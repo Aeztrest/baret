@@ -4,3 +4,6 @@ packages:
 # A new package version must be this many minutes old before it can be installed
 # (supply-chain protection, as in the Metropolis repo). 4320 = 3 days.
 minimumReleaseAge: 4320
+# Install scripts allowed (pnpm 11 asks for each). esbuild checks its native binary.
+allowBuilds:
+  esbuild: true

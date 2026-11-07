@@ -38,7 +38,8 @@ const RULES = {
   "packages/content": ["core"],
   "packages/ui": ["content"],
   "packages/web-ui": ["content", "ui"],
-  "apps/api": ["engine", "providers", "chains", "core", "content"],
+  // The API is the composition root: it builds each family's adapter (chain-*/engine).
+  "apps/api": ["engine", "providers", "chains", "core", "content", ...CHAIN_ADAPTERS],
   "apps/extension": ["wallet-core", "guard", "ui", "content", "chains", "core"],
   "apps/web": ["guard", "ui", "web-ui", "content", "chains", "core", "wallet-core"],
 };

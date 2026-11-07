@@ -1,6 +1,6 @@
 # Environments and variables
 
-Status: **planned** (no `.env.example` exists yet; `pnpm docs:check` will require every variable in any `.env.example` to appear here)
+Status: **in progress** (`apps/api/.env.example` exists; `pnpm docs:check` requires every variable in any `.env.example` to appear here)
 Last verified: 2026-11-07
 
 ## 1. Environments
@@ -23,8 +23,9 @@ Last verified: 2026-11-07
 | Variable | Required | Description |
 |---|---|---|
 | `PORT` | no | default 8080 |
+| `HOST` | no | default `0.0.0.0` |
 | `LOG_LEVEL` | no | `info` |
-| `BARET_ENV` | yes | `local`, `staging`, `production` |
+| `BARET_ENV` | no | `local` (default), `staging`, `production`; production refuses to start without `BARET_API_KEYS` |
 | `CHAIN_<SLUG>_RPC_URL` | enables the chain | main RPC (EVM JSON-RPC, Stellar RPC, Casper node RPC) |
 | `CHAIN_<SLUG>_TRACE_RPC_URL` | EVM, no | node for `debug_traceCall` when the main RPC lacks it |
 | `CHAIN_<SLUG>_HORIZON_URL` | Stellar | Horizon endpoint |
@@ -35,6 +36,9 @@ Last verified: 2026-11-07
 | `BARET_RATE_LIMIT_PER_MINUTE` | no | per IP, default 120 |
 | `BARET_REQUEST_TIMEOUT_MS` | no | default 8000 |
 | `BARET_VERDICT_TTL_SECONDS` | no | default 30 |
+| `BARET_PROXY_DIRECT_HOPS` | staging, production | X-Forwarded-For entries the host's proxy adds on a direct request; unset: Fastify's `req.ip` (`apps/api/src/client.ts`) |
+| `BARET_PROXY_EDGE_HOPS` | with the web app | entries on a request through the web app's rewrite |
+| `BARET_EDGE_SECRET` | with the web app | shared secret the web app's edge sends in `x-baret-edge` |
 | `BARET_ATTESTATION_KEY` | no | ed25519 key for signed verdicts (planned) |
 | `NANSEN_API_KEY`, `NANSEN_MODE`, `NANSEN_LABELS_DAILY_LIMIT` | no | reputation (EVM) |
 | `CLEANVERSE_*` | no | compliance |
