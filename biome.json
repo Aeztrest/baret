@@ -12,6 +12,7 @@
       "!**/.output",
       "!**/.wxt",
       "!**/*.tsbuildinfo",
+      "!**/*.md",
       "!contracts/evm/lib",
       "!contracts/evm/out",
       "!contracts/evm/cache",
