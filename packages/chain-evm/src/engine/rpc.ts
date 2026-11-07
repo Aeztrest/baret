@@ -1,3 +1,4 @@
+import { ChainUnavailableError } from "@baret/core";
 import {
   type Address,
   BaseError,
@@ -55,8 +56,11 @@ export interface RawCallFrame {
   logs?: { address: string; topics: string[]; data: string }[];
 }
 
-/** The RPC did not answer. Distinct from a revert, which is a valid answer. */
-export class RpcUnavailableError extends Error {
+/**
+ * The RPC did not answer. Distinct from a revert, which is a valid answer. A
+ * ChainUnavailableError, so the API answers 503 and never a verdict.
+ */
+export class RpcUnavailableError extends ChainUnavailableError {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = "RpcUnavailableError";

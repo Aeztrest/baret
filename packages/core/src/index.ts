@@ -2,6 +2,7 @@ export * from "./adapters.js";
 export * from "./analyze.js";
 export * from "./chain-config.js";
 export * from "./effects.js";
+export * from "./errors.js";
 export * from "./findings.js";
 export * from "./ids.js";
 export * from "./migrate.js";

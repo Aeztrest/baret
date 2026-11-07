@@ -4,9 +4,12 @@
  *
  * 1. A package may import only the @baret packages its row allows.
  * 2. Chain libraries (viem, @stellar/stellar-sdk, casper-js-sdk, …) may be imported only by
- *    the chain adapter of their own family.
+ *    the chain adapter of their own family. Test files (`*.test.*`, `test/`) are exempt from
+ *    this rule only, to build fixtures; the @baret rule applies to them too.
  * 3. A package or app missing from RULES fails: add its row here and in
  *    docs/architecture/packages.md §4 in the same PR.
+ * 4. Every app or package with a tsconfig.json is referenced by the root tsconfig.json.
+ *    Otherwise `pnpm typecheck` (tsc -b) silently skips it: this happened to chain-evm.
  *
  * RULES below is the machine copy of docs/architecture/packages.md §4; change both together.
  */
@@ -90,6 +93,7 @@ for (const base of ["apps", "packages"]) {
     for (const file of walk(join(ROOT, dir))) {
       const rel = relative(ROOT, file).split("\\").join("/");
       const text = readFileSync(file, "utf8");
+      const isTest = /\.test\.[cm]?[jt]sx?$/.test(rel) || rel.split("/").includes("test");
       for (const m of text.matchAll(SPECIFIER)) {
         const pkg = packageName(m[1] ?? "");
         if (!pkg) continue;
@@ -102,6 +106,9 @@ for (const base of ["apps", "packages"]) {
           }
           continue;
         }
+        // Tests may use a chain library to build fixtures (calldata, logs, fake nodes);
+        // production code may not.
+        if (isTest) continue;
         for (const [owner, libs] of Object.entries(CHAIN_LIBRARIES)) {
           if (owner !== self && libs.some((lib) => pkg === lib || pkg.startsWith(`${lib}/`))) {
             errors.push(
@@ -109,6 +116,28 @@ for (const base of ["apps", "packages"]) {
             );
           }
         }
+      }
+    }
+  }
+}
+
+// 4. Every typed workspace project is part of the root build.
+const rootConfig = join(ROOT, "tsconfig.json");
+if (existsSync(rootConfig)) {
+  /** @type {{ references?: { path: string }[] }} */
+  const root = JSON.parse(readFileSync(rootConfig, "utf8"));
+  const referenced = new Set(
+    (root.references ?? []).map((r) => r.path.replace(/^\.\//, "").replace(/\/$/, "")),
+  );
+  for (const base of ["apps", "packages"]) {
+    const baseDir = join(ROOT, base);
+    if (!existsSync(baseDir)) continue;
+    for (const name of readdirSync(baseDir)) {
+      const dir = `${base}/${name}`;
+      if (existsSync(join(ROOT, dir, "tsconfig.json")) && !referenced.has(dir)) {
+        errors.push(
+          `${dir}: has a tsconfig.json but is not referenced by the root tsconfig.json, so typecheck skips it`,
+        );
       }
     }
   }

@@ -1,14 +1,20 @@
 import type { ZodType } from "zod";
-import type { SimulationMode } from "./analyze.js";
+import type { PaymentContext, SimulationMode, SourceStatus } from "./analyze.js";
 import type { ChainConfig } from "./chain-config.js";
-import type { Effects } from "./effects.js";
+import type { Allowance, BalanceChange } from "./effects.js";
 import type { FindingCode } from "./findings.js";
 import type { Caip10, Family } from "./ids.js";
-import type { GuardPolicy } from "./policy.js";
+import type { GuardPolicy, PolicyField } from "./policy.js";
 
 /**
  * The contract between the engine and a chain family (ADR-0003).
- * docs/architecture/chain-adapters.md describes each method; this file is the authority.
+ * docs/architecture/chain-adapters.md explains it; this file is the authority.
+ *
+ * Phase 1 shape (D9): the adapter runs its family's whole analysis (decode, simulate,
+ * effects, detectors, policy rules) and hands the engine finding drafts; the engine decides,
+ * assembles and validates the verdict. When the universal detectors move into the engine
+ * with the second family (TASKS.md T3.7), this interface gains the finer steps
+ * (decode / simulate / effects → core `Effects`).
  */
 
 /** The chain state every read of one analysis uses. */
@@ -17,29 +23,37 @@ export interface StatePin {
   value: string;
 }
 
-/** A detector's output before the policy decides severity display and blocking. */
+/** A detector's output before the policy decides blocking. */
 export interface FindingDraft {
   code: FindingCode;
   values: Record<string, string>;
   details?: Record<string, unknown>;
+  /** The rule that produced it, for codes several rules can produce. */
+  rule?: PolicyField;
 }
 
-export interface NoSimulation {
-  simulated: false;
-  /** Why: unsupported on this chain, the node failed, … Becomes a gap in Effects. */
-  reason: string;
-}
-
-export interface FamilyDetectorInput<Tx, Sim> {
-  tx: Tx;
-  sim: Sim | NoSimulation;
-  effects: Effects;
-  policy: GuardPolicy;
+export interface AdapterInput {
   chain: ChainConfig;
+  /** Already validated against the adapter's `requestSchema`. */
+  request: unknown;
+  /** Whose balances the loss rules protect; null: the signer. */
+  account: Caip10 | null;
+  policy: GuardPolicy;
+  payment: PaymentContext | null;
+  /** Unix seconds. */
+  now: number;
 }
 
-/** Pure: no I/O. Every read happens before detectors run. */
-export type FamilyDetector<Tx, Sim> = (input: FamilyDetectorInput<Tx, Sim>) => FindingDraft[];
+export interface AdapterResult {
+  drafts: FindingDraft[];
+  estimatedChanges: BalanceChange[];
+  allowances: Allowance[];
+  sources: SourceStatus[];
+  pinnedAt: StatePin | null;
+  simulation: SimulationMode;
+  /** Before data-source gaps: the engine lowers it to low when a *_UNAVAILABLE finding exists. */
+  confidence: "high" | "medium" | "low";
+}
 
 export interface ChainHealth {
   reachable: boolean;
@@ -49,19 +63,16 @@ export interface ChainHealth {
   detail?: string;
 }
 
-/** Server side: `@baret/chain-<family>/engine`. */
-export interface EngineAdapter<Req = unknown, Tx = unknown, Sim = unknown> {
+/**
+ * Server side: `@baret/chain-<family>/engine`. `analyze` throws InvalidRequestError for a
+ * request it cannot analyse and ChainUnavailableError when the chain cannot be read.
+ */
+export interface EngineAdapter {
   family: Family;
   version: string;
   /** The family payload inside /v1/analyze `request`. */
-  requestSchema: ZodType<Req>;
-  /** Canonical form for comparisons (EVM: lower-case; Stellar/Casper: as is). */
-  normaliseAddress(address: string): string;
-  pin(chain: ChainConfig): Promise<StatePin>;
-  decode(request: Req, chain: ChainConfig): Promise<Tx>;
-  simulate(tx: Tx, pin: StatePin, chain: ChainConfig): Promise<Sim | NoSimulation>;
-  effects(tx: Tx, sim: Sim | NoSimulation, chain: ChainConfig): Promise<Effects>;
-  detectors: readonly FamilyDetector<Tx, Sim>[];
+  requestSchema: ZodType;
+  analyze(input: AdapterInput): Promise<AdapterResult>;
   health(chain: ChainConfig): Promise<ChainHealth>;
 }
 

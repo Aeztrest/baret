@@ -221,6 +221,16 @@ describe("import-rules", () => {
     expect(r.out).not.toContain("chain-evm/src/ok.ts");
   });
 
+  it("refuses a typed package the root tsconfig does not reference", () => {
+    const r = check({
+      "tsconfig.json": JSON.stringify({ files: [], references: [{ path: "./packages/core" }] }),
+      "packages/core/tsconfig.json": "{}",
+      "packages/chains/tsconfig.json": "{}",
+    });
+    expect(r.out).toContain("packages/chains: has a tsconfig.json but is not referenced");
+    expect(r.out).not.toContain("packages/core: has a tsconfig.json");
+  });
+
   it("refuses a package that has no rule", () => {
     const r = check({ "packages/mystery/src/a.ts": src("export {};") });
     expect(r.out).toContain("packages/mystery: no import rule");

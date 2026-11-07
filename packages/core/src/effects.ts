@@ -18,7 +18,8 @@ export const assetRefSchema = z
     /** "native", "fungible" (ERC-20, SEP-41, CEP-18, classic Stellar asset) or "nft". */
     kind: z.enum(["native", "fungible", "nft"]),
     symbol: z.string().nullable(),
-    decimals: z.number().int().nonnegative(),
+    /** Null when the token's decimals could not be read (shown in base units). */
+    decimals: z.number().int().nonnegative().nullable(),
     /** nft only: the piece, when known. */
     tokenId: z.string().optional(),
   })
@@ -40,8 +41,10 @@ export const allowanceSchema = z
     owner: caip10Schema,
     spender: caip10Schema,
     asset: assetRefSchema,
-    /** Base units, or "unlimited" (at or above the family's unlimited threshold). */
-    amount: z.union([baseUnitsSchema, z.literal("unlimited")]),
+    /** Base units; null for access to a whole collection, which has no amount. */
+    amount: baseUnitsSchema.nullable(),
+    /** At or above the family's unlimited threshold (EVM: the largest uint96). */
+    unlimited: z.boolean(),
     /** token: one asset · collection: every item of a collection · item: one nft. */
     scope: z.enum(["token", "collection", "item"]),
     /** transaction: granted on chain now · signature: an off-chain approval (permit). */

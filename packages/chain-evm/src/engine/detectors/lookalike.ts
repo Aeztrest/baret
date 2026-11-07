@@ -1,4 +1,4 @@
-import { type Address, getAddress } from "viem";
+import { type Address, getAddress, isAddress } from "viem";
 import type { Detector, EvmContext, FindingDraft } from "../analysis/context.js";
 
 /**
@@ -70,8 +70,10 @@ export const lookalike: Detector = (ctx) => {
   return out;
 };
 
-const payee = (ctx: EvmContext): Address | null =>
-  ctx.payment ? getAddress(ctx.payment.payTo) : null;
+const payee = (ctx: EvmContext): Address | null => {
+  const payTo = ctx.payment?.requirements.payTo;
+  return payTo && isAddress(payTo, { strict: false }) ? getAddress(payTo) : null;
+};
 
 /** Addresses Baret vouches for on this network. */
 function trusted(ctx: EvmContext): Set<Address> {
