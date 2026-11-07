@@ -29,8 +29,6 @@ jobs:
 
   checks:
     name: Lint, types, tests
-    # Turns on by itself once the workspace has a lockfile (TASKS.md T1.1).
-    if: ${{ hashFiles('pnpm-lock.yaml') != '' }}
     needs: docs
     runs-on: ubuntu-latest
     timeout-minutes: 15

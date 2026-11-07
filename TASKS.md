@@ -25,6 +25,7 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
 | D5 | LLM provider for `/v1/explain` and `/v1/policy/draft` | KIMI (legacy) / Qwen / Claude / none in v1 | decide before T2.7 |
 | D6 | Shared store for production (limits, caches, API keys) | Render Redis (Key Value) + Postgres / Upstash / Supabase | Render Key Value + Render Postgres: one vendor, one dashboard |
 | D7 | x402 settlement chain for Baret's own paid API | Base / Arc / Stellar | decide in Phase 6 with fee data |
+| D8 | Branch protection on the private repo | GitHub Pro (~$4/month) / company org on GitHub Team (~$4/user/month) / stay without until the company exists | GitHub Pro now: protection for `main` and `release`, required CI checks; the script is ready (`gh api …/branches/main/protection`) |
 
 ## Phase 0 — Foundation
 
@@ -34,7 +35,8 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
   → done 2026-11-07 (planning session)
 - [x] **T0.3 Review the Proposed ADRs (D1)** — accept or amend 0002, 0003, 0006, 0008; update their status lines and the ADR index. Done when: no Phase 1 task depends on a Proposed ADR.
   → all four accepted by the owner, 2026-11-07
-- [ ] **T0.4 Create the GitHub repository and push** — decided (D2, 2026-11-07): `Aeztrest/baret`, **private** until the first release, transferred to the company org when it exists. protect `main` (PR + CI required, no force-push, linear history); create `release` from `main` with the same protection; enable Dependabot alerts and secret scanning. Done when: CI runs green on GitHub.
+- [x] **T0.4 Create the GitHub repository and push** — decided (D2, 2026-11-07): `Aeztrest/baret`, **private** until the first release, transferred to the company org when it exists. protect `main` (PR + CI required, no force-push, linear history); create `release` from `main` with the same protection; enable Dependabot alerts and secret scanning. Done when: CI runs green on GitHub.
+  → done 2026-11-07: https://github.com/Aeztrest/baret (private), `main` default, `release` created, CI green on GitHub (PR #3 fixed a workflow error). **Not done:** branch protection and private vulnerability reporting: GitHub offers neither on a private repo of a free personal account (HTTP 403 "Upgrade to GitHub Pro"). See D8. Until then the PR-only rule in `CLAUDE.md` is the protection, and Render deploys only commits whose checks passed.
 - [x] **T0.5 License** — decided (D3, 2026-11-07): proprietary core; MIT for the published SDKs (`core`, `guard`, `agent-kit`). Add `LICENSE` at the root (proprietary) and per published package (MIT).
   → root `LICENSE` added 2026-11-07; each published package adds its MIT `LICENSE` when it is created (T1.2, T1.9, T2.8).
 - [x] **T0.6 `SECURITY.md`, `CODEOWNERS`** — disclosure contact; owner as code owner of everything.
