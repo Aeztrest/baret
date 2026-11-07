@@ -22,7 +22,7 @@
     "DemoUsdc": {
       "address": "0x5BB6fF1FCbE31ED8FBce6805852Ce279475522fc",
       "kind": "contract",
-      "listed": false,
+      "listed": true,
       "role": "NovaSwap: dUSDC test dollars, 6 decimals, faucet() gives 100",
       "source": "Baret-Metropolis contracts/src/demo/DemoUSDC.sol",
       "checkedOnChain": "2026-11-08"
