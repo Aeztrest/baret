@@ -19,7 +19,8 @@
     "lint:fix": "biome check --write .",
     "docs:check": "node tooling/docs-check.mjs",
     "secrets:check": "node tooling/secrets-check.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check && pnpm secrets:check"
+    "imports:check": "node tooling/import-rules.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm imports:check && pnpm test && pnpm docs:check && pnpm secrets:check"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
