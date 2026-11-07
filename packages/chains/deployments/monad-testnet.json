@@ -17,5 +17,151 @@
       "sourceVerified": false,
       "checkedOnChain": "2026-11-07"
     }
+  },
+  "showcase": {
+    "DemoUsdc": {
+      "address": "0x5BB6fF1FCbE31ED8FBce6805852Ce279475522fc",
+      "kind": "contract",
+      "listed": false,
+      "role": "NovaSwap: dUSDC test dollars, 6 decimals, faucet() gives 100",
+      "source": "Baret-Metropolis contracts/src/demo/DemoUSDC.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "NovaSwapRouter": {
+      "address": "0xEB9EA352613D8545d70a586C112C30D23D5C1888",
+      "kind": "contract",
+      "listed": true,
+      "role": "NovaSwap: honest router, 3.2 dUSDC per MON both ways",
+      "source": "Baret-Metropolis contracts/src/demo/NovaSwapRouter.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "NovaSwapDrainer": {
+      "address": "0xeB9EBB97BcD146FF1a4424490cbE8e19b7983888",
+      "kind": "contract",
+      "listed": false,
+      "role": "NovaSwap attack: look-alike router, reported in the ReputationRegistry",
+      "source": "Baret-Metropolis contracts/src/demo/NovaSwapDrainer.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "NightShift": {
+      "address": "0xC3fAFF337A197d7BFa49bB3210C0C057dd188688",
+      "kind": "contract",
+      "listed": true,
+      "role": "PixelDrop: ERC-721 collection, mint(count) at 0.01 MON, ten per wallet",
+      "source": "Baret-Metropolis contracts/src/demo/NightShift.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "OrbitPool": {
+      "address": "0x9dD3Bc0e343Bdc4AB2BCD4c96D01bc8500725f38",
+      "kind": "contract",
+      "listed": true,
+      "role": "OrbitYield: stake() mints oMON one to one",
+      "source": "Baret-Metropolis contracts/src/demo/OrbitPool.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "OrbitReceipt": {
+      "address": "0xB789996F13551eC6f3DF93d54D4F04A1316C3A92",
+      "kind": "contract",
+      "listed": true,
+      "role": "OrbitYield: oMON receipt token",
+      "source": "Baret-Metropolis contracts/src/demo/DemoToken.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "OrbitPoolSilent": {
+      "address": "0xb4cCbB7A8a0Ff5564115856C008eD9a46d306fa8",
+      "kind": "contract",
+      "listed": false,
+      "role": "OrbitYield attack: keeps the MON, returns nothing",
+      "source": "Baret-Metropolis contracts/src/demo/OrbitPool.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "ClaimHubDistributor": {
+      "address": "0x7cb4a1B209dF1beDEc7843d1bf20E5723BA6Cc2b",
+      "kind": "contract",
+      "listed": true,
+      "role": "ClaimHub: claim() sends 2,410 HUB",
+      "source": "Baret-Metropolis contracts/src/demo/ClaimHubDistributor.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "ClaimHubToken": {
+      "address": "0x26bC901B5489057F76D188631D6252779349684A",
+      "kind": "contract",
+      "listed": true,
+      "role": "ClaimHub: HUB token",
+      "source": "Baret-Metropolis contracts/src/demo/DemoToken.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "LaunchSale": {
+      "address": "0x7Dc38ed77388b1dacB4653b1681dC7FBF6Dc2aac",
+      "kind": "contract",
+      "listed": true,
+      "role": "LaunchPad: contribute() 0.01 to 1 MON, 1,000 LNTL per MON",
+      "source": "Baret-Metropolis contracts/src/demo/LaunchSale.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "LaunchToken": {
+      "address": "0x45AF9aA34BC4CB4E91B56413f18A6D739254D959",
+      "kind": "contract",
+      "listed": true,
+      "role": "LaunchPad: LNTL token",
+      "source": "Baret-Metropolis contracts/src/demo/DemoToken.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "LaunchSaleProxy": {
+      "address": "0x9A217845d5C5b684EBD6BF7973Da8f69dE453439",
+      "kind": "contract",
+      "listed": false,
+      "role": "LaunchPad attack: delegatecalls into replaceable logic",
+      "source": "Baret-Metropolis contracts/src/demo/LaunchSale.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "LaunchSaleLogic": {
+      "address": "0xc8b0f0aA28Bb9E25Cf9d27aff3E9BB059Cb1BCC1",
+      "kind": "contract",
+      "listed": false,
+      "role": "LaunchPad attack: the logic the proxy borrows",
+      "source": "Baret-Metropolis contracts/src/demo/LaunchSale.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "DemoDrainer": {
+      "address": "0x8D42f14012426F6a844BF0f5E6ab7889F8Cd79Eb",
+      "kind": "contract",
+      "listed": false,
+      "role": "ClaimHub, PixelDrop attack: spender and operator, reported in the ReputationRegistry",
+      "source": "Baret-Metropolis contracts/src/demo/DemoDrainer.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "FakeUsdc": {
+      "address": "0x1486794fc4958686115c9797d21aAcE497326826",
+      "kind": "contract",
+      "listed": false,
+      "role": "Agents: a token named USDC that is not the listed USDC",
+      "source": "Baret-Metropolis contracts/src/demo/DemoToken.sol",
+      "checkedOnChain": "2026-11-08"
+    },
+    "DrainerSink": {
+      "address": "0xac9517a70c88480c9fA7E9a280DA485F7f552C29",
+      "kind": "account",
+      "listed": false,
+      "role": "Where the drainers send what they take; reported in the ReputationRegistry. Nobody holds its key",
+      "source": null,
+      "checkedOnChain": "2026-11-08"
+    },
+    "ScrybeMerchant": {
+      "address": "0x1365566191bAA9872A64AcDce963751d5343ff49",
+      "kind": "account",
+      "listed": false,
+      "role": "Scrybe, Agents: payTo of the demo 402s. Its key is with the owner",
+      "source": null,
+      "checkedOnChain": "2026-11-08"
+    },
+    "OtherWallet": {
+      "address": "0x447be657388C5e488cEBC84924d611C3cC32E0f4",
+      "kind": "account",
+      "listed": false,
+      "role": "Agents: a wallet the 402 did not name (wrong payee). Nobody holds its key",
+      "source": null,
+      "checkedOnChain": "2026-11-08"
+    }
   }
 }

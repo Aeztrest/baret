@@ -7,6 +7,8 @@ import {
   getChain,
   getDeployment,
   getDeployments,
+  getShowcase,
+  knownAddresses,
   policyContext,
 } from "./index.js";
 
@@ -62,6 +64,21 @@ describe("deployments", () => {
         if (c.family === "evm") expect(d.address, name).toMatch(EVM_ADDRESS);
       }
     }
+  });
+
+  it("keeps demo addresses in the family's format and never lists an attack address", () => {
+    for (const c of CHAINS) {
+      for (const [name, e] of Object.entries(getShowcase(c.id))) {
+        if (c.family === "evm") expect(e.address, name).toMatch(EVM_ADDRESS);
+        if (e.kind === "account") expect(e.listed, name).toBe(false);
+      }
+    }
+    const known = knownAddresses("eip155:10143");
+    expect(known).toContain("0xEB9EA352613D8545d70a586C112C30D23D5C1888");
+    for (const attack of ["NovaSwapDrainer", "DemoDrainer", "OrbitPoolSilent", "LaunchSaleProxy"]) {
+      expect(known).not.toContain(getShowcase("eip155:10143")[attack]?.address);
+    }
+    expect(knownAddresses("eip155:143")).toEqual([]);
   });
 
   it("has the Monad testnet vault factory and reputation registry", () => {

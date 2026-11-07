@@ -5,7 +5,7 @@ import {
   OnchainRegistrySource,
   ViemEvmRpc,
 } from "@baret/chain-evm/engine";
-import { getDeployment, getDeployments } from "@baret/chains";
+import { getDeployment, knownAddresses } from "@baret/chains";
 import type { ChainConfig } from "@baret/core";
 import { createEngine } from "@baret/engine";
 
@@ -35,8 +35,8 @@ function evmDepsFor(chain: ChainConfig): EvmDeps {
       chain,
       chainId,
       usdcAddress: chain.usdc ? addr(chain.usdc.id.split(":").pop() as string) : null,
-      // Baret's own contracts on this chain are known contracts (rule: addresses are data).
-      knownContracts: Object.values(getDeployments(chain.id)).map((d) => addr(d.address)),
+      // Baret's own contracts and the listed demo contracts (rule: addresses are data).
+      knownContracts: knownAddresses(chain.id).map(addr),
       paymentGuardFactoryAddress: factory ? addr(factory.address) : null,
       cleanverse: null, // compliance provider: TASKS.md T1.7
     },
