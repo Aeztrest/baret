@@ -13,6 +13,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DOCS_CHECK = join(HERE, "docs-check.mjs");
 const SECRETS_CHECK = join(HERE, "secrets-check.mjs");
 const DOC_GUARD = join(HERE, "hooks", "doc-guard.mjs");
+const IMPORT_RULES = join(HERE, "import-rules.mjs");
 
 const scratch: string[] = [];
 afterEach(() => {
@@ -182,5 +183,46 @@ describe("doc-guard hook", () => {
     write(root, { "docs/new.md": "# New\n" });
     const r = hook(root);
     expect(JSON.parse(r.out).reason).toContain("docs/new.md: not listed");
+  });
+});
+
+describe("import-rules", () => {
+  const check = (files: Record<string, string>) =>
+    run(IMPORT_RULES, { IMPORT_RULES_ROOT: tree(files) });
+  const src = (line: string) => [line, ""].join("\n");
+
+  it("passes on the real repository", () => {
+    expect(run(IMPORT_RULES, {}).out).toContain("imports:check passed");
+  });
+
+  it("allows an import its row permits", () => {
+    const r = check({ "packages/chains/src/a.ts": src('import { x } from "@baret/core";') });
+    expect(r.status).toBe(0);
+  });
+
+  it("refuses an @baret import the row does not permit", () => {
+    const r = check({
+      "packages/guard/src/a.ts": src('import { analyze } from "@baret/engine";'),
+    });
+    expect(r.status).toBe(1);
+    expect(r.out).toContain("imports @baret/engine; packages/guard may import only core");
+  });
+
+  it("refuses a chain library outside its own adapter", () => {
+    const r = check({
+      "packages/core/src/a.ts": src('import { createPublicClient } from "viem";'),
+      "apps/api/src/b.ts": src('const sdk = await import("@stellar/stellar-sdk");'),
+      "packages/chain-evm/src/ok.ts": src('import { http } from "viem";'),
+      "packages/chain-casper/src/bad.ts": src('import { x } from "viem/chains";'),
+    });
+    expect(r.out).toContain("packages/core/src/a.ts: imports chain library viem");
+    expect(r.out).toContain("apps/api/src/b.ts: imports chain library @stellar/stellar-sdk");
+    expect(r.out).toContain("packages/chain-casper/src/bad.ts: imports chain library viem");
+    expect(r.out).not.toContain("chain-evm/src/ok.ts");
+  });
+
+  it("refuses a package that has no rule", () => {
+    const r = check({ "packages/mystery/src/a.ts": src("export {};") });
+    expect(r.out).toContain("packages/mystery: no import rule");
   });
 });

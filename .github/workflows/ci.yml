@@ -26,6 +26,7 @@ jobs:
       # Both scripts are dependency-free: no install needed.
       - run: node tooling/docs-check.mjs
       - run: node tooling/secrets-check.mjs
+      - run: node tooling/import-rules.mjs
 
   checks:
     name: Lint, types, tests
