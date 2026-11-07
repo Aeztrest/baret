@@ -1,0 +1,30 @@
+{
+  "name": "@baret/demo-near",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The NEAR demo (ADR-0010, ADR-0011): testnet setup scripts for the Baret vault and an AI agent that asks Baret before every payment and pays through the vault with a function call key.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "keys": "tsx scripts/keys.ts",
+    "accounts": "tsx scripts/accounts.ts",
+    "deploy": "tsx scripts/deploy.ts",
+    "setup": "tsx scripts/setup.ts",
+    "agent-key": "tsx scripts/agent-key.ts",
+    "agent": "tsx src/agent-cli.ts"
+  },
+  "dependencies": {
+    "@baret/chains": "workspace:*",
+    "@baret/core": "workspace:*",
+    "near-api-js": "7.4.0"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}

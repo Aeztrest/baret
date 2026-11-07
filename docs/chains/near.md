@@ -27,6 +27,10 @@ Package: `packages/chain-near`. Contract: `contracts/near`. Chains: `near:testne
 
 Rust, near-sdk. The owner deposits NEAR and NEP-141 tokens and sets the policy: per-transfer limit and rolling 24-hour limit per asset, receiver allowlist, token allowlist, pause. One or more agents are registered; an agent's function call key reaches only `execute_transfer` on the vault, so a leaked agent key cannot touch the owner's account. Every refusal is a panic with a stable error code (rule 4 in CLAUDE.md: codes, not sentences). The vault can forward an approved request to the Chain Signatures MPC contract (`v1.signer-prod.testnet` / `v1.signer`, to verify) so the same limits apply to an agent's payment on an EVM chain.
 
+## 3b. Demo (`packages/demo-near`)
+
+Testnet scripts set up the owner's vault, the shop and the agent, and give the agent a function call key that reaches only `execute_transfer` (TN.4). The agent CLI runs four scenarios: a normal payment (Safe, paid), over the per-transfer limit and a prompt-injected receiver (Baret predicts the vault's refusal; not signed), and a prompt-injected full access key (`AUTHORITY_CHANGE`, Blocked). `--force` shows the second line of defence: the vault, or NEAR's key permissions, refuse on chain.
+
 ## 4. Wallet side
 
 Not in the hackathon scope. Derivation for the multichain wallet: ed25519, `m/44'/397'/0'` (to verify against NEAR wallets), with the extension (T2.3).
