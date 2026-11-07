@@ -288,6 +288,11 @@ function v1Details(code: string, details: Record<string, unknown> | undefined) {
 /** v2 trust levels in values back to Nansen's v1 names. */
 const V1_TRUST: Record<string, string> = { known: "established", trusted: "identified" };
 function v1Values(code: string, values: Record<string, string>): Record<string, string> {
+  // v2 names the asset on cap findings (caps are per asset); v1's were always USDC.
+  if (/^X402_(PER_TX|HOURLY|DAILY)_CAP_EXCEEDED$/.test(code)) {
+    const { asset: _asset, ...rest } = values;
+    return rest;
+  }
   if (code !== "REPUTATION_TRUST_BELOW_MINIMUM") return values;
   const out = { ...values };
   for (const k of ["actual", "limit"] as const) {

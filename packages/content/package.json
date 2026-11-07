@@ -1,0 +1,22 @@
+{
+  "name": "@baret/content",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Every user-facing string in Baret. No markup, no styling, no logic.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./shared/*.content": "./src/shared/*.content.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "lint:copy": "node ./scripts/lint-copy.mjs"
+  },
+  "dependencies": {
+    "@baret/core": "workspace:*"
+  }
+}
