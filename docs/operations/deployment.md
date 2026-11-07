@@ -23,6 +23,9 @@ Blueprint `render.yaml` at the repo root (pattern from `Baret-Metropolis/render.
 
 ## 2. Vercel — `apps/web`
 
+**Today:** the owner's Vercel account has a project `baret` linked to this repository (created 2026-11-07). Until `apps/web` exists, the root `vercel.json` turns off Git deployments, so pull requests do not get a failing Vercel check. When `apps/web` is ported (T2.4) the project's Root Directory becomes `apps/web`, whose own `vercel.json` then applies, and the root file is removed.
+
+
 - One Vercel project, root `apps/web`, `vercel.json` with install/build from the monorepo root (pattern from `Baret-Metropolis/apps/showcase/vercel.json`), security headers, long cache for hashed assets.
 - Production branch: `release`. `main` → staging domain. PRs → previews pointing at the staging API.
 - `/api/*` rewrites to the API of the same environment, so the browser talks to one origin.
