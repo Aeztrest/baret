@@ -57,7 +57,7 @@ baret/
 | `packages/guard` | `@baret/guard` | **yes** — **built** (0.2.0, not yet published) | Client for `/v1/analyze`, verdict helpers; re-exports `@baret/core` | `docs/architecture/sdk.md` |
 | `packages/agent-kit` | `@baret/agent-kit` | **yes** | `AgentWallet`, signers, x402 buyer, `baret` CLI | `docs/architecture/sdk.md` |
 | `packages/wallet-core` | `@baret/wallet-core` | no | Keyring (seed → accounts per family), sessions, check-then-sign | `docs/architecture/frontend.md` |
-| `packages/content` | `@baret/content` | no | Words for findings, policy fields, screens; languages | `docs/architecture/frontend.md` |
+| `packages/content` | `@baret/content` | no — **shared strings built** (pages come with their apps) | Words for findings, policy rules, common screens | `docs/architecture/frontend.md` |
 | `packages/ui` | `@baret/ui` | no — **built** (ported) | Design tokens (Tailwind v4), shadcn-based components, Baret primitives | `docs/architecture/frontend.md` |
 | `packages/web-ui` | `@baret/web-ui` | no | Web-only signature layer | `docs/architecture/frontend.md` |
 

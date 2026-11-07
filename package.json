@@ -20,7 +20,8 @@
     "docs:check": "node tooling/docs-check.mjs",
     "secrets:check": "node tooling/secrets-check.mjs",
     "imports:check": "node tooling/import-rules.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm imports:check && pnpm test && pnpm docs:check && pnpm secrets:check"
+    "check": "pnpm lint && pnpm lint:copy && pnpm typecheck && pnpm imports:check && pnpm test && pnpm docs:check && pnpm secrets:check",
+    "lint:copy": "pnpm --filter @baret/content lint:copy"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.4",

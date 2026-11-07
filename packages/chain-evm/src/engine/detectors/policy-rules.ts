@@ -134,7 +134,7 @@ function paymentRules(ctx: EvmContext): FindingDraft[] {
   if (asset === undefined) return out; // X402_SHAPE_INVALID already says so
   const cap = x.caps.find((c) => assetAddress(ctx, c.asset) === asset);
   if (!cap) return out;
-  const { decimals } = tokenMeta(ctx, asset);
+  const { symbol, decimals } = tokenMeta(ctx, asset);
   const fmt = (v: bigint) => formatAmount(v, decimals);
   const requested = BigInt(req.amount);
   const paid = actualPayment(ctx);
@@ -144,7 +144,7 @@ function paymentRules(ctx: EvmContext): FindingDraft[] {
   if (cap.perTx !== null && amount > BigInt(cap.perTx)) {
     out.push({
       code: "X402_PER_TX_CAP_EXCEEDED",
-      values: { origin, actual: fmt(amount), cap: fmt(BigInt(cap.perTx)) },
+      values: { origin, actual: fmt(amount), cap: fmt(BigInt(cap.perTx)), asset: symbol },
       rule: "core.x402.caps",
     });
   }
@@ -167,7 +167,12 @@ function paymentRules(ctx: EvmContext): FindingDraft[] {
     if (total > BigInt(w.limit as string)) {
       out.push({
         code: w.code,
-        values: { amount: fmt(amount), actual: fmt(total), cap: fmt(BigInt(w.limit as string)) },
+        values: {
+          amount: fmt(amount),
+          actual: fmt(total),
+          cap: fmt(BigInt(w.limit as string)),
+          asset: symbol,
+        },
         rule: "core.x402.caps",
       });
     }

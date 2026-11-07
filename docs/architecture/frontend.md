@@ -1,6 +1,6 @@
 # Frontend: extension, web app, shared UI
 
-Status: **in progress** — `packages/ui` ported (2026-11-07); content, web-ui, the web app and the extension next
+Status: **in progress** — `packages/ui` and the shared part of `packages/content` ported (2026-11-07); web-ui, the web app and the extension next
 Last verified: 2026-11-07
 
 Owns `apps/extension`, `apps/web`, `packages/wallet-core`, `packages/ui`, `packages/web-ui`, `packages/content`.
@@ -63,7 +63,7 @@ Deployed on Vercel; `/api/*` rewrites to the API of the environment (`docs/opera
 | `wallet-core` | Keyring, sessions, `check(request)` → verdict, `sign(request, verdict)`, per-account policy store | Rewritten around `WalletAdapter`s; Mera passkey account dropped for now |
 | `ui` | Tokens + components (light and dark) | none — **ported**; the network colour becomes per chain (T2.12) |
 | `web-ui` | Type, motion, layout for the web app | none |
-| `content` | Every word: findings, policy fields, screens; `en`, `tr`, `zh` | finding codes unified (ADR-0006); chain names and asset symbols from `chains` |
+| `content` | Every word: findings, policy fields, screens (English; explanations can be asked in `tr`/`zh`) | **shared strings ported**: codes unified (ADR-0006), rules keyed by v2 paths, chain-neutral wording; which codes a rule decides comes from `FINDING_SPECS`, not from content |
 
 ## 5. Not taken over (now)
 
