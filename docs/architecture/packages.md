@@ -19,6 +19,7 @@ baret/
 │   ├── chain-evm/      EVM adapter            ./engine  ./wallet
 │   ├── chain-stellar/  Stellar adapter        ./engine  ./wallet
 │   ├── chain-casper/   Casper adapter         ./engine  ./wallet
+│   ├── demo-evm/       the web app's EVM demo sites: addresses, builders (ADR-0010)
 │   ├── engine/         pipeline, universal detectors, policy evaluation
 │   ├── providers/      reputation, compliance, prices, LLM clients
 │   ├── guard/          @baret/guard — public SDK (published)
@@ -53,6 +54,7 @@ baret/
 | `packages/chain-evm` | `@baret/chain-evm` | no — **in progress** | EVM decode/simulate/effects/detectors + wallet ops (viem) | `docs/chains/evm.md` |
 | `packages/chain-stellar` | `@baret/chain-stellar` | no | Stellar adapter (`@stellar/stellar-sdk`) | `docs/chains/stellar.md` |
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |
+| `packages/demo-evm` | `@baret/demo-evm` | no — **built** | Demo sites' EVM code: addresses from the registry, transaction and x402 builders, analyze bodies (ADR-0010) | `docs/architecture/frontend.md` |
 | `packages/engine` | `@baret/engine` | no — **built** | `createEngine`, `decide`; Metropolis parity tests | `docs/architecture/engine.md` |
 | `packages/providers` | `@baret/providers` | no | Optional data sources and LLM client | `docs/architecture/providers.md` |
 | `packages/guard` | `@baret/guard` | **yes** — **built** (0.2.0, not yet published) | Client for `/v1/analyze`, verdict helpers; re-exports `@baret/core` | `docs/architecture/sdk.md` |
@@ -89,11 +91,12 @@ A package may import only from the packages in its row (plus external libraries 
 | `ui` | `content` | none |
 | `web-ui` | `content`, `ui` | none |
 | `routes` | — | none |
+| `demo-evm` | `core`, `chains` | the EVM libraries (viem, wagmi), like a real dApp (ADR-0010) |
 | `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core`, `routes` | none directly |
-| `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes` | none directly |
+| `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes`, `demo-evm` | none directly |
 
-The script also fails on a package or app that has no row, so a new package cannot skip this table, and on a package with a `tsconfig.json` that the root `tsconfig.json` does not reference (otherwise `tsc -b` skips it silently; this happened to `chain-evm` and is how a type error reached `main`). Test files (`*.test.*`, `test/`) may import chain libraries to build fixtures; the `@baret` rule still applies to them. Chain libraries it knows: `viem`, `ethers` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it.
+The script also fails on a package or app that has no row, so a new package cannot skip this table, and on a package with a `tsconfig.json` that the root `tsconfig.json` does not reference (otherwise `tsc -b` skips it silently; this happened to `chain-evm` and is how a type error reached `main`). Test files (`*.test.*`, `test/`) may import chain libraries to build fixtures; the `@baret` rule still applies to them. Chain libraries it knows: `viem`, `ethers`, `@wagmi/core` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it. A demo package (ADR-0010, `DEMO_FAMILY` in the script) may use the libraries of the family it demos.
 
 Two more rules (not checked by the script yet):
 - `chain-<family>/engine` and `chain-<family>/wallet` are separate entry points. The extension bundles only `./wallet`; the API only `./engine`.

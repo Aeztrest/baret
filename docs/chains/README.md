@@ -7,7 +7,7 @@ The support matrix. Every chain that has a file in `packages/chains/chains/` mus
 
 | Chain | CAIP-2 | Family | Network | Simulation | Spend limit | x402 | Status | Phase |
 |---|---|---|---|---|---|---|---|---|
-| Monad testnet | `eip155:10143` | EVM | testnet | trace | PaymentGuard | yes | registry entry + deployments (factory, registry) checked on chain 2026-11-07 | 1 |
+| Monad testnet | `eip155:10143` | EVM | testnet | trace | PaymentGuard | yes | registry entry + deployments (factory, registry) checked on chain 2026-11-07; 18 showcase entries checked 2026-11-08 | 1 |
 | Monad | `eip155:143` | EVM | mainnet | trace | PaymentGuard | yes | registry entry (USDC and trace RPC to confirm; x402 off until then) | 6 |
 | Arc testnet | to confirm | EVM | testnet | trace (RPC provider to choose) | PaymentGuard | yes | planned | 5 |
 | Arc | `eip155:5042` (from hub README; confirm) | EVM | mainnet | trace (RPC provider to choose) | PaymentGuard | yes | planned | 6 |

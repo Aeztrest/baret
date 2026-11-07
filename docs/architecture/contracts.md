@@ -34,6 +34,8 @@ Addresses are data in `packages/chains/deployments/<chain-slug>.json`:
 
 Schema: `deploymentsSchema` in `packages/chains/src/index.ts`. Recorded so far: Monad testnet `PaymentGuardFactory` and `ReputationRegistry` (deployed by Metropolis; code checked on chain 2026-11-07). The source in `contracts/evm` compiles to the same runtime size as the code at both addresses (7,164 and 3,704 bytes), so they are reused, not redeployed.
 
+A testnet file may also carry a `showcase` section: the contracts and wallets the web app's demo sites use (ADR-0010), each with `kind` (`contract` or `account`), `listed` (Baret vouches for it: it joins the chain's known contracts, `knownAddresses()` in `packages/chains`, which the API passes to the engine) and its `role`. Monad testnet has 18 entries (ported from the Metropolis contracts doc, §7, deployed by Metropolis 2026-10-03 and 2026-10-05; every contract's code checked on chain with `eth_getCode` 2026-11-08, the three wallets have no code). Listed: `NovaSwapRouter`, `NightShift`, `OrbitPool`, `OrbitReceipt`, `ClaimHubDistributor`, `ClaimHubToken`, `LaunchSale`, `LaunchToken`. Never listed (a test enforces it for the attack contracts): `NovaSwapDrainer`, `DemoDrainer`, `OrbitPoolSilent`, `LaunchSaleProxy`/`Logic`, `FakeUsdc`, the wallets. Whether `DemoUsdc` (dUSDC) must be listed for NovaSwap's honest verdicts is checked against the live API when the site lands.
+
 - Written by the deploy script output, reviewed in a PR, never typed by hand into an app.
 - Mainnet deployments require: audit report linked here, deployer key from a hardware wallet, owner = multisig.
 

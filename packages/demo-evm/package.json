@@ -1,0 +1,21 @@
+{
+  "name": "@baret/demo-evm",
+  "version": "0.2.0",
+  "private": true,
+  "description": "The EVM side of the web app's demo sites: addresses from the chain registry, transaction and x402 builders, analyze bodies (ADR-0010).",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@baret/chains": "workspace:*",
+    "@baret/core": "workspace:*",
+    "viem": "2.56.5"
+  }
+}

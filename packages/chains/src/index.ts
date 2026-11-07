@@ -31,14 +31,35 @@ export const deployedContractSchema = z
   })
   .strict();
 
+/**
+ * An address the web app's demo sites use (ADR-0010). `listed`: Baret vouches for it
+ * (it joins the chain's known contracts); an attack contract or a reported wallet is
+ * never listed. `kind: "account"` is a plain wallet (no code).
+ */
+export const showcaseEntrySchema = z
+  .object({
+    address: z.string().min(1),
+    kind: z.enum(["contract", "account"]),
+    listed: z.boolean(),
+    role: z.string().min(1),
+    source: z.string().min(1).nullable(),
+    checkedOnChain: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })
+  .strict();
+
+const contractName = z.string().regex(/^[A-Z][A-Za-z0-9]*$/);
+
 export const deploymentsSchema = z
   .object({
     chain: caip2Schema,
-    contracts: z.record(z.string().regex(/^[A-Z][A-Za-z0-9]*$/), deployedContractSchema),
+    contracts: z.record(contractName, deployedContractSchema),
+    /** Demo-site contracts and wallets, testnets only. */
+    showcase: z.record(contractName, showcaseEntrySchema).optional(),
   })
   .strict();
 
 export type DeployedContract = z.infer<typeof deployedContractSchema>;
+export type ShowcaseEntry = z.infer<typeof showcaseEntrySchema>;
 export type Deployments = z.infer<typeof deploymentsSchema>;
 
 const RAW_CHAINS: unknown[] = [monadTestnet, monad];
@@ -62,6 +83,23 @@ export function getDeployments(chain: Caip2): Deployments["contracts"] {
 
 export function getDeployment(chain: Caip2, name: string): DeployedContract | null {
   return getDeployments(chain)[name] ?? null;
+}
+
+/** The demo sites' addresses on a chain ({} when the chain has none). */
+export function getShowcase(chain: Caip2): Readonly<Record<string, ShowcaseEntry>> {
+  return deploymentsById.get(chain)?.showcase ?? {};
+}
+
+/**
+ * The contracts Baret vouches for on a chain: its own deployments and the listed demo
+ * contracts. The engine treats them as known (no unknown-contract finding).
+ */
+export function knownAddresses(chain: Caip2): string[] {
+  const own = Object.values(getDeployments(chain)).map((d) => d.address);
+  const demo = Object.values(getShowcase(chain))
+    .filter((e) => e.listed)
+    .map((e) => e.address);
+  return [...own, ...demo];
 }
 
 /** The name of a chain variable: CHAIN_<envSlug>_<suffix> (docs/operations/environments.md §2). */

@@ -69,7 +69,8 @@ const listDirs = (p) =>
       )
     : [];
 
-const mdFiles = walk(ROOT, (n) => n.endsWith(".md")).map(rel);
+// `*.local.md` files are gitignored notes for one machine (CLAUDE.md): never checked.
+const mdFiles = walk(ROOT, (n) => n.endsWith(".md") && !n.endsWith(".local.md")).map(rel);
 const docFiles = mdFiles.filter((f) => f.startsWith("docs/"));
 /** @param {string} f */
 const isAdr = (f) => /^docs\/decisions\/\d{4}-.+\.md$/.test(f);

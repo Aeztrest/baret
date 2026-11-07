@@ -39,18 +39,36 @@ const RULES = {
   "packages/ui": ["content"],
   "packages/web-ui": ["content", "ui"],
   "packages/routes": [],
+  // ADR-0010: the demo sites' chain code; the only package besides chain-evm that may use viem.
+  "packages/demo-evm": ["core", "chains"],
   // The API is the composition root: it builds each family's adapter (chain-*/engine).
   "apps/api": ["engine", "providers", "chains", "core", "content", ...CHAIN_ADAPTERS],
   "apps/extension": ["wallet-core", "guard", "ui", "content", "chains", "core", "routes"],
-  "apps/web": ["guard", "ui", "web-ui", "content", "chains", "core", "wallet-core", "routes"],
+  "apps/web": [
+    "guard",
+    "ui",
+    "web-ui",
+    "content",
+    "chains",
+    "core",
+    "wallet-core",
+    "routes",
+    "demo-evm",
+  ],
 };
 
 /** @type {Record<string, string[]>} family adapter → the chain libraries only it may import */
 const CHAIN_LIBRARIES = {
-  "chain-evm": ["viem", "ethers", "@ethersproject"],
+  "chain-evm": ["viem", "ethers", "@ethersproject", "@wagmi/core"],
   "chain-stellar": ["@stellar/stellar-sdk", "@stellar/stellar-base", "@stellar/freighter-api"],
   "chain-casper": ["casper-js-sdk", "@make-software/csprclick-core-client"],
 };
+
+/**
+ * Demo packages (ADR-0010) may use the chain libraries of the family they demo, like a
+ * real dApp would. @type {Record<string, string>} demo package → family adapter
+ */
+const DEMO_FAMILY = { "demo-evm": "chain-evm" };
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "dist-types", ".output", ".wxt", "coverage"]);
 const SOURCE = /\.(?:ts|tsx|mts|cts|js|jsx|mjs)$/;
@@ -112,9 +130,11 @@ for (const base of ["apps", "packages"]) {
         // production code may not.
         if (isTest) continue;
         for (const [owner, libs] of Object.entries(CHAIN_LIBRARIES)) {
-          if (owner !== self && libs.some((lib) => pkg === lib || pkg.startsWith(`${lib}/`))) {
+          const mayUse =
+            owner === self || DEMO_FAMILY[/** @type {keyof typeof DEMO_FAMILY} */ (self)] === owner;
+          if (!mayUse && libs.some((lib) => pkg === lib || pkg.startsWith(`${lib}/`))) {
             errors.push(
-              `${rel}: imports chain library ${pkg}; only packages/${owner} may (ADR-0003)`,
+              `${rel}: imports chain library ${pkg}; only packages/${owner} may (ADR-0003, ADR-0010)`,
             );
           }
         }
