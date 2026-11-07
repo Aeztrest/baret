@@ -1,23 +1,23 @@
 # API (`apps/api`)
 
-Status: **planned** (ported from `Baret-Metropolis/apps/server`; key management and x402 seller ideas from `Baret-Stellar/apps/server`)
+Status: **in progress** — Phase 1 routes built in `apps/api` and checked live against Monad testnet (2026-11-07); not deployed yet (T2.5)
 Last verified: 2026-11-07
 
 The engine as an HTTP service and an MCP server. One process serves every enabled chain (modular monolith). It is deployed on Render (`docs/operations/deployment.md`).
 
 ## 1. Stack
 
-Fastify + TypeScript, Zod for every request and response, pino logs (JSON), `@fastify/rate-limit`, `@fastify/cors`. Started with `tsx` in development; built to JS for production (Metropolis ran `tsx` in production; we stop doing that).
+Fastify + TypeScript, Zod for every request and response, pino logs (JSON), `@fastify/rate-limit`, `@fastify/cors`. `tsx` in development; in production an esbuild bundle, `node dist/main.js` (`apps/api/scripts/build.mjs`; Metropolis ran `tsx` in production).
 
 ## 2. Routes (target)
 
 | Method | Path | Purpose | Phase |
 |---|---|---|---|
-| GET | `/health` | Liveness + running commit | 1 |
-| GET | `/health/ready` | Per enabled chain: RPC reachable, right chain, simulation mode; which providers are configured | 1 |
-| GET | `/v1/chains` | Enabled chains and their capabilities (`docs/architecture/chain-adapters.md` §6) | 1 |
-| POST | `/v1/analyze` | One transaction / message → `Verdict` | 1 |
-| GET | `/v1/policy/templates?chain=` | Templates filled for one chain | 1 |
+| GET | `/health` | Liveness + running commit — **built** | 1 |
+| GET | `/health/ready` | Per enabled chain: RPC reachable, right chain, simulation mode — **built** (provider flags come with T1.7) | 1 |
+| GET | `/v1/chains` | Enabled chains and their capabilities (`docs/architecture/chain-adapters.md` §6) — **built** | 1 |
+| POST | `/v1/analyze` | One transaction / message → `Verdict` — **built** | 1 |
+| GET | `/v1/policy/templates?chain=` | Templates filled for one chain — **built** | 1 |
 | POST | `/v1/explain` | Plain-language explanation of a verdict this server returned (LLM; decision copied, never generated) | 2 |
 | POST | `/v1/policy/draft` | Rules proposed from a sentence (LLM; a proposal only) | 2 |
 | GET | `/v1/audit/*` | History from the indexer of a chain that has one; 503 per chain otherwise, never an empty list | 2 |
@@ -65,7 +65,7 @@ Clients treat any non-2xx as **Blocked** ("Can't reach Baret").
 
 ## 5. Configuration
 
-Every variable is listed in `docs/operations/environments.md`; `apps/api/src/config/env.ts` validates them at start-up and refuses to boot on an invalid value. A chain is enabled when its RPC URL variable is set. Optional features are enabled when their keys are set, and `/health/ready` shows which.
+Every variable is listed in `docs/operations/environments.md`; `apps/api/src/config.ts` validates them at start-up and refuses to boot on an invalid value. A chain is enabled when its RPC URL variable is set. Optional features are enabled when their keys are set, and `/health/ready` shows which.
 
 ## 6. State
 
@@ -73,4 +73,4 @@ In memory for now (verdict cache for `/v1/explain`, LLM answer cache, rate-limit
 
 ## 7. Not built yet
 
-Everything in this file.
+Every route from phase 2 on; managed keys; a shared store.

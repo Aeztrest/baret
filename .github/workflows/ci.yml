@@ -44,3 +44,5 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      # The production bundle must build (a smoke run found a dependency it could not resolve).
+      - run: pnpm build
