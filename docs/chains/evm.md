@@ -1,6 +1,6 @@
 # EVM family
 
-Status: **in progress** — simulation layer ported to `packages/chain-evm` (request, RPC, decode, trace, ABI, reverts); effects and detectors next (source: `Baret-Metropolis`; `Baret-GOAT` for chain-configurable EVM lessons)
+Status: **in progress** — simulation, effects and all detectors ported to `packages/chain-evm`; the analysis pipeline and the adapter object next (source: `Baret-Metropolis`; `Baret-GOAT` for chain-configurable EVM lessons)
 Last verified: 2026-11-07
 
 Package: `packages/chain-evm` (viem). Chains: `docs/chains/README.md`.

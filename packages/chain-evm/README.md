@@ -4,7 +4,7 @@ The EVM chain family adapter (ADR-0003): everything Baret knows about EVM chains
 
 | Entry | Used by | Status |
 |---|---|---|
-| `@baret/chain-evm/engine` | `packages/engine` (server) | **in progress**: simulation layer ported (below); effects, EVM detectors and the `EngineAdapter` object are next (TASKS.md T1.5) |
+| `@baret/chain-evm/engine` | `packages/engine` (server) | **in progress**: simulation, effects and every detector ported (below); the pipeline that builds `EvmContext` and the `EngineAdapter` object are next (TASKS.md T1.5) |
 | `@baret/chain-evm/wallet` | `wallet-core`, `agent-kit` | not started (T2.2) |
 
 ## Engine side, ported so far (from `Baret-Metropolis/apps/server/src`)
@@ -17,7 +17,13 @@ The EVM chain family adapter (ADR-0003): everything Baret knows about EVM chains
 | `engine/simulation/trace.ts` | Flattens a `callTracer` tree: frames, logs of non-reverted frames, contract depth (delegatecalls add no level), read-only and forwarded frames | `simulation/trace.ts` |
 | `engine/simulation/abi.ts` | Known calls/events, the uint96 "unlimited" threshold (Metropolis D-049), EIP-1967 / ZOS proxy slots | `simulation/abi.ts` |
 | `engine/simulation/reverts.ts` | Names a revert from its error selector (vault errors, OpenZeppelin v5) | `simulation/reverts.ts` |
+| `engine/analysis/effects.ts` | `EvmEffects` from a trace, from calldata, or from EIP-712 typed data (permits, Permit2, EIP-3009, Seaport orders, carried calls) | `analysis/effects.ts` |
+| `engine/analysis/context.ts` | `EvmContext`: everything detectors read; `EvmNetwork` from the chain registry | `analysis/context.ts` |
+| `engine/analysis/format.ts` | Token labels (native coin from the registry), `assetAddress()` CAIP-19 → address | `analysis/format.ts` |
+| `engine/detectors/*` | All ten Metropolis detectors + the policy rules (loss, floors, x402 caps and merchants), emitting v2 codes and v2 rule paths | `risk/detectors/*`, `policy/evaluate.ts` (`policyFindings`) |
 
-Tests: `pnpm --filter @baret/chain-evm test` (18; the RPC tests run against a local fake node, no network).
+**Where the detectors live (D9).** They are ported here as they are, working on `EvmContext`, so Metropolis parity can be checked first. The universal ones move to `packages/engine` with the Stellar adapter (T3.7). Changes from Metropolis, all deliberate: v2 codes (`APPROVAL_*`, `AUTHORITY_CHANGE`, `REPUTATION_*`, `EXCESSIVE_FEE`); floors and x402 caps per CAIP-19 asset in base units; a payment asset with no cap entry has no caps; new `X402_NETWORK_MISMATCH`, `X402_SHAPE_INVALID` and `X402_AMOUNT_MISMATCH` (overpayment only); `core.maxFee` beside `evm.maxGas`.
+
+Tests: `pnpm --filter @baret/chain-evm test` (42; the RPC tests run against a local fake node, no network).
 
 Known follow-up: `reverts.ts` returns English sentences; they move to `@baret/content` keyed by error name when the content package is ported (T2.1).

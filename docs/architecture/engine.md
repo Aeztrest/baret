@@ -58,7 +58,9 @@ Rule: if a family has a concept with no field here, it is added to the model (AD
 
 Ported codes are unified across families (ADR-0006). Each code has one entry in the registry (`packages/core/src/findings.ts`, built): kind (toggle / threshold / fail-closed / warning), the policy field that controls it, the families that can emit it, its value placeholders. Words for each code: `packages/content`.
 
-### 4.1 Universal detectors (`packages/engine/detectors`, work on `Effects`)
+### 4.1 Universal detectors (target: `packages/engine/detectors`, working on `Effects`)
+
+**Today (D9):** every detector, universal or not, is ported into `packages/chain-evm/src/engine/detectors` working on the EVM context, and already emits the codes below. They move here with the Stellar adapter (T3.7).
 
 | Detector | Codes | Legacy origin |
 |---|---|---|
