@@ -13,7 +13,7 @@ The single task list for the project. Every session reads "Now" and "Waiting on 
 
 ## Now
 
-**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.7 (providers: needs keys to verify live); then Phase 2 (staging deploy: needs the owner's Render/Vercel accounts, T0.9). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
+**NEAR HACKATHON week (2026-11-08 → 11-14)**: see the section below; Phase 2 pauses. Before it: Phase 1 done, Phase 2 web app ported up to the six demo sites. After the hackathon: T2.4 (`/docs`, `/partners`), T2.2/T2.3 (wallet-core, extension), T1.7 (providers). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
 
 ## Waiting on a decision (owner)
 
@@ -25,6 +25,23 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
 | D5 | LLM provider for `/v1/explain` and `/v1/policy/draft` | KIMI (legacy) / Qwen / Claude / none in v1 | decide before T2.7 |
 | D6 | Shared store for production (limits, caches, API keys) | Render Redis (Key Value) + Postgres / Upstash / Supabase | Render Key Value + Render Postgres: one vendor, one dashboard |
 | D7 | x402 settlement chain for Baret's own paid API | Base / Arc / Stellar | decide in Phase 6 with fee data |
+| D10 | Making the repository public (decided 2026-11-08 for NEAR HACKATHON) | when, after which checks | before 2026-11-14 23:59 UTC, after a secrets scan of the full history; the owner says yes at that moment |
+
+## NEAR HACKATHON (2026-11-08 → 2026-11-14 23:59 UTC)
+
+Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goes **public** before the deadline (D2 changes; D3 licence unchanged); NEAR becomes a chain family now (ADR-0011); scope = vault, function call key, adapter, agent demo, Chain Signatures, NEAR Intents check, web panel, Agent Market listing; tracks `security` + `agents`. Still open with the owner: K3 (mainnet prize account), K4 (hosted demo, Render plan), K5 (X account). The submission itself (form, X post, making the repo public) needs the owner's yes each time.
+
+- [ ] **TN.1 Core: the `near` family** — `FAMILIES`, CAIP namespace, `near` policy section (`blockDeleteAccount`, `blockContractDeploy`), finding codes (`ACCOUNT_DELETE_DETECTED`, `CONTRACT_DEPLOY_DETECTED`, `FUNCTION_CALL_KEY_ADDED`, `CHAIN_SIGNATURE_REQUEST`), content, templates, parity tests still green. Tag `pre-hackathon` on the commit before it.
+- [ ] **TN.2 Registry** — `near:testnet` (and `near:mainnet` for Intents) chain entries; RPC env names.
+- [ ] **TN.3 Vault contract** (`contracts/near`, Rust near-sdk) — deposit, policy, agents, pause, `execute_transfer` (NEAR + NEP-141), limits per transfer and per rolling day, allowlists, error codes; unit tests; CI job. Testnet deploy needs the owner's yes.
+- [ ] **TN.4 Function call key flow** — script that adds an agent key limited to the vault's `execute_transfer` with an allowance.
+- [ ] **TN.5 `packages/chain-near` engine** — decode (JSON + borsh), preflight over RPC, effects, family detectors, adapter registered in `apps/api`; staging serves `near:testnet`.
+- [ ] **TN.6 Agent demo** — TypeScript agent: asks `/v1/analyze`, then calls the vault with its function call key; four scenarios (normal payment, over the limit refused on chain, receiver not allowed, a full access key addition blocked before signing).
+- [ ] **TN.7 Chain Signatures** — the vault forwards an approved request to the MPC contract; one payment on an EVM testnet limited by the NEAR policy.
+- [ ] **TN.8 NEAR Intents check** — read a `dry: true` quote before signing, apply the policy (mainnet, small amounts).
+- [ ] **TN.9 Web panel** — `/near` in `apps/web`: the vault's policy, spending and the latest verdicts.
+- [ ] **TN.10 Agent Market listing** — owner action with the steps written.
+- [ ] **TN.11 Submission** — README (try it: do X, see Y), video, X post (owner), repo public + `hackathon-submission` tag (owner's yes), form (payload shown first).
 
 ## Phase 0 — Foundation
 

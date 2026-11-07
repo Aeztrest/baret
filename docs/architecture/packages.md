@@ -19,6 +19,7 @@ baret/
 │   ├── chain-evm/      EVM adapter            ./engine  ./wallet
 │   ├── chain-stellar/  Stellar adapter        ./engine  ./wallet
 │   ├── chain-casper/   Casper adapter         ./engine  ./wallet
+│   ├── chain-near/     NEAR adapter           ./engine  (ADR-0011)
 │   ├── demo-evm/       the web app's EVM demo sites: addresses, builders (ADR-0010)
 │   ├── engine/         pipeline, universal detectors, policy evaluation
 │   ├── providers/      reputation, compliance, prices, LLM clients
@@ -32,7 +33,8 @@ baret/
 ├── contracts/
 │   ├── evm/            Foundry
 │   ├── stellar/        Soroban (Rust workspace)
-│   └── casper/         Odra (Rust)
+│   ├── casper/         Odra (Rust)
+│   └── near/           near-sdk (Rust): spend-limit vault (ADR-0011)
 ├── tooling/            docs-check, secrets-check, import-rules check, hooks
 └── docs/
 ```
@@ -54,6 +56,7 @@ baret/
 | `packages/chain-evm` | `@baret/chain-evm` | no — **in progress** | EVM decode/simulate/effects/detectors + wallet ops (viem) | `docs/chains/evm.md` |
 | `packages/chain-stellar` | `@baret/chain-stellar` | no | Stellar adapter (`@stellar/stellar-sdk`) | `docs/chains/stellar.md` |
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |
+| `packages/chain-near` | `@baret/chain-near` | no — planned (NEAR HACKATHON) | NEAR adapter (near-api-js) | `docs/chains/near.md` |
 | `packages/demo-evm` | `@baret/demo-evm` | no — **built** | Demo sites' EVM code: addresses from the registry, transaction and x402 builders, analyze bodies (ADR-0010) | `docs/architecture/frontend.md` |
 | `packages/engine` | `@baret/engine` | no — **built** | `createEngine`, `decide`; Metropolis parity tests | `docs/architecture/engine.md` |
 | `packages/providers` | `@baret/providers` | no | Optional data sources and LLM client | `docs/architecture/providers.md` |
@@ -72,6 +75,7 @@ baret/
 | `contracts/evm` | Foundry | `docs/architecture/contracts.md`, `docs/chains/evm.md` |
 | `contracts/stellar` | Soroban (Rust) | `docs/architecture/contracts.md`, `docs/chains/stellar.md` |
 | `contracts/casper` | Odra (Rust) | `docs/architecture/contracts.md`, `docs/chains/casper.md` |
+| `contracts/near` | near-sdk (Rust) | `docs/architecture/contracts.md`, `docs/chains/near.md` |
 
 ## 4. Import rules (enforced in CI by `tooling/import-rules.mjs`, which holds the machine copy of this table: change both together)
 
