@@ -8,7 +8,7 @@ Last verified: 2026-11-07
 | Environment | API | Web | Chains | Data |
 |---|---|---|---|---|
 | local | `http://localhost:8080` | `http://localhost:5173` | testnets (your own RPC keys) | in memory |
-| staging | Render `baret-api-staging` | Vercel staging domain | testnets | in memory; free-tier providers |
+| staging | Render `baret-api-staging`: https://baret-api-staging.onrender.com (live since 2026-11-07, free plan: sleeps when idle) | Vercel staging domain (not yet) | Monad testnet | in memory; no paid providers yet |
 | production | Render `baret-api` | Vercel production domain | mainnets (+ testnets) | shared store (Phase 6) |
 
 ## 2. Naming
