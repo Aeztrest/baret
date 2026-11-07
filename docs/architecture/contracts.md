@@ -1,6 +1,6 @@
 # Contracts and deployments
 
-Status: **planned** (contracts exist and are deployed in the legacy repos; they are ported, re-tested and re-deployed from here)
+Status: **in progress** — EVM ported (`contracts/evm`: PaymentGuard, PaymentGuardFactory, ReputationRegistry, 29 tests, own CI job); Stellar and Casper not yet
 Last verified: 2026-11-07
 
 ## 1. Per family
@@ -32,14 +32,14 @@ Addresses are data in `packages/chains/deployments/<chain-slug>.json`:
 }
 ```
 
-Schema: `deploymentsSchema` in `packages/chains/src/index.ts`. Recorded so far: Monad testnet `PaymentGuardFactory` and `ReputationRegistry` (deployed by Metropolis; code checked on chain 2026-11-07).
+Schema: `deploymentsSchema` in `packages/chains/src/index.ts`. Recorded so far: Monad testnet `PaymentGuardFactory` and `ReputationRegistry` (deployed by Metropolis; code checked on chain 2026-11-07). The source in `contracts/evm` compiles to the same runtime size as the code at both addresses (7,164 and 3,704 bytes), so they are reused, not redeployed.
 
 - Written by the deploy script output, reviewed in a PR, never typed by hand into an app.
 - Mainnet deployments require: audit report linked here, deployer key from a hardware wallet, owner = multisig.
 
 ## 3. CI
 
-Each family has its own job (path-filtered): EVM `forge fmt --check`, `forge build --sizes`, `forge test`; Stellar `cargo fmt --check`, `clippy -D warnings`, `cargo test`, wasm build; Casper `cargo odra test` (toolchain pinned in `rust-toolchain`).
+Each family has its own job (path-filtered): EVM `forge fmt --check`, `forge build --sizes`, `forge test` (`.github/workflows/contracts-evm.yml`, built); Stellar `cargo fmt --check`, `clippy -D warnings`, `cargo test`, wasm build; Casper `cargo odra test` (toolchain pinned in `rust-toolchain`).
 
 ## 4. Current legacy deployments (reference only, not ours until re-verified)
 

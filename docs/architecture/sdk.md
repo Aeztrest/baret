@@ -8,7 +8,7 @@ Last verified: 2026-11-07
 - `new TransactionGuard({ baseUrl, apiKey? }).evaluate({ chain, request, policy | policyTemplate, account? })` → `Verdict` (schema-checked).
 - No answer, non-2xx, or an answer off the schema → `GuardUnreachableError`; the caller treats it as Blocked.
 - Helpers: `isSafe`, `isSignable` (not Blocked), `verdictRefusal(verdict, { chain, now })` (expired or another chain; `now` in Unix seconds).
-- `policyTemplate(name, chain)`, `migratePolicyV1(v1, chain)`.
+- Re-exported from `@baret/core`: `createPolicy(name, chainContext)`, `migratePolicyV1(v1, ctx)`, every schema and type.
 - **Depends only on `@baret/core`** (types + zod). No chain library: a dApp on any chain can install it.
 - **Never signs or submits.**
 

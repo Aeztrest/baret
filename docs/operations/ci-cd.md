@@ -21,7 +21,7 @@ GitHub Actions is the gate: nothing reaches staging or production unless CI is g
 | File | Trigger | Jobs | State |
 |---|---|---|---|
 | `.github/workflows/ci.yml` | PR, push to `main` | `docs` (docs-check, secrets-check, import rules); `checks` (install, Biome, typecheck, Vitest, `pnpm build`); `build` (all apps, extension zips as artifact) | `docs` and `checks` live; `build` comes with the first app |
-| `contracts-evm.yml` | PR/push touching `contracts/evm/**` | `forge fmt --check`, `forge build --sizes`, `forge test` | Phase 1 |
+| `contracts-evm.yml` | PR/push touching `contracts/evm/**` | `forge fmt --check`, `forge build --sizes`, `forge test` (checkout with submodules: `forge-std` v1.17.0) | live |
 | `contracts-stellar.yml` | `contracts/stellar/**` | `cargo fmt --check`, `clippy -D warnings`, `cargo test`, wasm build | Phase 3 |
 | `contracts-casper.yml` | `contracts/casper/**` | Odra build + tests | Phase 4 |
 | `release.yml` | tag `v*` | §3 | Phase 2 |

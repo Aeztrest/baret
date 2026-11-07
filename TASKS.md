@@ -13,7 +13,7 @@ The single task list for the project. Every session reads "Now" and "Waiting on 
 
 ## Now
 
-**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.10 (EVM contracts), T1.7 (providers); then Phase 2 (staging deploy). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
+**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.7 (providers: needs keys to verify live); then Phase 2 (staging deploy: needs the owner's Render/Vercel accounts, T0.9). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
 
 ## Waiting on a decision (owner)
 
@@ -72,7 +72,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
   → done 2026-11-07: Fastify app (CORS, per-client limits, headers, keys, `{ error: { code, message } }`), `config.ts`, esbuild bundle, 10 tests. **Checked live** against Monad testnet with the bundle: Safe transfer; NovaSwap drainer approval Blocked (`APPROVAL_UNLIMITED`, `KNOWN_MALICIOUS_ADDRESS` from the on-chain registry). The first smoke run caught an unresolvable external (`viem`) in the bundle: fixed in `scripts/build.mjs`, and CI now runs `pnpm build`.
 - [x] **T1.9 `packages/guard` 0.2.0** — client over `core`; README quickstart.
   → done 2026-11-07: client on the v2 contract, re-exports core, 9 tests; `core` and `guard` build to `dist/` for npm (`tsconfig.build.json`, `publishConfig`). Packed tarballs installed in an empty project ran the README call against `apps/api` on Monad testnet: the drainer's sink → Blocked (`KNOWN_MALICIOUS_ADDRESS`), a plain wallet → Safe. Publishing: T2.6 (needs T0.8, the npm scope).
-- [ ] **T1.10 `contracts/evm`** — port Foundry project (PaymentGuard, factory, registry) + `contracts-evm.yml`.
+- [x] **T1.10 `contracts/evm`** — port Foundry project (PaymentGuard, factory, registry) + `contracts-evm.yml`.
+  → done 2026-11-07: PaymentGuard, PaymentGuardFactory, ReputationRegistry + tests (29, fuzzing) + chain-agnostic `script/Deploy.s.sol`; `forge-std` v1.17.0 as a submodule; `contracts-evm.yml`. The compiled runtime sizes equal the code at the Monad testnet addresses, so those deployments are reused. Nothing deployed.
 - [x] **T1.11 CAIP-19 namespaces for Stellar and Casper assets** — decide and write in `docs/architecture/engine.md` §2.
   → decided 2026-11-07: `slip44:<coin type>` for natives (60 on all EVM, 148, 506), `erc20`/`erc721`, `sep41` + `asset:CODE-ISSUER`, `cep18`. Re-check against the CAIP registry in T3.1 / T4.2.
 - [ ] **T1.12 Monad mainnet: canonical USDC and a trace-capable RPC** — the registry entry has `usdc: null` and x402 off until both are confirmed.

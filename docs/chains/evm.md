@@ -34,4 +34,4 @@ secp256k1 `m/44'/60'/0'/0/i`; EIP-1193 + EIP-6963 provider; viem for building, s
 
 ## 4. Contracts
 
-`contracts/evm` — see `docs/architecture/contracts.md`.
+`contracts/evm` (Foundry, ported; `contracts/evm/README.md`) — see `docs/architecture/contracts.md`.
