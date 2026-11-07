@@ -1,6 +1,6 @@
 # Deployment
 
-Status: **in progress** — `render.yaml` (staging API) is in the repo and was checked in a clean clone; the Render and Vercel accounts and services are not created yet (owner, T0.9 / T2.5)
+Status: **in progress** — staging API **live** on Render (https://baret-api-staging.onrender.com, from `render.yaml`, 2026-11-07); production API, Vercel and store publishing not set up yet
 Last verified: 2026-11-07
 
 Where each piece runs and how it gets there. Variables: `docs/operations/environments.md`. Pipeline: `docs/operations/ci-cd.md`.
@@ -16,11 +16,15 @@ Blueprint `render.yaml` at the repo root (pattern from `Baret-Metropolis/render.
 
 - Region Frankfurt. `autoDeployTrigger: checksPass`. `buildFilter` on `apps/api/**`, `packages/**`, lockfile, `render.yaml`.
 - Build: `pnpm install --frozen-lockfile --filter @baret/api...` then `pnpm --filter @baret/api build`. Start: `node apps/api/dist/main.js` (built JS, not `tsx`). Checked 2026-11-07 in a fresh clone: 110 packages installed, bundle built, the server started and `/health/ready` was ready against Monad testnet.
-- Setting it up (owner): Render → New → Blueprint → `Aeztrest/baret` (grant Render's GitHub app access to the private repo) → fill the `sync: false` values → create. Then the service URL goes into `docs/operations/environments.md` §1.
+- Set up by the owner on 2026-11-07 (Render → New → Blueprint → `Aeztrest/baret`). Checked live the same day: `/health` reports the deployed commit (`517f94e` = `main`), `/health/ready` ready with trace on Monad testnet, security headers present; the drainer's sink and the NovaSwap drainer approval Blocked, a plain transfer Safe; `@baret/guard` from its packed tarball got the same answers.
+- Not done: the proxy-hop setting for per-client rate limits behind Render (T2.11).
 - `healthCheckPath: /health`. Secrets are `sync: false` and entered in the Render dashboard.
 - Free plan sleeps (first request 30–60 s; Metropolis G-03). Warm it before demos or use a paid plan.
 
 ## 2. Vercel — `apps/web`
+
+**Today:** the owner's Vercel account has a project `baret` linked to this repository (created 2026-11-07). Until `apps/web` exists, the root `vercel.json` turns off Git deployments, so pull requests do not get a failing Vercel check. When `apps/web` is ported (T2.4) the project's Root Directory becomes `apps/web`, whose own `vercel.json` then applies, and the root file is removed.
+
 
 - One Vercel project, root `apps/web`, `vercel.json` with install/build from the monorepo root (pattern from `Baret-Metropolis/apps/showcase/vercel.json`), security headers, long cache for hashed assets.
 - Production branch: `release`. `main` → staging domain. PRs → previews pointing at the staging API.

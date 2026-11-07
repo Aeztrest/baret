@@ -86,7 +86,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [ ] **T2.3 `apps/extension`** — port; family flags; EVM accounts and provider; per-chain policy.
 - [ ] **T2.4 `apps/web`** — port showcase (Monad scenarios), landing, install, `/agents`, developer portal from route schemas; chain filter.
 - [ ] **T2.5 Staging deploy** — `render.yaml` (`baret-api-staging`), Vercel project for `apps/web`, staging domains. Depends: T0.9, D4.
-  → in progress 2026-11-07: `render.yaml` (`baret-api-staging`, free plan, Frankfurt, deploy on green checks) merged and checked in a clean clone. Waiting on the owner: Render account + Blueprint, a Monad testnet RPC key. Vercel waits for `apps/web` (T2.4).
+  → in progress 2026-11-07: `render.yaml` (`baret-api-staging`, free plan, Frankfurt, deploy on green checks) merged and checked in a clean clone. Staging API **live** 2026-11-07: https://baret-api-staging.onrender.com (owner created the Blueprint); checked live (deployed commit = `main`, ready with trace, drainer cases Blocked, plain transfer Safe, SDK tarball against it). Vercel: project `baret` exists (owner); Git deployments are off via the root `vercel.json` until `apps/web` (T2.4), then Root Directory → `apps/web`.
+- [ ] **T2.11 Per-client rate limits behind Render** — measure how many X-Forwarded-For entries Render's proxy adds (a `forwardedHops` count on `/health`, as Metropolis had), then set `BARET_PROXY_DIRECT_HOPS` on the service. Until then every visitor may share one bucket (Metropolis G-01).
 - [ ] **T2.6 Release pipeline** — changesets, `release.yml`, `chain-check.yml`, extension zips on releases.
 - [ ] **T2.7 `/v1/explain`, `/v1/policy/draft`, `/mcp`, `/v1/audit/*`** — depends D5; audit needs the Envio indexer (decide its location, porting plan §3).
 - [ ] **T2.8 `packages/agent-kit` (EVM) + CLI** — port; x402 buyer (EIP-3009).

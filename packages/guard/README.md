@@ -33,7 +33,7 @@ verdict.decision; // "blocked"
 verdict.findings.map((f) => f.code); // ["KNOWN_MALICIOUS_ADDRESS"]
 ```
 
-Checked on 2026-11-07 with the packed tarballs installed in an empty project, against `apps/api` running on Monad testnet: the address above (where the NovaSwap drainer sends what it takes, listed in Baret's on-chain registry) comes back `blocked` with `KNOWN_MALICIOUS_ADDRESS`; the same transfer to a plain wallet comes back `safe` with no findings, high confidence.
+Checked on 2026-11-07 with the packed tarballs installed in an empty project, against `apps/api` on Monad testnet (locally, then the staging API `https://baret-api-staging.onrender.com`): the address above (where the NovaSwap drainer sends what it takes, listed in Baret's on-chain registry) comes back `blocked` with `KNOWN_MALICIOUS_ADDRESS`; the same transfer to a plain wallet comes back `safe` with no findings, high confidence.
 
 ## Fail-closed
 
