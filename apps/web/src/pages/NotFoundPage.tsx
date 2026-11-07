@@ -1,7 +1,7 @@
 import { common } from "@baret/content";
 import { ImgWell } from "@baret/web-ui/components/Img";
 import { LinkButton } from "@baret/web-ui/components/LinkButton";
-import { SHOWCASE_PATH } from "../routes.js";
+import { routes } from "../routes.js";
 import { NOT_FOUND_ART } from "../shared/assets.js";
 import { PageHero } from "../shared/PageHero.js";
 
@@ -31,7 +31,7 @@ export function Component() {
               fullOnPhone
             />
             <LinkButton
-              href={SHOWCASE_PATH}
+              href={routes.showcase.path}
               newTab
               label={actions.openShowcase}
               size="lg"

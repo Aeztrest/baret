@@ -11,7 +11,7 @@ import {
   useOutlet,
   useRouteError,
 } from "react-router";
-import { DEMO_PATHS, routes, SHOWCASE_PATH } from "../routes.js";
+import { DEMO_PATHS, routes } from "../routes.js";
 import { ROW } from "./nav.js";
 import { SiteFooter } from "./SiteFooter.js";
 import { SiteHeader } from "./SiteHeader.js";
@@ -294,7 +294,7 @@ function DemoRibbon() {
           {common.demo.ribbon}
         </Tag>
         <Link
-          to={SHOWCASE_PATH}
+          to={routes.showcase.path}
           viewTransition
           className="inline-flex min-h-11 items-center text-sm font-medium text-[color:var(--fg)] underline decoration-[color:var(--rule-strong)] underline-offset-4 hover:decoration-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-[color:var(--accent)]"
         >

@@ -24,6 +24,7 @@ import { loadEnv } from "vite";
 // `.js` specifiers Node cannot map to `.ts`. These files import nothing.
 import { common } from "../../../packages/content/src/shared/common.content.ts";
 import { home } from "../../../packages/content/src/web/home.content.ts";
+import { hub } from "../../../packages/content/src/web/hub.content.ts";
 import { IMG, LCP_SIZES } from "../src/shared/assets.ts";
 import { writeRouteHeads } from "./route-heads.mjs";
 
@@ -157,7 +158,7 @@ export function baretHead() {
       // Registry key -> that page's own description, and a demo site's key ->
       // its scenario { title, description }. Both fill as the pages land
       // (TASKS.md T2.4); until then every route unfurls with the brand line.
-      const descriptions = {};
+      const descriptions = { showcase: hub.meta.description };
       const heads = {};
       await writeRouteHeads({
         outDir,
