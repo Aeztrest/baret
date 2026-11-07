@@ -1,6 +1,6 @@
 # EVM family
 
-Status: **planned** (source: `Baret-Metropolis`, the most mature Baret; `Baret-GOAT` for chain-configurable EVM lessons)
+Status: **in progress** — simulation layer ported to `packages/chain-evm` (request, RPC, decode, trace, ABI, reverts); effects and detectors next (source: `Baret-Metropolis`; `Baret-GOAT` for chain-configurable EVM lessons)
 Last verified: 2026-11-07
 
 Package: `packages/chain-evm` (viem). Chains: `docs/chains/README.md`.

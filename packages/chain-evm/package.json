@@ -1,0 +1,20 @@
+{
+  "name": "@baret/chain-evm",
+  "version": "0.2.0",
+  "private": true,
+  "description": "The EVM chain family adapter: decode, simulate, effects and EVM detectors (./engine); keys, signing and sending (./wallet).",
+  "type": "module",
+  "exports": {
+    "./engine": "./src/engine/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@baret/chains": "workspace:*",
+    "@baret/core": "workspace:*",
+    "viem": "2.56.5",
+    "zod": "4.6.7"
+  }
+}
