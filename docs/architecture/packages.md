@@ -21,6 +21,7 @@ baret/
 │   ├── chain-casper/   Casper adapter         ./engine  ./wallet
 │   ├── chain-near/     NEAR adapter           ./engine  (ADR-0011)
 │   ├── demo-evm/       the web app's EVM demo sites: addresses, builders (ADR-0010)
+│   ├── demo-near/      the NEAR demo: testnet setup scripts and the agent (ADR-0011)
 │   ├── engine/         pipeline, universal detectors, policy evaluation
 │   ├── providers/      reputation, compliance, prices, LLM clients
 │   ├── guard/          @baret/guard — public SDK (published)
@@ -58,6 +59,7 @@ baret/
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |
 | `packages/chain-near` | `@baret/chain-near` | no — **engine built** (NEAR HACKATHON) | NEAR adapter: decode, preflight, effects, detectors (near-api-js) | `docs/chains/near.md` |
 | `packages/demo-evm` | `@baret/demo-evm` | no — **built** | Demo sites' EVM code: addresses from the registry, transaction and x402 builders, analyze bodies (ADR-0010) | `docs/architecture/frontend.md` |
+| `packages/demo-near` | `@baret/demo-near` | no — **built** | NEAR demo: vault setup scripts (keys, accounts, deploy, policy, function call key) and the agent CLI with four scenarios | `docs/chains/near.md` |
 | `packages/engine` | `@baret/engine` | no — **built** | `createEngine`, `decide`; Metropolis parity tests | `docs/architecture/engine.md` |
 | `packages/providers` | `@baret/providers` | no | Optional data sources and LLM client | `docs/architecture/providers.md` |
 | `packages/guard` | `@baret/guard` | **yes** — **built** (0.2.0, not yet published) | Client for `/v1/analyze`, verdict helpers; re-exports `@baret/core` | `docs/architecture/sdk.md` |
@@ -96,6 +98,7 @@ A package may import only from the packages in its row (plus external libraries 
 | `web-ui` | `content`, `ui` | none |
 | `routes` | — | none |
 | `demo-evm` | `core`, `chains` | the EVM libraries (viem, wagmi), like a real dApp (ADR-0010) |
+| `demo-near` | `core`, `chains` | near-api-js (ADR-0010, ADR-0011) |
 | `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core`, `routes` | none directly |
 | `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes`, `demo-evm` | none directly |

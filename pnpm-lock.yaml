@@ -234,6 +234,22 @@ importers:
         specifier: 4.23.15
         version: 4.23.15
 
+  packages/demo-near:
+    dependencies:
+      '@baret/chains':
+        specifier: workspace:*
+        version: link:../chains
+      '@baret/core':
+        specifier: workspace:*
+        version: link:../core
+      near-api-js:
+        specifier: 7.4.0
+        version: 7.4.0
+    devDependencies:
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
   packages/engine:
     dependencies:
       '@baret/chains':

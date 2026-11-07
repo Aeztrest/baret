@@ -42,6 +42,7 @@ const RULES = {
   "packages/routes": [],
   // ADR-0010: the demo sites' chain code; the only package besides chain-evm that may use viem.
   "packages/demo-evm": ["core", "chains"],
+  "packages/demo-near": ["core", "chains"],
   // The API is the composition root: it builds each family's adapter (chain-*/engine).
   "apps/api": ["engine", "providers", "chains", "core", "content", ...CHAIN_ADAPTERS],
   "apps/extension": ["wallet-core", "guard", "ui", "content", "chains", "core", "routes"],
@@ -70,7 +71,7 @@ const CHAIN_LIBRARIES = {
  * Demo packages (ADR-0010) may use the chain libraries of the family they demo, like a
  * real dApp would. @type {Record<string, string>} demo package → family adapter
  */
-const DEMO_FAMILY = { "demo-evm": "chain-evm" };
+const DEMO_FAMILY = { "demo-evm": "chain-evm", "demo-near": "chain-near" };
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "dist-types", ".output", ".wxt", "coverage"]);
 const SOURCE = /\.(?:ts|tsx|mts|cts|js|jsx|mjs)$/;

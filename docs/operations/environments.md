@@ -58,6 +58,19 @@ Last verified: 2026-11-07
 | `WXT_BARET_API_URL` (extension) | API base embedded in the build |
 | `VITE_ENABLED_FAMILIES` / `WXT_ENABLED_FAMILIES` | `evm,stellar,casper` — which families a build exposes |
 
+## 4b. `packages/demo-near` (local only, `.env.near`, gitignored)
+
+The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only; the scripts stop on any other network.
+
+| Variable | Description |
+|---|---|
+| `NEAR_NETWORK` | `testnet` (default; nothing else runs) |
+| `NEAR_RPC_URL` | default `https://rpc.<network>.near.org` |
+| `BARET_API_URL` | the API the agent asks (default staging) |
+| `NEAR_OWNER_ID`, `NEAR_OWNER_KEY` | the funded testnet owner and its full access key (secret) |
+| `NEAR_VAULT_ID/KEY`, `NEAR_AGENT_ID/KEY`, `NEAR_SHOP_ID/KEY`, `NEAR_AGENT_FC_KEY` | written by `pnpm keys` (secrets) |
+| `NEAR_ATTACKER_ID` | optional: the account a prompt injection names |
+
 ## 5. Secrets inventory (where each lives)
 
 | Secret | Lives in |
