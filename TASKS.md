@@ -17,7 +17,7 @@ The single task list for the project. Every session reads "Now" and "Waiting on 
 
 ## Waiting on a decision (owner)
 
-Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aeztrest/baret`, private), D3 (proprietary core + MIT SDKs), D8 (no GitHub Pro: no branch protection on the private repo; the PR-only rule in `CLAUDE.md` plus green CI is the gate, and the owner allows Claude to merge its own PRs once CI is green — architecture decisions, deploys, contract deploys and spending still need the owner).
+Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aeztrest/baret`, private), D3 (proprietary core + MIT SDKs), D9 (option b: Metropolis's detectors are ported into `chain-evm` first, as they are; the universal ones move into `packages/engine` with the Stellar adapter, T3.7), D8 (no GitHub Pro: no branch protection on the private repo; the PR-only rule in `CLAUDE.md` plus green CI is the gate, and the owner allows Claude to merge its own PRs once CI is green — architecture decisions, deploys, contract deploys and spending still need the owner).
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
@@ -25,7 +25,6 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
 | D5 | LLM provider for `/v1/explain` and `/v1/policy/draft` | KIMI (legacy) / Qwen / Claude / none in v1 | decide before T2.7 |
 | D6 | Shared store for production (limits, caches, API keys) | Render Redis (Key Value) + Postgres / Upstash / Supabase | Render Key Value + Render Postgres: one vendor, one dashboard |
 | D7 | x402 settlement chain for Baret's own paid API | Base / Arc / Stellar | decide in Phase 6 with fee data |
-| D9 | Where Metropolis's detectors go in Phase 1 | (a) split now: universal detectors into `packages/engine` over core `Effects`, EVM-only ones into `chain-evm` · (b) port all of them into `chain-evm` first, working on the EVM context exactly as in Metropolis; lift the universal ones into the engine when the Stellar adapter (second family) is ported in Phase 3 | **(b)**: parity with Metropolis comes faster and safer, and the universal shape is designed with two real families in hand instead of guessed from one. ADR-0003's target does not change; only the order. |
 
 ## Phase 0 — Foundation
 
@@ -64,8 +63,9 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [x] **T1.4 Import-rules script in `tooling/`** — enforces `docs/architecture/packages.md` §4 in CI.
   → done 2026-11-07: `tooling/import-rules.mjs` (`pnpm imports:check`, CI docs job), 5 tests. Enforces the @baret import table and keeps chain libraries inside their own adapter.
 - [ ] **T1.5 `packages/chain-evm` engine side** — port decode, simulation, effects, EVM detectors with their tests (`docs/migration/porting-plan.md` §3).
-  → in progress. Step 1 done 2026-11-07: request schema, `EvmRpc` (batching per chain), decode, trace, ABI, reverts + 18 tests (new decode tests: replay/other-chain refusal, EIP-7702). Next: effects (`analysis/effects.ts`, 696 lines) and the detectors — order depends on D9.
+  → in progress. Step 1 done 2026-11-07: request schema, `EvmRpc` (batching per chain), decode, trace, ABI, reverts + 18 tests (new decode tests: replay/other-chain refusal, EIP-7702). Step 2 done 2026-11-07: effects, context, format, all ten detectors + policy rules on v2 (42 tests in chain-evm). Next (step 3): the pipeline that builds `EvmContext` (Metropolis `application/analyze.ts`: address collection, reads, source lookups), mapping `EvmEffects` to core `Effects`, and the `EngineAdapter` object — done together with T1.6.
 - [ ] **T1.6 `packages/engine`** — pipeline, universal detectors, policy evaluation; **parity test** replaying Metropolis scenario fixtures (`apps/server/scripts/export-scenarios.ts`) with expected decisions.
+  Note from porting: Metropolis's `decide()` let a fail-closed finding with no rule fall to `allowWarnings`. In v2 `SIGNATURE_NOT_UNDERSTOOD` and `X402_SHAPE_INVALID` are fail-closed with no field, so `decide()` must block them always, and `firedRules[].rule` needs a value for them (make it nullable or add a pseudo field) — decide and test in T1.6.
 - [ ] **T1.7 `packages/providers`** — reputation registry reader, Nansen (optional), threat feed.
 - [ ] **T1.8 `apps/api`** — `/health`, `/health/ready`, `/v1/chains`, `/v1/analyze`, `/v1/policy/templates`; env schema; `.env.example`; built JS start.
 - [ ] **T1.9 `packages/guard` 0.2.0** — client over `core`; README quickstart.
@@ -95,6 +95,7 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [ ] **T3.3 `chain-stellar` wallet side** — SEP-0005 derivation; passkey-kit smart wallet; sub-key mandates; x402 auth entries.
 - [ ] **T3.4 Extension: Stellar accounts and dApp provider** — research SEP-43 / Stellar Wallets Kit first; ADR if a convention must be chosen.
 - [ ] **T3.5 Showcase: Stellar scenarios; agent-kit: Stellar.**
+- [ ] **T3.7 Lift the universal detectors into `packages/engine`** (D9) — with EVM and Stellar both ported, move approvals, contracts, reputation, lookalike, compliance, complexity, x402 and the policy rules out of `chain-evm` to work on core `Effects`; family-only parts stay in the adapters. The Metropolis parity tests (T1.6) must stay green through the move.
 - [ ] **T3.6 Renew the Stellar mainnet agent authority** — expired 2026-11-06 (hub README); needed before the next investor demo.
 
 ## Phase 4 — Casper
