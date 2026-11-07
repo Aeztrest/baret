@@ -13,7 +13,7 @@ The single task list for the project. Every session reads "Now" and "Waiting on 
 
 ## Now
 
-**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.7 (providers), T1.9 (`@baret/guard` 0.2.0), T1.10 (EVM contracts); then Phase 2 (staging deploy). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
+**Phase 0 — Foundation**, nearly done; **Phase 1 started** (T1.1 done). Goal of Phase 1: `/v1/analyze` on Monad testnet through the new engine with Metropolis parity. Next up: T1.10 (EVM contracts), T1.7 (providers); then Phase 2 (staging deploy). Owner-side Phase 0 items still open: T0.7, T0.8, T0.9, T0.12–T0.14.
 
 ## Waiting on a decision (owner)
 
@@ -70,7 +70,8 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [ ] **T1.7 `packages/providers`** — reputation registry reader, Nansen (optional), threat feed.
 - [x] **T1.8 `apps/api`** — `/health`, `/health/ready`, `/v1/chains`, `/v1/analyze`, `/v1/policy/templates`; env schema; `.env.example`; built JS start.
   → done 2026-11-07: Fastify app (CORS, per-client limits, headers, keys, `{ error: { code, message } }`), `config.ts`, esbuild bundle, 10 tests. **Checked live** against Monad testnet with the bundle: Safe transfer; NovaSwap drainer approval Blocked (`APPROVAL_UNLIMITED`, `KNOWN_MALICIOUS_ADDRESS` from the on-chain registry). The first smoke run caught an unresolvable external (`viem`) in the bundle: fixed in `scripts/build.mjs`, and CI now runs `pnpm build`.
-- [ ] **T1.9 `packages/guard` 0.2.0** — client over `core`; README quickstart.
+- [x] **T1.9 `packages/guard` 0.2.0** — client over `core`; README quickstart.
+  → done 2026-11-07: client on the v2 contract, re-exports core, 9 tests; `core` and `guard` build to `dist/` for npm (`tsconfig.build.json`, `publishConfig`). Packed tarballs installed in an empty project ran the README call against `apps/api` on Monad testnet: the drainer's sink → Blocked (`KNOWN_MALICIOUS_ADDRESS`), a plain wallet → Safe. Publishing: T2.6 (needs T0.8, the npm scope).
 - [ ] **T1.10 `contracts/evm`** — port Foundry project (PaymentGuard, factory, registry) + `contracts-evm.yml`.
 - [x] **T1.11 CAIP-19 namespaces for Stellar and Casper assets** — decide and write in `docs/architecture/engine.md` §2.
   → decided 2026-11-07: `slip44:<coin type>` for natives (60 on all EVM, 148, 506), `erc20`/`erc721`, `sep41` + `asset:CODE-ISSUER`, `cep18`. Re-check against the CAIP registry in T3.1 / T4.2.

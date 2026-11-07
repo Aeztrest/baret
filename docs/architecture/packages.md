@@ -54,7 +54,7 @@ baret/
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |
 | `packages/engine` | `@baret/engine` | no — **built** | `createEngine`, `decide`; Metropolis parity tests | `docs/architecture/engine.md` |
 | `packages/providers` | `@baret/providers` | no | Optional data sources and LLM client | `docs/architecture/providers.md` |
-| `packages/guard` | `@baret/guard` | **yes** | Client for `/v1/analyze`, policy templates, verdict helpers | `docs/architecture/sdk.md` |
+| `packages/guard` | `@baret/guard` | **yes** — **built** (0.2.0, not yet published) | Client for `/v1/analyze`, verdict helpers; re-exports `@baret/core` | `docs/architecture/sdk.md` |
 | `packages/agent-kit` | `@baret/agent-kit` | **yes** | `AgentWallet`, signers, x402 buyer, `baret` CLI | `docs/architecture/sdk.md` |
 | `packages/wallet-core` | `@baret/wallet-core` | no | Keyring (seed → accounts per family), sessions, check-then-sign | `docs/architecture/frontend.md` |
 | `packages/content` | `@baret/content` | no | Words for findings, policy fields, screens; languages | `docs/architecture/frontend.md` |

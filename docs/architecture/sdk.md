@@ -1,13 +1,13 @@
 # SDKs: `@baret/guard` and `@baret/agent-kit`
 
-Status: **planned** (v1 of both exists on npm from Baret-Metropolis, Monad-only; this codebase publishes the multichain line)
+Status: **in progress** — `@baret/guard` 0.2.0 built and packed (not published yet: T2.6, T0.8); `@baret/agent-kit` not ported (T2.8)
 Last verified: 2026-11-07
 
 ## 1. `@baret/guard` — for dApps and wallets
 
 - `new TransactionGuard({ baseUrl, apiKey? }).evaluate({ chain, request, policy | policyTemplate, account? })` → `Verdict` (schema-checked).
 - No answer, non-2xx, or an answer off the schema → `GuardUnreachableError`; the caller treats it as Blocked.
-- Helpers: `isSafe`, `isSignable` (not Blocked), `verdictRefusal(verdict, { chain, now })` (expired or another chain).
+- Helpers: `isSafe`, `isSignable` (not Blocked), `verdictRefusal(verdict, { chain, now })` (expired or another chain; `now` in Unix seconds).
 - `policyTemplate(name, chain)`, `migratePolicyV1(v1, chain)`.
 - **Depends only on `@baret/core`** (types + zod). No chain library: a dApp on any chain can install it.
 - **Never signs or submits.**
@@ -27,3 +27,4 @@ Last verified: 2026-11-07
 - The multichain line starts at **0.2.0** (breaking: `chain` field, policy v2, unified codes). 0.1.x stays documented as Monad-only.
 - Published from CI on a release tag only, with npm provenance. Who owns the `@baret` npm scope: to confirm (`TASKS.md`).
 - Each published package has a README with a quickstart that is run in CI against the staging API (Phase 2).
+- Checked 2026-11-07: `pnpm pack` of `@baret/core` and `@baret/guard` gives tarballs with built `dist/` only and `workspace:*` rewritten to `0.2.0`; installed with npm in an empty project, the README call ran against `apps/api` on Monad testnet with the expected answers.
