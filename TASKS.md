@@ -25,6 +25,7 @@ Decided on 2026-11-07: D1 (ADRs 0002, 0003, 0006, 0008 accepted), D2 (repo `Aezt
 | D5 | LLM provider for `/v1/explain` and `/v1/policy/draft` | KIMI (legacy) / Qwen / Claude / none in v1 | decide before T2.7 |
 | D6 | Shared store for production (limits, caches, API keys) | Render Redis (Key Value) + Postgres / Upstash / Supabase | Render Key Value + Render Postgres: one vendor, one dashboard |
 | D7 | x402 settlement chain for Baret's own paid API | Base / Arc / Stellar | decide in Phase 6 with fee data |
+| D9 | Where Metropolis's detectors go in Phase 1 | (a) split now: universal detectors into `packages/engine` over core `Effects`, EVM-only ones into `chain-evm` · (b) port all of them into `chain-evm` first, working on the EVM context exactly as in Metropolis; lift the universal ones into the engine when the Stellar adapter (second family) is ported in Phase 3 | **(b)**: parity with Metropolis comes faster and safer, and the universal shape is designed with two real families in hand instead of guessed from one. ADR-0003's target does not change; only the order. |
 
 ## Phase 0 — Foundation
 
@@ -63,6 +64,7 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [x] **T1.4 Import-rules script in `tooling/`** — enforces `docs/architecture/packages.md` §4 in CI.
   → done 2026-11-07: `tooling/import-rules.mjs` (`pnpm imports:check`, CI docs job), 5 tests. Enforces the @baret import table and keeps chain libraries inside their own adapter.
 - [ ] **T1.5 `packages/chain-evm` engine side** — port decode, simulation, effects, EVM detectors with their tests (`docs/migration/porting-plan.md` §3).
+  → in progress. Step 1 done 2026-11-07: request schema, `EvmRpc` (batching per chain), decode, trace, ABI, reverts + 18 tests (new decode tests: replay/other-chain refusal, EIP-7702). Next: effects (`analysis/effects.ts`, 696 lines) and the detectors — order depends on D9.
 - [ ] **T1.6 `packages/engine`** — pipeline, universal detectors, policy evaluation; **parity test** replaying Metropolis scenario fixtures (`apps/server/scripts/export-scenarios.ts`) with expected decisions.
 - [ ] **T1.7 `packages/providers`** — reputation registry reader, Nansen (optional), threat feed.
 - [ ] **T1.8 `apps/api`** — `/health`, `/health/ready`, `/v1/chains`, `/v1/analyze`, `/v1/policy/templates`; env schema; `.env.example`; built JS start.
