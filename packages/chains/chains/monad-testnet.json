@@ -22,5 +22,6 @@
     "rpcBatch": true
   },
   "policyFloors": { "strict": "0.5", "balanced": "0.1" },
+  "publicRpcUrl": "https://testnet-rpc.monad.xyz",
   "faucetUrl": "https://faucet.monad.xyz"
 }

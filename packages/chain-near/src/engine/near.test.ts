@@ -33,9 +33,30 @@ const POLICY = {
   owner: "alice.testnet",
   paused: false,
   agents: ["agent.testnet"],
-  receivers: ["shop.testnet"],
-  limits: [["native", { per_transfer: NEAR.toString(), per_day: (3n * NEAR).toString() }]],
+  receivers: ["shop.testnet", "0x5bb6ff1fcbe31ed8fbce6805852ce279475522fc"],
+  limits: [
+    ["native", { per_transfer: NEAR.toString(), per_day: (3n * NEAR).toString() }],
+    [
+      "eip155:10143",
+      { per_transfer: (10n ** 17n).toString(), per_day: (3n * 10n ** 17n).toString() },
+    ],
+  ],
 };
+
+/** What the vault's get_evm_payload answers (contracts/near/vault/src/evm.rs). */
+function evmParts(tx: Record<string, string | number>) {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(String(tx.to))) return null;
+  return {
+    payload: "ab".repeat(32),
+    asset: `eip155:${tx.chain_id}`,
+    receiver: String(tx.to).toLowerCase(),
+    max_cost: (
+      BigInt(tx.value ?? 0) +
+      BigInt(tx.max_fee_per_gas ?? 0) * BigInt(tx.gas_limit ?? 0)
+    ).toString(),
+    path: "eip155",
+  };
+}
 
 function fakeRpc(over: Partial<{ remaining: string; paused: boolean }> = {}): NearRpc {
   return {
@@ -44,6 +65,8 @@ function fakeRpc(over: Partial<{ remaining: string; paused: boolean }> = {}): Ne
     callView: async (contract, method, args) => {
       if (contract === "vault.testnet" && method === "get_policy")
         return { ...POLICY, paused: over.paused ?? false };
+      if (contract === "vault.testnet" && method === "get_evm_payload")
+        return evmParts((args as { tx: Record<string, string | number> }).tx);
       if (contract === "vault.testnet" && method === "get_remaining")
         return over.remaining ?? (2n * NEAR).toString();
       if (contract === USDC && method === "ft_balance_of") {
@@ -193,6 +216,63 @@ describe("NEAR adapter", () => {
     );
     expect(r.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details).toEqual({
       reason: "E_DAILY_LIMIT",
+    });
+  });
+
+  describe("Chain Signatures through the vault (TN.7)", () => {
+    const evm = (over: Record<string, unknown> = {}) => ({
+      signerId: "agent.testnet",
+      receiverId: "vault.testnet",
+      actions: [
+        {
+          type: "FunctionCall",
+          methodName: "request_evm_signature",
+          args: {
+            tx: {
+              chain_id: 10143,
+              nonce: 0,
+              max_priority_fee_per_gas: "2000000000",
+              max_fee_per_gas: "60000000000",
+              gas_limit: 21000,
+              to: "0x5BB6fF1FCbE31ED8FBce6805852Ce279475522fc",
+              value: "10000000000000000",
+              ...over,
+            },
+          },
+          gas: "300000000000000",
+          deposit: "0",
+        },
+      ],
+    });
+
+    it("lets an EVM payment within the vault's policy through", async () => {
+      expect(codes(await run(evm()))).toEqual([]);
+    });
+
+    it("predicts the refusal of an EVM receiver the owner never listed", async () => {
+      const r = await run(evm({ to: "0x000000000000000000000000000000000000dEaD" }));
+      expect(r.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details).toEqual({
+        reason: "E_RECEIVER_NOT_ALLOWED",
+      });
+    });
+
+    it("counts the worst-case fee like the vault does", async () => {
+      // Exactly the per-transfer limit in value: the fee on top crosses it.
+      const r = await run(evm({ value: (10n ** 17n).toString() }));
+      expect(r.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details).toEqual({
+        reason: "E_PER_TRANSFER_LIMIT",
+      });
+    });
+
+    it("refuses a malformed EVM transfer and an EVM chain with no limit", async () => {
+      const bad = await run(evm({ to: "0x12" }));
+      expect(bad.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details).toEqual({
+        reason: "E_BAD_EVM_TX",
+      });
+      const chain1 = await run(evm({ chain_id: 1 }));
+      expect(chain1.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details).toEqual({
+        reason: "E_ASSET_NOT_ALLOWED",
+      });
     });
   });
 

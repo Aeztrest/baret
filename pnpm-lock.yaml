@@ -245,6 +245,12 @@ importers:
       '@baret/core':
         specifier: workspace:*
         version: link:../core
+      '@noble/hashes':
+        specifier: 2.2.0
+        version: 2.2.0
+      '@scure/base':
+        specifier: 2.2.0
+        version: 2.2.0
       near-api-js:
         specifier: 7.4.0
         version: 7.4.0

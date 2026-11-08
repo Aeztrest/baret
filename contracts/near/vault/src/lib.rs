@@ -6,11 +6,21 @@
 //! contract, so a leaked agent key can spend at most what the policy allows and can never
 //! touch the owner's account.
 //!
+//! Chain Signatures (TN.7): `request_evm_signature` lets the same agent pay on an EVM chain
+//! from an address the vault controls through NEAR's MPC network. The vault builds the
+//! transaction itself (evm.rs) and applies the same policy: the asset is the chain's
+//! CAIP-2 id (`eip155:10143`), the receiver a lowercase 0x address on the receiver list.
+//!
 //! Fail-closed: an asset with no limit cannot be spent, a receiver not on the list cannot
 //! be paid, and a paused vault pays nobody. Every refusal panics with a stable code
 //! (`E_…`), never a sentence: the words live in Baret's content (CLAUDE.md rule 4).
 
+mod evm;
+
+pub use evm::EvmTransfer;
+use evm::{encode_hex, EvmError};
 use near_sdk::json_types::U128;
+use near_sdk::serde_json::{self, json, Value};
 use near_sdk::store::{IterableMap, IterableSet, LookupMap};
 use near_sdk::{
     env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault,
@@ -24,6 +34,12 @@ pub const DAY_NS: u64 = 86_400 * 1_000_000_000;
 /// Gas for a token's `ft_transfer` and for this vault's own callback.
 const FT_TRANSFER_GAS: Gas = Gas::from_tgas(10);
 const CALLBACK_GAS: Gas = Gas::from_tgas(10);
+/// The derivation path of the vault's EVM address: one address for every EVM chain.
+pub const EVM_PATH: &str = "eip155";
+/// NEAR's MPC signer (Chain Signatures). The vault's own account says which network it is
+/// on, so no state field is needed and an already deployed vault keeps its layout.
+const MPC_TESTNET: &str = "v1.signer-prod.testnet";
+const MPC_MAINNET: &str = "v1.signer";
 
 /// Refusal codes. Public so tests and clients match them exactly.
 pub mod errors {
@@ -36,6 +52,7 @@ pub mod errors {
     pub const PER_TRANSFER_LIMIT: &str = "E_PER_TRANSFER_LIMIT";
     pub const DAILY_LIMIT: &str = "E_DAILY_LIMIT";
     pub const BAD_LIMIT: &str = "E_BAD_LIMIT";
+    pub const BAD_EVM_TX: &str = "E_BAD_EVM_TX";
 }
 
 #[near(serializers = [borsh])]
@@ -208,16 +225,71 @@ impl Vault {
         if result.is_ok() {
             return true;
         }
-        if let Some(list) = self.spent.get_mut(&asset) {
-            if let Some(i) = list.iter().position(|s| s.at == at && s.amount == amount.0) {
-                list.remove(i);
-            }
-        }
+        self.unrecord(&asset, amount.0, at);
         emit(
             "transfer_failed",
             &format!("{{\"asset\":\"{asset}\",\"amount\":\"{}\"}}", amount.0),
         );
         false
+    }
+
+    /// Signs an EVM native transfer with the vault's derived key when every rule allows it.
+    /// The spend counted is the transaction's worst case (value + gas limit x max fee).
+    /// Returns the MPC signature (`big_r`, `s`, `recovery_id`), or null when the MPC
+    /// network failed, in which case the spend goes back to the window.
+    pub fn request_evm_signature(&mut self, tx: EvmTransfer) -> Promise {
+        let agent = env::predecessor_account_id();
+        let now = env::block_timestamp();
+        let (receiver, unsigned, cost) = evm_parts(&tx);
+        let asset = tx.asset();
+        self.check(&agent, &asset, &receiver, cost, now);
+        self.record(&asset, cost, now);
+        let payload = encode_hex(&env::keccak256(&unsigned));
+        emit(
+            "evm_signature_requested",
+            &format!(
+                "{{\"agent\":\"{agent}\",\"asset\":\"{asset}\",\"receiver\":\"{receiver}\",\"value\":\"{}\",\"max_cost\":\"{cost}\",\"payload\":\"{payload}\"}}",
+                tx.value
+            ),
+        );
+        let args = json!({
+            "request": { "path": EVM_PATH, "payload_v2": { "Ecdsa": payload }, "domain_id": 0 }
+        });
+        Promise::new(mpc_account())
+            .function_call_weight(
+                "sign".to_string(),
+                serde_json::to_vec(&args).unwrap_or_default(),
+                NearToken::from_yoctonear(1),
+                Gas::from_tgas(0),
+                near_sdk::GasWeight(1),
+            )
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(CALLBACK_GAS)
+                    .on_evm_signed(asset, U128(cost), now),
+            )
+    }
+
+    /// The MPC answer. A failed signature gives its spend back to the window.
+    #[private]
+    pub fn on_evm_signed(
+        &mut self,
+        asset: String,
+        amount: U128,
+        at: u64,
+        #[callback_result] result: Result<Value, PromiseError>,
+    ) -> Option<Value> {
+        match result {
+            Ok(signature) => Some(signature),
+            Err(_) => {
+                self.unrecord(&asset, amount.0, at);
+                emit(
+                    "evm_signature_failed",
+                    &format!("{{\"asset\":\"{asset}\",\"amount\":\"{}\"}}", amount.0),
+                );
+                None
+            }
+        }
     }
 
     // ---------------------------------------------------------------- NEP-141
@@ -268,6 +340,20 @@ impl Vault {
         U128(left.min(limit.per_transfer.0))
     }
 
+    /// What an EVM transfer would be signed as: the keccak256 the MPC network signs, the
+    /// asset and receiver the policy reads and the spend it counts. For clients and Baret's
+    /// preflight; it checks no rule.
+    pub fn get_evm_payload(&self, tx: EvmTransfer) -> Value {
+        let (receiver, unsigned, cost) = evm_parts(&tx);
+        json!({
+            "payload": encode_hex(&env::keccak256(&unsigned)),
+            "asset": tx.asset(),
+            "receiver": receiver,
+            "max_cost": cost.to_string(),
+            "path": EVM_PATH,
+        })
+    }
+
     // ---------------------------------------------------------------- internals
 
     fn assert_owner(&self) {
@@ -316,6 +402,14 @@ impl Vault {
         self.spent.insert(asset.to_string(), list);
     }
 
+    fn unrecord(&mut self, asset: &str, amount: u128, at: u64) {
+        if let Some(list) = self.spent.get_mut(asset) {
+            if let Some(i) = list.iter().position(|s| s.at == at && s.amount == amount) {
+                list.remove(i);
+            }
+        }
+    }
+
     fn send(
         &self,
         asset: &str,
@@ -335,6 +429,27 @@ impl Vault {
                 .ft_transfer(receiver, U128(amount), memo)
         }
     }
+}
+
+/// The receiver (as an account id), the unsigned bytes and the worst-case cost of an EVM
+/// transfer; any malformed field refuses with E_BAD_EVM_TX.
+fn evm_parts(tx: &EvmTransfer) -> (AccountId, Vec<u8>, u128) {
+    let built = (|| -> Result<_, EvmError> {
+        let receiver = tx.receiver()?;
+        Ok((receiver, tx.unsigned()?, tx.max_cost()?))
+    })();
+    let (receiver, unsigned, cost) = built.unwrap_or_else(|_| env::panic_str(errors::BAD_EVM_TX));
+    let receiver: AccountId = receiver
+        .parse()
+        .unwrap_or_else(|_| env::panic_str(errors::BAD_EVM_TX));
+    (receiver, unsigned, cost)
+}
+
+fn mpc_account() -> AccountId {
+    let on_testnet = env::current_account_id().as_str().ends_with(".testnet");
+    (if on_testnet { MPC_TESTNET } else { MPC_MAINNET })
+        .parse()
+        .unwrap_or_else(|_| env::panic_str("E_MPC"))
 }
 
 /// A NEP-297 event: `EVENT_JSON:{"standard":"baret_vault","version":"1.0.0",…}`.
