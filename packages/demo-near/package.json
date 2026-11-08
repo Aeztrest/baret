@@ -17,11 +17,15 @@
     "deploy-vault": "tsx scripts/deploy.ts",
     "setup-vault": "tsx scripts/setup.ts",
     "agent-key": "tsx scripts/agent-key.ts",
+    "upgrade-vault": "tsx scripts/upgrade.ts",
+    "evm-setup": "tsx scripts/evm-setup.ts",
     "agent": "tsx src/agent-cli.ts"
   },
   "dependencies": {
     "@baret/chains": "workspace:*",
     "@baret/core": "workspace:*",
+    "@noble/hashes": "2.2.0",
+    "@scure/base": "2.2.0",
     "near-api-js": "7.4.0"
   },
   "devDependencies": {

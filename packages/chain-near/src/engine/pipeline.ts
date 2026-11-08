@@ -50,6 +50,8 @@ interface Analysis {
   drafts: FindingDraft[];
   /** Why the request would fail on chain, when the preflight can tell; null: it would not. */
   failure: string | null;
+  /** EVM transfers a Baret vault is asked to sign through Chain Signatures (TN.7). */
+  evmSignatures: { vault: string; tx: Record<string, unknown> }[];
 }
 
 export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<AdapterResult> {
@@ -62,7 +64,7 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   const signer = await deps.rpc.viewAccount(tx.signerId, pin.hash);
   const receiver = await deps.rpc.viewAccount(tx.receiverId, pin.hash);
 
-  const a: Analysis = { tx, user, movements: [], drafts: [], failure: null };
+  const a: Analysis = { tx, user, movements: [], drafts: [], failure: null, evmSignatures: [] };
   if (signer === null) a.failure = "E_SIGNER_MISSING";
 
   readActions(a, deps);
@@ -206,6 +208,13 @@ function readCall(
       viaVault: tx.receiverId,
     });
   }
+  // A Baret vault signing an EVM transfer through Chain Signatures. No
+  // CHAIN_SIGNATURE_REQUEST here: the vault builds the transaction itself and bounds it by
+  // its policy, which the preflight reads below; the EVM transfer is checked on its own
+  // chain by a second /v1/analyze. A direct `sign` on the MPC contract has no such bound.
+  if (method === "request_evm_signature" && typeof args.tx === "object" && args.tx !== null) {
+    a.evmSignatures.push({ vault: tx.receiverId, tx: args.tx as Record<string, unknown> });
+  }
   if (method === "sign" && deps.mpcContracts.includes(tx.receiverId)) {
     const request = (args.request ?? args) as Record<string, unknown>;
     a.drafts.push({
@@ -262,6 +271,48 @@ async function preflight(
       policy,
       tx.signerId,
       m,
+      typeof remaining === "string" ? BigInt(remaining) : null,
+    );
+    if (code) a.failure ??= code;
+  }
+
+  // The vault says what it would sign (receiver, asset, worst-case cost); its policy says
+  // whether it will. A vault with no get_evm_payload cannot sign EVM transfers.
+  for (const e of a.evmSignatures) {
+    const parts = (await deps.rpc.callView(e.vault, "get_evm_payload", { tx: e.tx }, block)) as {
+      asset?: unknown;
+      receiver?: unknown;
+      max_cost?: unknown;
+    } | null;
+    if (
+      !parts ||
+      typeof parts.asset !== "string" ||
+      typeof parts.receiver !== "string" ||
+      typeof parts.max_cost !== "string"
+    ) {
+      a.failure ??= "E_BAD_EVM_TX";
+      continue;
+    }
+    const policy = (await deps.rpc.callView(
+      e.vault,
+      "get_policy",
+      {},
+      block,
+    )) as VaultPolicy | null;
+    if (!policy || !Array.isArray(policy.limits)) {
+      a.failure ??= "E_BAD_EVM_TX";
+      continue;
+    }
+    const remaining = await deps.rpc.callView(
+      e.vault,
+      "get_remaining",
+      { asset: parts.asset },
+      block,
+    );
+    const code = vaultRefusal(
+      policy,
+      tx.signerId,
+      { from: e.vault, to: parts.receiver, asset: parts.asset, amount: toBig(parts.max_cost) },
       typeof remaining === "string" ? BigInt(remaining) : null,
     );
     if (code) a.failure ??= code;

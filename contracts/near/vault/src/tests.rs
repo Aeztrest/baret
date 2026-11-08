@@ -181,3 +181,120 @@ fn a_failed_transfer_gives_its_amount_back() {
     assert!(!ok);
     assert_eq!(v.get_spent_today(NATIVE.into()), U128(0));
 }
+
+// ------------------------------------------------------------ Chain Signatures (TN.7)
+
+const MONAD: &str = "eip155:10143";
+const EVM_SHOP: &str = "0x5bb6ff1fcbe31ed8fbce6805852ce279475522fc";
+
+fn evm_tx(value: &str) -> EvmTransfer {
+    EvmTransfer {
+        chain_id: 10143,
+        nonce: 7,
+        max_priority_fee_per_gas: "2000000000".into(),
+        max_fee_per_gas: "60000000000".into(),
+        gas_limit: 21000,
+        // Mixed case on purpose: the vault normalises it.
+        to: "0x5BB6fF1FCbE31ED8FBce6805852Ce279475522fc".into(),
+        value: value.into(),
+    }
+}
+
+/// The base vault plus MON on Monad testnet: 0.1 per transfer, 0.3 per day (wei), and
+/// the EVM shop on the receiver list.
+fn evm_vault() -> Vault {
+    let mut v = vault();
+    as_caller(OWNER, 2);
+    v.set_limit(MONAD.into(), U128(10u128.pow(17)), U128(3 * 10u128.pow(17)));
+    v.add_receiver(acc(EVM_SHOP));
+    v
+}
+
+const FEE: u128 = 60_000_000_000 * 21_000;
+
+#[test]
+fn signs_an_evm_transfer_and_counts_value_plus_max_fee() {
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    v.request_evm_signature(evm_tx("10000000000000000"));
+    assert_eq!(
+        v.get_spent_today(MONAD.into()),
+        U128(10_000_000_000_000_000 + FEE)
+    );
+    assert!(get_logs()
+        .iter()
+        .any(|l| l.contains("\"event\":\"evm_signature_requested\"")
+            && l.contains("7ac1463ea822e31e7122d92e407fefee98f1e60d17c7ab6e2e2f410b8d1117ca")));
+}
+
+#[test]
+fn the_payload_view_is_the_eip1559_hash_viem_computes() {
+    let v = evm_vault();
+    let p = v.get_evm_payload(evm_tx("10000000000000000"));
+    assert_eq!(
+        p["payload"],
+        "7ac1463ea822e31e7122d92e407fefee98f1e60d17c7ab6e2e2f410b8d1117ca"
+    );
+    assert_eq!(p["receiver"], EVM_SHOP);
+    assert_eq!(p["asset"], MONAD);
+}
+
+#[test]
+#[should_panic(expected = "E_PER_TRANSFER_LIMIT")]
+fn the_fee_counts_against_the_per_transfer_limit() {
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    // Exactly the limit in value: the fee on top crosses it.
+    v.request_evm_signature(evm_tx("100000000000000000"));
+}
+
+#[test]
+#[should_panic(expected = "E_RECEIVER_NOT_ALLOWED")]
+fn refuses_an_evm_receiver_not_on_the_list() {
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    let mut tx = evm_tx("1");
+    tx.to = "0x000000000000000000000000000000000000dEaD".into();
+    v.request_evm_signature(tx);
+}
+
+#[test]
+#[should_panic(expected = "E_ASSET_NOT_ALLOWED")]
+fn refuses_an_evm_chain_with_no_limit() {
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    let mut tx = evm_tx("1");
+    tx.chain_id = 1;
+    v.request_evm_signature(tx);
+}
+
+#[test]
+#[should_panic(expected = "E_NOT_AGENT")]
+fn refuses_an_evm_signature_for_a_stranger() {
+    let mut v = evm_vault();
+    as_caller("stranger.testnet", 10);
+    v.request_evm_signature(evm_tx("1"));
+}
+
+#[test]
+#[should_panic(expected = "E_BAD_EVM_TX")]
+fn refuses_a_malformed_evm_transfer() {
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    let mut tx = evm_tx("1");
+    tx.to = "0x12".into();
+    v.request_evm_signature(tx);
+}
+
+#[test]
+fn a_failed_signature_gives_the_spend_back() {
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    v.request_evm_signature(evm_tx("1000"));
+    let spent = 1000 + FEE;
+    assert_eq!(v.get_spent_today(MONAD.into()), U128(spent));
+    as_caller("vault.testnet", 11);
+    let out = v.on_evm_signed(MONAD.into(), U128(spent), 10, Err(PromiseError::Failed));
+    assert!(out.is_none());
+    assert_eq!(v.get_spent_today(MONAD.into()), U128(0));
+}

@@ -1,15 +1,29 @@
 /**
  * The demo agent. For each scenario it builds the transaction, asks Baret first, and
- * signs only on Safe, with a function call key that reaches nothing but the vault's
- * `execute_transfer`. `--force` sends a refused request anyway, to show the second line
- * of defence: the vault (or NEAR's key permissions) refuses it on chain.
+ * signs only on Safe, with a function call key that reaches nothing but the vault.
+ * `--force` sends a refused request anyway, to show the second line of defence: the
+ * vault (or NEAR's key permissions) refuses it on chain.
+ *
+ * The Chain Signatures scenarios (evm-*) ask Baret twice: about the NEAR call that asks
+ * the vault to sign, and about the EVM transfer itself on its own chain. Both must be
+ * Safe. Then the vault's MPC signature is assembled into the EVM transaction and sent.
  *
  *   pnpm --filter @baret/demo-near agent -- pay
  *   pnpm --filter @baret/demo-near agent -- wrong-receiver --force
+ *   pnpm --filter @baret/demo-near agent -- evm-pay
  */
+import { getChain } from "@baret/chains";
 import { Account, actions, JsonRpcProvider, KeyPair, KeyPairSigner, PublicKey } from "near-api-js";
 import { BARET_API, CHAIN, EXPLORER, env, envOr, RPC_URL } from "./env.js";
-import { buildAction, SCENARIOS, type ScenarioName } from "./scenarios.js";
+import {
+  EVM_CHAIN,
+  EVM_CHAIN_ID,
+  evmAccounts,
+  type MpcSignature,
+  signedTransaction,
+  vaultEvmAddress,
+} from "./evm.js";
+import { buildAction, type EvmBase, SCENARIOS, type ScenarioName } from "./scenarios.js";
 
 const name = process.argv.slice(2).find((a) => !a.startsWith("--")) as ScenarioName | undefined;
 const force = process.argv.includes("--force");
@@ -17,60 +31,123 @@ if (!name || !(name in SCENARIOS)) {
   console.error(`usage: agent <${Object.keys(SCENARIOS).join("|")}> [--force]`);
   process.exit(2);
 }
+const isEvm = name.startsWith("evm-");
+
+const evmRpcUrl = getChain(EVM_CHAIN)?.publicRpcUrl;
+async function evmRpc(method: string, params: unknown[]): Promise<string> {
+  if (!evmRpcUrl) throw new Error(`${EVM_CHAIN} has no public RPC in the registry`);
+  const res = await fetch(evmRpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const body = (await res.json()) as { result?: string; error?: { message?: string } };
+  if (typeof body.result !== "string")
+    throw new Error(`${method}: ${body.error?.message ?? res.status}`);
+  return body.result;
+}
+
+const vaultId = env("NEAR_VAULT_ID");
+const evm = isEvm ? evmAccounts() : null;
+const evmFrom = isEvm ? await vaultEvmAddress(RPC_URL, vaultId) : null;
+
+/** Nonce and fees of the vault's EVM address, read from the chain now. */
+async function evmBase(from: string): Promise<EvmBase> {
+  const [nonce, gasPrice, tip] = await Promise.all([
+    evmRpc("eth_getTransactionCount", [from, "pending"]),
+    evmRpc("eth_gasPrice", []),
+    evmRpc("eth_maxPriorityFeePerGas", []),
+  ]);
+  return {
+    chain_id: EVM_CHAIN_ID,
+    nonce: Number(BigInt(nonce)),
+    max_priority_fee_per_gas: BigInt(tip).toString(),
+    max_fee_per_gas: (2n * BigInt(gasPrice)).toString(),
+    gas_limit: 21000,
+  };
+}
 
 const ids = {
   agent: env("NEAR_AGENT_ID"),
-  vault: env("NEAR_VAULT_ID"),
+  vault: vaultId,
   shop: env("NEAR_SHOP_ID"),
   attacker: envOr("NEAR_ATTACKER_ID", "drain-it-all.testnet"),
   attackerKey: KeyPair.fromRandom("ed25519").getPublicKey().toString(),
+  ...(evm ? { evmShop: evm.shop, evmAttacker: evm.attacker } : {}),
 };
-const action = buildAction(name, ids);
+const action = buildAction(name, ids, evmFrom ? await evmBase(evmFrom) : undefined);
 
 console.log(`\nScenario: ${SCENARIOS[name]}`);
-console.log(`Asking Baret (${BARET_API}) before signing...`);
+if (evmFrom) console.log(`The vault's EVM address (Chain Signatures, path eip155): ${evmFrom}`);
 
-// Fail-closed: no verdict (timeout, network error, bad answer) means no signature.
-// Render's free plan can take about a minute to wake up, so allow 90 s.
-let res: Response;
-let verdict: {
-  decision?: string;
-  findings?: { code: string; blocking: boolean; details?: { reason?: string } }[];
-  error?: { code: string; message: string };
-};
-try {
-  res = await fetch(`${BARET_API}/v1/analyze`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      chain: CHAIN,
-      request: { kind: "transaction", tx: action.tx },
+type Finding = { code: string; blocking: boolean; details?: { reason?: string } };
+
+/** One /v1/analyze call. Fail-closed: no verdict (timeout, error, bad answer) is null. */
+async function ask(label: string, body: object): Promise<string | null> {
+  console.log(`Asking Baret about ${label} (${BARET_API})...`);
+  try {
+    const res = await fetch(`${BARET_API}/v1/analyze`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(90_000),
+    });
+    const v = (await res.json()) as {
+      decision?: string;
+      findings?: Finding[];
+      error?: { code: string };
+    };
+    if (!res.ok || !v.decision) {
+      console.log(`  Baret did not answer (${res.status} ${v.error?.code ?? ""}).`);
+      return null;
+    }
+    console.log(`  Baret: ${v.decision.toUpperCase()}`);
+    for (const f of v.findings ?? []) {
+      const why = f.details?.reason ? ` (${f.details.reason})` : "";
+      console.log(`    - ${f.code}${why}${f.blocking ? "  [blocks]" : ""}`);
+    }
+    return v.decision;
+  } catch (e) {
+    console.log(`  Baret did not answer (${(e as Error).name}).`);
+    return null;
+  }
+}
+
+const verdicts = [
+  await ask("the NEAR call", {
+    chain: CHAIN,
+    request: { kind: "transaction", tx: action.tx },
+    policyTemplate: "balanced",
+  }),
+];
+if (action.evm && evmFrom) {
+  verdicts.push(
+    await ask(`the ${EVM_CHAIN} transfer`, {
+      chain: EVM_CHAIN,
+      request: {
+        kind: "call",
+        tx: {
+          from: evmFrom,
+          to: action.evm.to,
+          value: action.evm.value,
+          gas: String(action.evm.gas_limit),
+          maxFeePerGas: action.evm.max_fee_per_gas,
+          maxPriorityFeePerGas: action.evm.max_priority_fee_per_gas,
+          nonce: action.evm.nonce,
+        },
+      },
       policyTemplate: "balanced",
     }),
-    signal: AbortSignal.timeout(90_000),
-  });
-  verdict = (await res.json()) as typeof verdict;
-} catch (e) {
-  console.log(`Baret did not answer (${(e as Error).name}). Not signing.`);
-  process.exit(1);
-}
-if (!res.ok || !verdict.decision) {
-  // Fail-closed: no verdict, no signature.
-  console.log(`Baret did not answer (${res.status} ${verdict.error?.code ?? ""}). Not signing.`);
-  process.exit(1);
-}
-console.log(`Baret: ${verdict.decision.toUpperCase()}`);
-for (const f of verdict.findings ?? []) {
-  const why = f.details?.reason ? ` (${f.details.reason})` : "";
-  console.log(`  - ${f.code}${why}${f.blocking ? "  [blocks]" : ""}`);
+  );
 }
 
-if (verdict.decision !== "safe" && !force) {
+const safe = verdicts.every((v) => v === "safe");
+if (!safe && !force) {
   console.log("Not signed: the agent signs only what Baret calls Safe.");
-  process.exit(0);
+  process.exit(verdicts.includes(null) ? 1 : 0);
 }
-if (verdict.decision !== "safe")
-  console.log("--force: sending anyway, to show the chain refuse it.");
+if (!safe) console.log("--force: sending anyway, to show the chain refuse it.");
 
 const provider = new JsonRpcProvider({ url: RPC_URL });
 const signer = KeyPairSigner.fromSecretKey(env("NEAR_AGENT_FC_KEY") as `ed25519:${string}`);
@@ -85,14 +162,30 @@ const built = action.tx.actions.map((a) =>
         BigInt(String(a.deposit)),
       ),
 );
+let out: Awaited<ReturnType<Account["signAndSendTransaction"]>>;
 try {
-  const out = await agent.signAndSendTransaction({
+  out = await agent.signAndSendTransaction({
     receiverId: action.tx.receiverId,
     actions: built,
     throwOnFailure: true,
   });
-  const hash = out.transaction.hash;
-  console.log(`Sent: ${EXPLORER}/txns/${hash}`);
 } catch (e) {
   console.log(`Refused on chain: ${(e as Error).message.slice(0, 300)}`);
+  process.exit(0);
+}
+console.log(`Sent on NEAR: ${EXPLORER}/txns/${out.transaction.hash}`);
+
+if (action.evm) {
+  const value = (out.status as { SuccessValue?: string }).SuccessValue;
+  const sig = value
+    ? (JSON.parse(Buffer.from(value, "base64").toString()) as MpcSignature | null)
+    : null;
+  if (!sig?.big_r) {
+    console.log("The MPC network gave no signature; the vault returned the spend to its window.");
+    process.exit(1);
+  }
+  const raw = signedTransaction(action.evm, sig);
+  const hash = await evmRpc("eth_sendRawTransaction", [raw]);
+  const template = getChain(EVM_CHAIN)?.explorer.tx ?? "{hash}";
+  console.log(`Sent on ${EVM_CHAIN}: ${template.replace("{hash}", hash)}`);
 }
