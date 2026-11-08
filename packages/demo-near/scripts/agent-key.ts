@@ -1,7 +1,9 @@
 /**
  * Step 5 (TN.4, TN.7): the agent account gets a function call key that can call only the
- * vault's `execute_transfer` and `request_evm_signature`, with 0.25 NEAR of fee
- * allowance. The agent process holds this key and nothing else, so a leaked key can do
+ * vault's `execute_transfer` and `request_evm_signature`, with 1 NEAR of fee allowance.
+ * NEAR checks the allowance against a call's prepaid gas at full price before it runs:
+ * a Chain Signatures call prepays 300 TGas (about 0.3 NEAR on testnet), so 0.25 was too
+ * little. Only the gas actually burnt is taken from it. The agent process holds this key and nothing else, so a leaked key can do
  * no more than the vault allows. Run again after an upgrade: an existing key is replaced
  * in the same transaction, so the method list follows the vault.
  */
@@ -21,7 +23,7 @@ const out = await agent.signAndSendTransaction({
   receiverId: env("NEAR_AGENT_ID"),
   actions: [
     ...(exists ? [actions.deleteKey(publicKey)] : []),
-    actions.addFunctionCallAccessKey(publicKey, env("NEAR_VAULT_ID"), METHODS, NEAR / 4n),
+    actions.addFunctionCallAccessKey(publicKey, env("NEAR_VAULT_ID"), METHODS, NEAR),
   ],
   throwOnFailure: true,
 });
