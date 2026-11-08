@@ -44,8 +44,8 @@ Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goe
   → 2026-11-08: adapter built (12 tests: transfers, keys, delete/deploy, vault refusal prediction, NEP-141, unknown contract, Chain Signatures, reported account, x402) and registered in `apps/api`. Staging needs `CHAIN_NEAR_TESTNET_RPC_URL` on Render (owner).
 - [x] **TN.6 Agent demo** — TypeScript agent: asks `/v1/analyze`, then calls the vault with its function call key; four scenarios (normal payment, over the limit refused on chain, receiver not allowed, a full access key addition blocked before signing).
   → 2026-11-08: `packages/demo-near` agent CLI with the four scenarios and `--force`; scenario tests. Live run 2026-11-08 against staging: pay Safe and sent; over-limit, wrong-receiver, add-key Blocked; with `--force` the chain refused all three.
-- [~] **TN.7 Chain Signatures** — the vault forwards an approved request to the MPC contract; one payment on an EVM testnet limited by the NEAR policy.
-  → 2026-11-09: vault `request_evm_signature` (builds the EIP-1559 transfer itself, value + max fee counted, MPC `payload_v2` checked live on testnet), `get_evm_payload` view; engine preflight predicts its refusals; agent `evm-pay` / `evm-wrong-receiver` ask Baret about both chains. Live run waits for the upgrade (owner's yes given 2026-11-09) and testnet MON on the vault's EVM address.
+- [x] **TN.7 Chain Signatures** — the vault forwards an approved request to the MPC contract; one payment on an EVM testnet limited by the NEAR policy.
+  → 2026-11-09: vault `request_evm_signature` (builds the EIP-1559 transfer itself, value + max fee counted, MPC `payload_v2` checked live on testnet), `get_evm_payload` view; engine preflight predicts its refusals; agent `evm-pay` / `evm-wrong-receiver` ask Baret about both chains. Vault upgraded in place 2026-11-09 (owner's yes, state kept). Live: `evm-pay` Safe on both chains, MPC-signed 0.01 MON on Monad testnet (tx `0x2796a4ad…afb8`, status 1, from the vault's derived address `0x9568…5b27`); `evm-wrong-receiver` Blocked on both, `--force` refused by the vault. `/near` lists both runs.
 - [ ] **TN.8 NEAR Intents check** — read a `dry: true` quote before signing, apply the policy (mainnet, small amounts).
 - [x] **TN.9 Web panel** — `/near` in `apps/web`: the vault's policy, spending and the latest verdicts.
   → 2026-11-08: `/near` (header nav "NEAR"): vault read live over NEAR RPC in the browser (`demo-near` `view.ts`, `publicRpcUrl` in the registry), the four requests checked live through `/api`, the recorded runs with tx links. Checked in the browser against staging: Safe, Blocked (E_PER_TRANSFER_LIMIT), Blocked (E_RECEIVER_NOT_ALLOWED), Blocked (AUTHORITY_CHANGE).
@@ -104,6 +104,7 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
   → decided 2026-11-07: `slip44:<coin type>` for natives (60 on all EVM, 148, 506), `erc20`/`erc721`, `sep41` + `asset:CODE-ISSUER`, `cep18`. Re-check against the CAIP registry in T3.1 / T4.2.
 - [ ] **T1.12 Monad mainnet: canonical USDC and a trace-capable RPC** — the registry entry has `usdc: null` and x402 off until both are confirmed.
 - [ ] **T1.13 TypeScript 7 upgrade** — Dependabot PR #5 bumps TypeScript 6 → 7 (and Biome, Vitest) and fails CI. Do it as its own task: read the TS 7 migration notes, fix, then merge #5 or replace it. Until then Dependabot ignores TypeScript majors.
+- [ ] **T1.14 Flaky API test under load** — `apps/api` `src/app.test.ts` "answers a verdict" times out (13 s) during a full `pnpm check` on a loaded machine and passes alone (seen 2026-11-08 and 2026-11-09). Find the slow step (cold imports of the adapters?) and fix it, not the timeout.
 
 ## Phase 2 — Frontend, agents and staging
 

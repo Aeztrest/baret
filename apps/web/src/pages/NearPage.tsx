@@ -1,10 +1,10 @@
+import { getChain } from "@baret/chains";
 import { common, findings, near } from "@baret/content";
 import type { Verdict } from "@baret/core";
 import {
   demoAccounts,
   demoAnalyzeBody,
   explorerAccount,
-  explorerTx,
   formatNear,
   readVault,
   type ScenarioName,
@@ -72,7 +72,7 @@ function Layers(): JSX.Element {
   return (
     <Section id="layers">
       <Heading id="layers" title={near.layers.title} />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {near.layers.items.map((item) => (
           <article key={item.title} className={CARD}>
             <p className={T.label}>{item.label}</p>
@@ -272,9 +272,13 @@ function Requests(): JSX.Element {
   );
 }
 
+/** A recorded transaction's explorer page, from its chain's registry entry. */
+function txHref(chain: string, hash: string): string | null {
+  return getChain(chain)?.explorer.tx.replace("{hash}", hash) ?? null;
+}
+
 function Runs(): JSX.Element {
   const { runs } = near;
-  const titleById = Object.fromEntries(near.requests.items.map((i) => [i.id, i.title]));
   return (
     <Section id="runs" ground="deep">
       <Heading id="runs" title={runs.title} body={runs.body} />
@@ -289,24 +293,25 @@ function Runs(): JSX.Element {
           </thead>
           <tbody>
             {runs.rows.map((r) => (
-              <tr key={r.id} className="border-t border-[color:var(--rule)] align-top">
-                <td className="py-3 pr-4 text-[color:var(--fg)]">{titleById[r.id]}</td>
+              <tr key={r.title} className="border-t border-[color:var(--rule)] align-top">
+                <td className="py-3 pr-4 text-[color:var(--fg)]">{r.title}</td>
                 <td className="py-3 pr-4">{r.baret}</td>
                 <td className="py-3">
-                  {r.chain}
-                  {r.tx ? (
-                    <>
-                      {" · "}
+                  <span className="block">{r.chain}</span>
+                  {r.txs.map((t) => {
+                    const href = txHref(t.chain, t.hash);
+                    return href ? (
                       <a
-                        className="underline underline-offset-4"
-                        href={explorerTx(r.tx)}
+                        key={t.hash}
+                        className="mr-4 underline underline-offset-4"
+                        href={href}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {runs.viewTx}
+                        {runs.viewTx.replace("{label}", t.label)}
                       </a>
-                    </>
-                  ) : null}
+                    ) : null;
+                  })}
                 </td>
               </tr>
             ))}
