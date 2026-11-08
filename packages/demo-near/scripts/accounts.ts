@@ -27,5 +27,5 @@ for (const role of ["VAULT", "AGENT", "SHOP"] as const) {
   }
 }
 console.log(
-  "Next: download the vault wasm from CI (artifact baret-near-vault-wasm), then pnpm deploy <file.wasm>",
+  "Next: download the vault wasm from CI (artifact baret-near-vault-wasm), then pnpm deploy-vault <file.wasm>",
 );

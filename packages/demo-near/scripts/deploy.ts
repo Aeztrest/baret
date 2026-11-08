@@ -2,7 +2,7 @@
  * Step 3: deploys the vault wasm to NEAR_VAULT_ID and initialises it with the owner, in
  * one transaction. The wasm comes from CI (contracts-near.yml artifact).
  *
- *   pnpm --filter @baret/demo-near deploy -- path/to/baret_near_vault.wasm
+ *   pnpm --filter @baret/demo-near deploy-vault -- path/to/baret_near_vault.wasm
  */
 import { readFileSync } from "node:fs";
 import { actions } from "near-api-js";
