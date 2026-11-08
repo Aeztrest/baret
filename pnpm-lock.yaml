@@ -72,6 +72,9 @@ importers:
       '@baret/demo-evm':
         specifier: workspace:*
         version: link:../../packages/demo-evm
+      '@baret/demo-near':
+        specifier: workspace:*
+        version: link:../../packages/demo-near
       '@baret/routes':
         specifier: workspace:*
         version: link:../../packages/routes

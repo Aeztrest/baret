@@ -16,6 +16,7 @@
     "@baret/content": "workspace:*",
     "@baret/core": "workspace:*",
     "@baret/demo-evm": "workspace:*",
+    "@baret/demo-near": "workspace:*",
     "@baret/routes": "workspace:*",
     "@baret/ui": "workspace:*",
     "@baret/web-ui": "workspace:*",

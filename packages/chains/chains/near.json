@@ -29,5 +29,6 @@
     "strict": "0.5",
     "balanced": "0.1"
   },
+  "publicRpcUrl": "https://rpc.mainnet.near.org",
   "faucetUrl": null
 }

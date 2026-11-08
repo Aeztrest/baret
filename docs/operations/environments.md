@@ -53,6 +53,7 @@ Last verified: 2026-11-07
 | `VITE_BARET_API_URL` (web) | API base; in Vercel normally `/api` (rewrite). Not read yet: the landing calls no API |
 | `BARET_EDGE_SECRET` (web, Vercel runtime) | read by `apps/web/middleware.ts`; must equal the API's |
 | `BARET_SITE_URL` (web) | absolute site URL for canonical, og:url, sitemap; on Vercel defaults to the production domain |
+| `BARET_DEV_API` (web, dev only) | where `vite dev` proxies `/api`; default `http://localhost:8080` (apps/api), or the staging URL to try the demos without a local API |
 | `BARET_REQUIRE_SITE_URL` (web) | `1` makes a build without a site URL fail (a Vercel production build always does) |
 | `BARET_SOURCEMAPS` (web) | `1` writes hidden source maps (off by default) |
 | `WXT_BARET_API_URL` (extension) | API base embedded in the build |

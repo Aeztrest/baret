@@ -49,6 +49,11 @@ export const chainConfigSchema = z
       .object({ strict: decimalAmountSchema.nullable(), balanced: decimalAmountSchema.nullable() })
       .strict(),
     faucetUrl: z.url().nullable(),
+    /**
+     * A keyless public RPC that answers browsers (CORS), for read-only pages such as the
+     * NEAR demo panel. The API never uses it: its RPC comes from CHAIN_<envSlug>_RPC_URL.
+     */
+    publicRpcUrl: z.url().optional(),
   })
   .strict()
   .refine((c) => familyOf(c.id) === c.family, {
