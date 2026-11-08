@@ -6,8 +6,8 @@
  *
  * Rules this page keeps:
  *  - Testnet is said where the vault and the runs are shown; NEAR on testnet has no value.
- *  - The recorded runs are the ones made on 2026-11-08 (packages/demo-near, `pnpm agent`),
- *    with their transaction hashes. A new run updates them here, never a made-up one.
+ *  - The recorded runs are the ones made on 2026-11-08 and 2026-11-09 (packages/demo-near,
+ *    `pnpm agent`), with their transaction hashes and the CAIP-2 chain each one is on. A new run updates them here, never a made-up one.
  *  - Amounts and account ids come from the chain or the registry, never from this file.
  */
 
@@ -41,6 +41,11 @@ export const near = {
         label: "On chain",
         title: "The vault",
         body: "Holds the money and enforces the owner's limits: a cap per payment, a cap per rolling day, a list of receivers and of agents. The agent's key reaches nothing else, so it cannot add keys or move funds around the vault.",
+      },
+      {
+        label: "On other chains",
+        title: "Chain Signatures",
+        body: "The vault also pays on EVM chains, from an address only NEAR's MPC network can sign for, and only when the vault asks. It builds the transaction itself and counts the value plus the highest possible fee against the same limits. Baret checks both sides: the call on NEAR and the transfer on the other chain.",
       },
     ],
   },
@@ -109,35 +114,65 @@ export const near = {
 
   runs: {
     title: "What happened when the agent ran.",
-    body: "Recorded on 2026-11-08 against Baret's staging API. With --force the agent sent the blocked requests anyway, to show the chain refuse them too.",
+    body: "Recorded on 2026-11-08 and 2026-11-09 against Baret's staging API. With --force the agent sent blocked requests anyway, to show the chain refuse them too.",
     head: { request: "Request", baret: "Baret", chain: "On chain" },
     rows: [
       {
-        id: "pay",
+        title: "Pay the shop 0.1 NEAR",
         baret: "Safe",
         chain: "Paid 0.1 NEAR to the shop",
-        tx: "AoFv4uUaRNo3k5VDRPPPevwwNFZrvuXpaEpg4fhMdbvr",
+        txs: [
+          {
+            chain: "near:testnet",
+            hash: "AoFv4uUaRNo3k5VDRPPPevwwNFZrvuXpaEpg4fhMdbvr",
+            label: "NEAR",
+          },
+        ],
       },
       {
-        id: "over-limit",
+        title: "Pay the shop 5 NEAR",
         baret: "Blocked",
         chain: "Refused by the vault: E_PER_TRANSFER_LIMIT",
-        tx: null,
+        txs: [],
       },
       {
-        id: "wrong-receiver",
+        title: "Pay 1 NEAR to an account a prompt named",
         baret: "Blocked",
         chain: "Refused by the vault: E_RECEIVER_NOT_ALLOWED",
-        tx: null,
+        txs: [],
       },
       {
-        id: "add-key",
+        title: "Add a full access key to the agent",
         baret: "Blocked",
         chain: "Refused by NEAR: the agent's key cannot add keys",
-        tx: null,
+        txs: [],
+      },
+      {
+        title: "Pay the shop 0.01 MON on Monad testnet",
+        baret: "Safe on NEAR and on Monad testnet",
+        chain: "The vault signed through Chain Signatures; paid 0.01 MON",
+        txs: [
+          {
+            chain: "near:testnet",
+            hash: "AYeXGS4GUexwcYE9X3BBWm2FsFvizkm7Dw5AsbJYLHPv",
+            label: "NEAR",
+          },
+          {
+            chain: "eip155:10143",
+            hash: "0x2796a4ad2edb515dde729c1d6c51475fd15b3884883c991ddcf4a6c94253afb8",
+            label: "Monad testnet",
+          },
+        ],
+      },
+      {
+        title: "Pay 0.01 MON to an address a prompt named",
+        baret:
+          "Blocked on both: a receiver the owner never listed, an address on the reported list",
+        chain: "Refused by the vault: E_RECEIVER_NOT_ALLOWED",
+        txs: [],
       },
     ],
-    viewTx: "View transaction",
+    viewTx: "View on {label}",
   },
 
   cta: {
