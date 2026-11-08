@@ -15,7 +15,7 @@
     "keys": "tsx scripts/keys.ts",
     "accounts": "tsx scripts/accounts.ts",
     "deploy-vault": "tsx scripts/deploy.ts",
-    "setup": "tsx scripts/setup.ts",
+    "setup-vault": "tsx scripts/setup.ts",
     "agent-key": "tsx scripts/agent-key.ts",
     "agent": "tsx src/agent-cli.ts"
   },

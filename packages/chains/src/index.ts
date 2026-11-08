@@ -11,6 +11,7 @@ import monadTestnet from "../chains/monad-testnet.json" with { type: "json" };
 import near from "../chains/near.json" with { type: "json" };
 import nearTestnet from "../chains/near-testnet.json" with { type: "json" };
 import monadTestnetDeployments from "../deployments/monad-testnet.json" with { type: "json" };
+import nearTestnetDeployments from "../deployments/near-testnet.json" with { type: "json" };
 
 /**
  * The registry of supported chains and of Baret's contract deployments (ADR-0003, rule 5
@@ -72,7 +73,7 @@ export type ShowcaseEntry = z.infer<typeof showcaseEntrySchema>;
 export type Deployments = z.infer<typeof deploymentsSchema>;
 
 const RAW_CHAINS: unknown[] = [monadTestnet, monad, nearTestnet, near];
-const RAW_DEPLOYMENTS: unknown[] = [monadTestnetDeployments];
+const RAW_DEPLOYMENTS: unknown[] = [monadTestnetDeployments, nearTestnetDeployments];
 
 export const CHAINS: readonly ChainConfig[] = RAW_CHAINS.map((c) => chainConfigSchema.parse(c));
 const DEPLOYMENTS: readonly Deployments[] = RAW_DEPLOYMENTS.map((d) => deploymentsSchema.parse(d));

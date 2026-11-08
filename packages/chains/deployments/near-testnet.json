@@ -1,0 +1,23 @@
+{
+  "chain": "near:testnet",
+  "contracts": {
+    "BaretVault": {
+      "address": "baret-vault.aeztrest-baret.testnet",
+      "block": 276819869,
+      "txHash": "7scjYroF5hZ783YgqrdCqRCWciw1q5EgYLE5AMX5Z97m",
+      "source": "contracts/near/vault",
+      "sourceVerified": false,
+      "checkedOnChain": "2026-11-08"
+    }
+  },
+  "showcase": {
+    "DemoShop": {
+      "address": "baret-shop.aeztrest-baret.testnet",
+      "kind": "account",
+      "listed": false,
+      "role": "NEAR demo: the shop the agent pays for API answers, on the vault's receiver list",
+      "source": null,
+      "checkedOnChain": "2026-11-08"
+    }
+  }
+}

@@ -30,21 +30,30 @@ const action = buildAction(name, ids);
 console.log(`\nScenario: ${SCENARIOS[name]}`);
 console.log(`Asking Baret (${BARET_API}) before signing...`);
 
-const res = await fetch(`${BARET_API}/v1/analyze`, {
-  method: "POST",
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({
-    chain: CHAIN,
-    request: { kind: "transaction", tx: action.tx },
-    policyTemplate: "balanced",
-  }),
-  signal: AbortSignal.timeout(60_000),
-});
-const verdict = (await res.json()) as {
+// Fail-closed: no verdict (timeout, network error, bad answer) means no signature.
+// Render's free plan can take about a minute to wake up, so allow 90 s.
+let res: Response;
+let verdict: {
   decision?: string;
   findings?: { code: string; blocking: boolean; details?: { reason?: string } }[];
   error?: { code: string; message: string };
 };
+try {
+  res = await fetch(`${BARET_API}/v1/analyze`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      chain: CHAIN,
+      request: { kind: "transaction", tx: action.tx },
+      policyTemplate: "balanced",
+    }),
+    signal: AbortSignal.timeout(90_000),
+  });
+  verdict = (await res.json()) as typeof verdict;
+} catch (e) {
+  console.log(`Baret did not answer (${(e as Error).name}). Not signing.`);
+  process.exit(1);
+}
 if (!res.ok || !verdict.decision) {
   // Fail-closed: no verdict, no signature.
   console.log(`Baret did not answer (${res.status} ${verdict.error?.code ?? ""}). Not signing.`);

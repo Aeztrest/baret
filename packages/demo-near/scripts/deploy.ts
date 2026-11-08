@@ -24,4 +24,4 @@ const out = await vault.signAndSendTransaction({
   throwOnFailure: true,
 });
 console.log(`Vault deployed to ${env("NEAR_VAULT_ID")}: ${link(out.transaction.hash)}`);
-console.log("Next: pnpm setup");
+console.log("Next: pnpm setup-vault");

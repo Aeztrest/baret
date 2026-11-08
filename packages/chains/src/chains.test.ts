@@ -88,4 +88,11 @@ describe("deployments", () => {
     expect(getDeployment("eip155:10143", "ReputationRegistry")).not.toBeNull();
     expect(getDeployment("eip155:143", "PaymentGuardFactory")).toBeNull();
   });
+
+  it("has the NEAR testnet demo vault, known to the engine", () => {
+    const vault = getDeployment("near:testnet", "BaretVault");
+    expect(vault?.address).toBe("baret-vault.aeztrest-baret.testnet");
+    expect(knownAddresses("near:testnet")).toEqual([vault?.address]);
+    expect(knownAddresses("near:mainnet")).toEqual([]);
+  });
 });

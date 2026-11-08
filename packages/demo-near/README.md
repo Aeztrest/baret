@@ -13,7 +13,7 @@ pnpm keys                          # key pairs for the vault, the agent, the sho
 pnpm accounts                      # the owner creates them as sub-accounts and funds them
 # download baret_near_vault.wasm from the "Contracts (NEAR)" CI run (artifact baret-near-vault-wasm)
 pnpm deploy-vault -- ./baret_near_vault.wasm
-pnpm setup                         # NEAR: 1 per transfer, 3 per day; the shop is the only receiver; 2 NEAR in
+pnpm setup-vault                   # NEAR: 1 per transfer, 3 per day; the shop is the only receiver; 2 NEAR in
 pnpm agent-key                     # the agent's key: execute_transfer on the vault only, 0.25 NEAR of fees
 ```
 
