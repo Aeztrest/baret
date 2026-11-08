@@ -276,6 +276,123 @@ describe("NEAR adapter", () => {
     });
   });
 
+  describe("NEAR Intents quotes (TN.8)", () => {
+    const DEPOSIT = "0abb20418af35c7061cde7cd51effdfc0222852f8c63ea60104b26d773d6487a";
+    const WRAP = "wrap.testnet";
+    const quote = (over: { quote?: object; quoteRequest?: object } = {}) => ({
+      quote: {
+        amountIn: NEAR.toString(),
+        amountOut: "3568328",
+        amountInUsd: "3.56",
+        amountOutUsd: "3.55",
+        depositAddress: DEPOSIT,
+        deadline: "2030-01-01T00:00:00.000Z",
+        ...over.quote,
+      },
+      quoteRequest: {
+        dry: false,
+        originAsset: `nep141:${WRAP}`,
+        destinationAsset: `nep141:${USDC}`,
+        recipient: "alice.testnet",
+        refundTo: "alice.testnet",
+        appFees: [],
+        ...over.quoteRequest,
+      },
+    });
+    const deposit = (amount = NEAR) => ({
+      signerId: "alice.testnet",
+      receiverId: WRAP,
+      actions: [
+        {
+          type: "FunctionCall",
+          methodName: "ft_transfer",
+          args: { receiver_id: DEPOSIT, amount: amount.toString() },
+          gas: "30000000000000",
+          deposit: "1",
+        },
+      ],
+    });
+    const runQuote = async (tx: unknown, intents: unknown) => {
+      const { createPolicy } = await import("@baret/core");
+      const { policyContext } = await import("@baret/chains");
+      const rpc = fakeRpc();
+      const base = rpc.viewAccount;
+      rpc.viewAccount = async (id) =>
+        id === WRAP
+          ? { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n }
+          : base(id, "blockhash");
+      const a = adapter(rpc);
+      return a.analyze({
+        chain,
+        request: a.requestSchema.parse({ kind: "transaction", tx, intents }),
+        account: null,
+        policy: createPolicy("balanced", policyContext(chain)),
+        payment: null,
+        now: 1_800_000_000,
+      });
+    };
+
+    it("lets a deposit that matches a quote paying the signer through, wNEAR known", async () => {
+      expect(codes(await runQuote(deposit(), quote()))).toEqual([]);
+    });
+
+    it("shows an app fee the quote adds", async () => {
+      const r = await runQuote(
+        deposit(),
+        quote({ quoteRequest: { appFees: [{ recipient: "app.testnet", fee: 20 }] } }),
+      );
+      expect(r.drafts.find((d) => d.code === "INTENTS_APP_FEE")?.values).toEqual({
+        amount: "0.2%",
+        recipient: "app.testnet",
+      });
+    });
+
+    it("blocks a quote that pays out or refunds to someone else", async () => {
+      const r = await runQuote(
+        deposit(),
+        quote({ quoteRequest: { recipient: "attacker.testnet", refundTo: "attacker.testnet" } }),
+      );
+      const found = r.drafts.find((d) => d.code === "INTENTS_RECIPIENT_MISMATCH");
+      expect(found?.details).toMatchObject({ fields: ["recipient", "refundTo"] });
+      expect(found?.values).toEqual({ recipient: "attacker.testnet", address: "alice.testnet" });
+      const refundOnly = await runQuote(
+        deposit(),
+        quote({ quoteRequest: { refundTo: "attacker.testnet" } }),
+      );
+      expect(
+        refundOnly.drafts.find((d) => d.code === "INTENTS_RECIPIENT_MISMATCH")?.details,
+      ).toMatchObject({ fields: ["refundTo"] });
+    });
+
+    it("blocks a deposit that does not match the quote", async () => {
+      const r = await runQuote(deposit(2n * NEAR), quote());
+      expect(codes(r)).toContain("INTENTS_DEPOSIT_MISMATCH");
+    });
+
+    it("fails closed on a dry or expired quote", async () => {
+      // The deposit then counts as a plain transfer out, so the loss rule fails closed too.
+      expect(codes(await runQuote(deposit(), quote({ quoteRequest: { dry: true } })))).toContain(
+        "INTENTS_QUOTE_INVALID",
+      );
+      expect(
+        codes(await runQuote(deposit(), quote({ quote: { deadline: "2020-01-01T00:00:00Z" } }))),
+      ).toContain("INTENTS_QUOTE_INVALID");
+    });
+
+    it("measures the loss from the quote's prices, not the whole deposit", async () => {
+      // Balanced allows 50 %: a fair swap passes, half the value gone does not.
+      const fair = await runQuote(deposit(), quote());
+      expect(codes(fair)).not.toContain("ESTIMATED_LOSS_EXCEEDS_MAX");
+      const bad = await runQuote(deposit(), quote({ quote: { amountOutUsd: "1.00" } }));
+      expect(codes(bad)).toContain("ESTIMATED_LOSS_EXCEEDS_MAX");
+      const noPrices = await runQuote(
+        deposit(),
+        quote({ quote: { amountInUsd: undefined, amountOutUsd: undefined } }),
+      );
+      expect(codes(noPrices)).toContain("LOSS_PERCENT_UNAVAILABLE");
+    });
+  });
+
   it("reads a NEP-141 transfer, its balance, and an unknown contract", async () => {
     const r = await run({
       signerId: "alice.testnet",

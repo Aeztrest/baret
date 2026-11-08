@@ -83,6 +83,10 @@ export const FINDING_CODES = [
   "CONTRACT_DEPLOY_DETECTED",
   "FUNCTION_CALL_KEY_ADDED",
   "CHAIN_SIGNATURE_REQUEST",
+  "INTENTS_RECIPIENT_MISMATCH",
+  "INTENTS_DEPOSIT_MISMATCH",
+  "INTENTS_QUOTE_INVALID",
+  "INTENTS_APP_FEE",
 ] as const;
 
 export type FindingCode = (typeof FINDING_CODES)[number];
@@ -340,6 +344,21 @@ export const FINDING_SPECS = {
   FUNCTION_CALL_KEY_ADDED: { severity: "low", rule: warning, families: ["near"] },
   // A signature for another chain: the transaction it signs is not simulated here.
   CHAIN_SIGNATURE_REQUEST: { severity: "medium", rule: warning, families: ["near"] },
+  // NEAR Intents (TN.8): the 1Click quote sent with the deposit says where the swap pays.
+  INTENTS_RECIPIENT_MISMATCH: {
+    severity: "critical",
+    rule: toggle("near.blockIntentsMismatch"),
+    families: ["near"],
+  },
+  INTENTS_DEPOSIT_MISMATCH: {
+    severity: "high",
+    rule: toggle("near.blockIntentsMismatch"),
+    families: ["near"],
+  },
+  // A quote was sent but cannot be read, has expired or has no deposit address.
+  INTENTS_QUOTE_INVALID: { severity: "high", rule: failClosed(), families: ["near"] },
+  // A fee the quote adds for an app: shown, never blocking on its own.
+  INTENTS_APP_FEE: { severity: "low", rule: warning, families: ["near"] },
 } as const satisfies Record<FindingCode, FindingSpec>;
 
 /**

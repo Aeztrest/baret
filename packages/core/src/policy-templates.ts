@@ -63,6 +63,8 @@ const base = (name: PolicyTemplateName): GuardPolicy => {
     near: {
       blockDeleteAccount: true,
       blockContractDeploy: !permissive,
+      // Paying a swap's output to someone else is never what the signer meant.
+      blockIntentsMismatch: true,
     },
   };
 };

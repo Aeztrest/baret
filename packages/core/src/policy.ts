@@ -103,6 +103,12 @@ export const nearPolicySchema = z
     blockDeleteAccount: z.boolean(),
     /** DeployContract replaces the code that runs on the account. */
     blockContractDeploy: z.boolean(),
+    /**
+     * A NEAR Intents swap whose quote pays out or refunds to someone other than the
+     * signer, or whose deposit does not match the quote. Defaults to on for policies
+     * saved before it existed.
+     */
+    blockIntentsMismatch: z.boolean().default(true),
   })
   .strict();
 
@@ -153,6 +159,7 @@ export const POLICY_FIELDS = [
   "casper.blockSessionCode",
   "near.blockDeleteAccount",
   "near.blockContractDeploy",
+  "near.blockIntentsMismatch",
 ] as const;
 
 export type PolicyField = (typeof POLICY_FIELDS)[number];

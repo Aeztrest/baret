@@ -227,6 +227,12 @@ export const policy = {
       hint: "Blocks a request that deploys contract code to an account, which then runs with that account's funds.",
       families: ["near"],
     },
+    "near.blockIntentsMismatch": {
+      group: "dangerous",
+      label: "Block swaps that pay someone else",
+      hint: "Blocks a NEAR Intents swap whose quote pays out or refunds to another account, or whose deposit does not match the quote.",
+      families: ["near"],
+    },
 
     "core.maxLossPercent": {
       group: "limits",

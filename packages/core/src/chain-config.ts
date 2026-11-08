@@ -27,6 +27,11 @@ export const chainConfigSchema = z
     nativeAsset: assetInfoSchema,
     /** The canonical USDC, when the chain has one; it is the default x402 payment asset. */
     usdc: assetInfoSchema.nullable(),
+    /**
+     * The canonical wrapped native token (wNEAR, WETH), when the chain has one. Swaps and
+     * intents deposit it, so the engine treats its contract as known.
+     */
+    wrappedNative: assetInfoSchema.optional(),
     explorer: z
       .object({
         /** URL templates with {hash} / {address}. */

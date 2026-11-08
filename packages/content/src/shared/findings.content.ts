@@ -667,6 +667,37 @@ export const findings = {
     body: "This request asks {contract} to sign a transaction on another chain with the key at path {path}.",
     why: "Baret checks the NEAR side of this request. The transaction on the other chain is signed, not simulated here.",
   },
+  INTENTS_RECIPIENT_MISMATCH: {
+    emitter: "near",
+    values: ["recipient", "address"],
+    title: "The swap pays someone else",
+    body: "The quote for this swap sends the output or the refund to {recipient}, not to {address}.",
+    why: "A NEAR Intents swap pays whoever the quote names. A quote changed by a page, a prompt or an app sends your money to that account.",
+    fix: "Decline. Ask for a new quote that names your own account.",
+  },
+  INTENTS_DEPOSIT_MISMATCH: {
+    emitter: "near",
+    values: ["address"],
+    title: "The deposit does not match the quote",
+    body: "This request does not send the quote's amount and asset to its deposit address {address}.",
+    why: "The swap starts only from the deposit the quote expects. Anything else is lost, refunded late, or paid to another swap.",
+    fix: "Decline, then build the deposit again from the quote.",
+  },
+  INTENTS_QUOTE_INVALID: {
+    emitter: "near",
+    values: [],
+    title: "The swap quote cannot be checked",
+    body: "A quote came with this request, but Baret could not read it, it has expired, or it has no deposit address.",
+    why: "Without a readable quote, Baret cannot tell who the swap pays. A check that cannot run counts as failed.",
+    fix: "Get a fresh quote and try again.",
+  },
+  INTENTS_APP_FEE: {
+    emitter: "near",
+    values: ["amount", "recipient"],
+    title: "An app fee of {amount}",
+    body: "The quote takes {amount} of the swap for {recipient}.",
+    why: "Apps may add a fee to a swap. A fee you did not expect is worth a look before you sign.",
+  },
 } as const satisfies Record<FindingCode, Finding>;
 
 export type FindingsContent = typeof findings;

@@ -19,6 +19,7 @@
     "agent-key": "tsx scripts/agent-key.ts",
     "upgrade-vault": "tsx scripts/upgrade.ts",
     "evm-setup": "tsx scripts/evm-setup.ts",
+    "intents-check": "tsx scripts/intents-check.ts",
     "agent": "tsx src/agent-cli.ts"
   },
   "dependencies": {
