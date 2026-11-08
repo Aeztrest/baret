@@ -8,6 +8,10 @@ import { z } from "zod";
  *                                                                     signed or unsigned
  *
  * Amounts are yoctoNEAR (or token base units) as decimal strings; gas is in gas units.
+ *
+ * Either kind may carry `intents`: the NEAR Intents 1Click quote (POST /v0/quote answer)
+ * the transaction deposits into (TN.8). Baret checks who the quote pays and that the
+ * deposit matches it. Unknown fields of the quote are kept: the API adds fields.
  */
 
 /** A NEAR account id: 2–64 chars, lowercase, digits, `-`, `_`, `.` separators. */
@@ -68,10 +72,51 @@ export const nearTransactionSchema = z
   })
   .strict();
 
+export const intentsQuoteSchema = z
+  .object({
+    quote: z
+      .object({
+        amountIn: amount,
+        amountOut: amount,
+        amountInUsd: z.string().optional(),
+        amountOutUsd: z.string().optional(),
+        depositAddress: z.string().min(1).optional(),
+        deadline: z.string().optional(),
+      })
+      .loose(),
+    quoteRequest: z
+      .object({
+        dry: z.boolean(),
+        originAsset: z.string().min(1),
+        destinationAsset: z.string().min(1),
+        recipient: z.string().min(1),
+        refundTo: z.string().min(1),
+        appFees: z
+          .array(z.object({ recipient: z.string(), fee: z.number().nonnegative() }).loose())
+          .optional(),
+      })
+      .loose(),
+  })
+  .loose();
+
 export const nearRequestSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("transaction"), tx: nearTransactionSchema }).strict(),
-  z.object({ kind: z.literal("borsh"), base64: z.string().min(1) }).strict(),
+  z
+    .object({
+      kind: z.literal("transaction"),
+      tx: nearTransactionSchema,
+      intents: intentsQuoteSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("borsh"),
+      base64: z.string().min(1),
+      intents: intentsQuoteSchema.optional(),
+    })
+    .strict(),
 ]);
+
+export type IntentsQuote = z.infer<typeof intentsQuoteSchema>;
 
 export type NearAction = z.infer<typeof nearActionSchema>;
 export type NearTransaction = z.infer<typeof nearTransactionSchema>;

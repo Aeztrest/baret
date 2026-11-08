@@ -8,7 +8,7 @@ import type {
 } from "@baret/core";
 import { InvalidRequestError, parseCaip10, parseCaip19 } from "@baret/core";
 import { toTransaction } from "./decode.js";
-import type { NearRequest, NearTransaction } from "./request.js";
+import type { IntentsQuote, NearRequest, NearTransaction } from "./request.js";
 import type { NearAccountState, NearRpc } from "./rpc.js";
 
 /**
@@ -41,6 +41,8 @@ interface Movement {
   amount: bigint;
   /** A Baret vault pays it, not the signer. */
   viaVault?: string;
+  /** The deposit of a NEAR Intents swap: an exchange, not a loss (its loss is the quote's). */
+  swap?: true;
 }
 
 interface Analysis {
@@ -68,11 +70,13 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   if (signer === null) a.failure = "E_SIGNER_MISSING";
 
   readActions(a, deps);
+  const intents = (input.request as NearRequest).intents;
+  if (intents) intentsCheck(a, intents, input.now);
   await preflight(a, deps, input, receiver, signer, pin.hash);
   detect(a, deps, input, receiver);
 
   const balances = await balancesBefore(a, deps, signer, pin.hash);
-  rules(a, input, balances);
+  rules(a, input, balances, intents);
   if (input.payment) payment(a, input);
 
   if (a.failure !== null) {
@@ -356,8 +360,10 @@ function detect(
 ): void {
   const { tx } = a;
   const known = new Set([...deps.knownContracts, tx.signerId]);
-  const usdc = input.chain.usdc ? parseCaip19(input.chain.usdc.id)?.assetReference : undefined;
-  if (usdc) known.add(usdc);
+  for (const asset of [input.chain.usdc, input.chain.wrappedNative]) {
+    const ref = asset ? parseCaip19(asset.id)?.assetReference : undefined;
+    if (ref) known.add(ref);
+  }
 
   const calls = tx.actions.some((x) => x.type === "FunctionCall");
   if (calls && receiver?.hasCode && !known.has(tx.receiverId)) {
@@ -406,22 +412,35 @@ async function balancesBefore(
 function delta(a: Analysis, asset: string): bigint {
   let d = 0n;
   for (const m of a.movements) {
-    if (m.asset !== asset || m.viaVault) continue;
+    if (m.asset !== asset || m.viaVault || m.swap) continue;
     if (m.from === a.user) d -= m.amount;
     if (m.to === a.user) d += m.amount;
   }
   return d;
 }
 
-function rules(a: Analysis, input: AdapterInput, b: Balances): void {
+function rules(a: Analysis, input: AdapterInput, b: Balances, intents?: IntentsQuote): void {
   if (a.failure !== null) return; // a request that fails moves nothing
   const p = input.policy.core;
   if (p.maxLossPercent !== null) {
     let worst = 0;
+    // A swap deposit is an exchange: what it loses is the gap between the quote's values.
+    if (a.movements.some((m) => m.swap)) {
+      const loss = quoteLossPercent(intents);
+      if (loss === null) {
+        a.drafts.push({
+          code: "LOSS_PERCENT_UNAVAILABLE",
+          values: {},
+          rule: "core.maxLossPercent",
+        });
+        worst = -1;
+      } else worst = loss;
+    }
     for (const asset of new Set([
       NATIVE,
-      ...a.movements.filter((m) => !m.viaVault).map((m) => m.asset),
+      ...a.movements.filter((m) => !m.viaVault && !m.swap).map((m) => m.asset),
     ])) {
+      if (worst < 0) break;
       const d = delta(a, asset);
       if (d >= 0n) continue;
       const pre = asset === NATIVE ? b.native : (b.tokens.get(asset) ?? null);
@@ -469,6 +488,73 @@ function rules(a: Analysis, input: AdapterInput, b: Balances): void {
       });
     }
   }
+}
+
+// ------------------------------------------------------------------ NEAR Intents (TN.8)
+
+/**
+ * The 1Click quote the transaction deposits into. Who it pays, who it refunds and what it
+ * charges are in the quote, not in the transaction, so they are checked here: the
+ * output and the refund must go to the signer (an agent's own account), and the
+ * transaction must send exactly the quote's amount of its origin asset to its deposit
+ * address. The quote's signature is not verified (1Click publishes no key to check it
+ * against); Baret reads the quote the agent will act on.
+ */
+function intentsCheck(a: Analysis, q: IntentsQuote, now: number): void {
+  const { quote, quoteRequest: r } = q;
+  const deadline = quote.deadline ? Date.parse(quote.deadline) / 1000 : null;
+  if (!quote.depositAddress || r.dry || (deadline !== null && deadline < now)) {
+    a.drafts.push({ code: "INTENTS_QUOTE_INVALID", values: {} });
+    return;
+  }
+  const parties: [string, string][] = [
+    ["recipient", r.recipient],
+    ["refundTo", r.refundTo],
+  ];
+  // One finding per code reaches the verdict, so both fields go in one draft.
+  const wrong = parties.filter(([, account]) => account !== a.user);
+  const first = wrong[0];
+  if (first) {
+    a.drafts.push({
+      code: "INTENTS_RECIPIENT_MISMATCH",
+      values: { recipient: first[1], address: a.user },
+      details: { fields: wrong.map(([field]) => field), accounts: wrong.map(([, acc]) => acc) },
+    });
+  }
+  for (const fee of r.appFees ?? []) {
+    if (fee.fee > 0) {
+      a.drafts.push({
+        code: "INTENTS_APP_FEE",
+        values: { amount: pct(fee.fee / 100), recipient: fee.recipient },
+        details: { bps: fee.fee },
+      });
+    }
+  }
+  // NEAR-side origin assets are NEP-141 tokens ("nep141:wrap.near").
+  const token = r.originAsset.startsWith("nep141:") ? r.originAsset.slice(7) : null;
+  const deposit = a.movements.find(
+    (m) =>
+      m.to === quote.depositAddress &&
+      m.from === a.tx.signerId &&
+      m.asset === token &&
+      m.amount === BigInt(quote.amountIn),
+  );
+  if (deposit) deposit.swap = true;
+  else {
+    a.drafts.push({
+      code: "INTENTS_DEPOSIT_MISMATCH",
+      values: { address: quote.depositAddress },
+      details: { expected: { asset: r.originAsset, amount: quote.amountIn } },
+    });
+  }
+}
+
+/** The quote's value loss in percent (USD in vs USD out), or null when it has no prices. */
+function quoteLossPercent(q?: IntentsQuote): number | null {
+  const usdIn = Number(q?.quote.amountInUsd);
+  const usdOut = Number(q?.quote.amountOutUsd);
+  if (!Number.isFinite(usdIn) || !Number.isFinite(usdOut) || usdIn <= 0) return null;
+  return Math.max(0, ((usdIn - usdOut) / usdIn) * 100);
 }
 
 // ------------------------------------------------------------------ x402
