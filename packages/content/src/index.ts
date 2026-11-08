@@ -24,6 +24,8 @@ export { home } from "./web/home.content.js";
 export type { HubContent } from "./web/hub.content.js";
 export { hub } from "./web/hub.content.js";
 export { launchpad } from "./web/launchpad.content.js";
+export type { NearContent } from "./web/near.content.js";
+export { near } from "./web/near.content.js";
 export { novaswap } from "./web/novaswap.content.js";
 export { orbityield } from "./web/orbityield.content.js";
 export type { AnalysisPanelContent } from "./web/panel.content.js";

@@ -42,11 +42,12 @@ Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goe
   → 2026-11-08: `packages/demo-near/scripts/agent-key.ts` (with keys, accounts, deploy, setup scripts). Runs once the owner has a funded testnet account and says yes to the deploy.
 - [x] **TN.5 `packages/chain-near` engine** — decode (JSON + borsh), preflight over RPC, effects, family detectors, adapter registered in `apps/api`; staging serves `near:testnet`.
   → 2026-11-08: adapter built (12 tests: transfers, keys, delete/deploy, vault refusal prediction, NEP-141, unknown contract, Chain Signatures, reported account, x402) and registered in `apps/api`. Staging needs `CHAIN_NEAR_TESTNET_RPC_URL` on Render (owner).
-- [~] **TN.6 Agent demo** — TypeScript agent: asks `/v1/analyze`, then calls the vault with its function call key; four scenarios (normal payment, over the limit refused on chain, receiver not allowed, a full access key addition blocked before signing).
-  → 2026-11-08: `packages/demo-near` agent CLI with the four scenarios and `--force`; scenario tests. Live run waits for TN.3 deploy and `CHAIN_NEAR_TESTNET_RPC_URL` on staging.
+- [x] **TN.6 Agent demo** — TypeScript agent: asks `/v1/analyze`, then calls the vault with its function call key; four scenarios (normal payment, over the limit refused on chain, receiver not allowed, a full access key addition blocked before signing).
+  → 2026-11-08: `packages/demo-near` agent CLI with the four scenarios and `--force`; scenario tests. Live run 2026-11-08 against staging: pay Safe and sent; over-limit, wrong-receiver, add-key Blocked; with `--force` the chain refused all three.
 - [ ] **TN.7 Chain Signatures** — the vault forwards an approved request to the MPC contract; one payment on an EVM testnet limited by the NEAR policy.
 - [ ] **TN.8 NEAR Intents check** — read a `dry: true` quote before signing, apply the policy (mainnet, small amounts).
-- [ ] **TN.9 Web panel** — `/near` in `apps/web`: the vault's policy, spending and the latest verdicts.
+- [x] **TN.9 Web panel** — `/near` in `apps/web`: the vault's policy, spending and the latest verdicts.
+  → 2026-11-08: `/near` (header nav "NEAR"): vault read live over NEAR RPC in the browser (`demo-near` `view.ts`, `publicRpcUrl` in the registry), the four requests checked live through `/api`, the recorded runs with tx links. Checked in the browser against staging: Safe, Blocked (E_PER_TRANSFER_LIMIT), Blocked (E_RECEIVER_NOT_ALLOWED), Blocked (AUTHORITY_CHANGE).
 - [ ] **TN.10 Agent Market listing** — owner action with the steps written.
 - [ ] **TN.11 Submission** — README (try it: do X, see Y), video, X post (owner), repo public + `hackathon-submission` tag (owner's yes), form (payload shown first).
 

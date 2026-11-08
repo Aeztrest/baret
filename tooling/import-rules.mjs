@@ -56,6 +56,7 @@ const RULES = {
     "wallet-core",
     "routes",
     "demo-evm",
+    "demo-near",
   ],
 };
 

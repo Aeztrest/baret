@@ -18,6 +18,14 @@
       "role": "NEAR demo: the shop the agent pays for API answers, on the vault's receiver list",
       "source": null,
       "checkedOnChain": "2026-11-08"
+    },
+    "DemoAgent": {
+      "address": "baret-agent.aeztrest-baret.testnet",
+      "kind": "account",
+      "listed": false,
+      "role": "NEAR demo: the AI agent; the vault's only agent, holds a function call key limited to execute_transfer",
+      "source": null,
+      "checkedOnChain": "2026-11-08"
     }
   }
 }

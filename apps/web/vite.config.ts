@@ -51,9 +51,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // The analysis server during development. apps/api, `pnpm --filter @baret/api dev`.
+      // The analysis server during development: apps/api (`pnpm --filter @baret/api dev`),
+      // or staging with BARET_DEV_API=https://baret-api-staging.onrender.com.
       "/api": {
-        target: "http://localhost:8080",
+        target: process.env.BARET_DEV_API ?? "http://localhost:8080",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },

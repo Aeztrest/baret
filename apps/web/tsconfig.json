@@ -28,6 +28,9 @@
     },
     {
       "path": "../../packages/demo-evm"
+    },
+    {
+      "path": "../../packages/demo-near"
     }
   ]
 }

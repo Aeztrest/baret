@@ -101,7 +101,7 @@ A package may import only from the packages in its row (plus external libraries 
 | `demo-near` | `core`, `chains` | near-api-js (ADR-0010, ADR-0011) |
 | `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core`, `routes` | none directly |
-| `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes`, `demo-evm` | none directly |
+| `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes`, `demo-evm`, `demo-near` (its browser-safe entry: read-only vault view, `/near`) | none directly |
 
 The script also fails on a package or app that has no row, so a new package cannot skip this table, and on a package with a `tsconfig.json` that the root `tsconfig.json` does not reference (otherwise `tsc -b` skips it silently; this happened to `chain-evm` and is how a type error reached `main`). Test files (`*.test.*`, `test/`) may import chain libraries to build fixtures; the `@baret` rule still applies to them. Chain libraries it knows: `viem`, `ethers`, `@wagmi/core` (EVM); `@stellar/stellar-sdk`, `@stellar/stellar-base`, `@stellar/freighter-api` (Stellar); `casper-js-sdk`, CSPR.click (Casper). Add a new chain library to the script when an adapter starts using it. A demo package (ADR-0010, `DEMO_FAMILY` in the script) may use the libraries of the family it demos.
 

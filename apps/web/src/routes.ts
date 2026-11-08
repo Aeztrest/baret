@@ -36,6 +36,14 @@ export const routes = defineRoutes({
     load: () => import("./pages/HubPage.js"),
   },
 
+  near: {
+    path: "/near",
+    title: "NEAR agent vault · Baret",
+    label: "NEAR",
+    group: "marketing",
+    load: () => import("./pages/NearPage.js"),
+  },
+
   scrybe: {
     path: "/scrybe",
     title: "Scrybe",

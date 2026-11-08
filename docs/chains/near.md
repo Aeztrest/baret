@@ -1,6 +1,6 @@
 # NEAR family
 
-Status: **in progress** — core family, registry, vault contract (tests in CI) and the engine adapter built 2026-11-08; not deployed (ADR-0011; NEAR HACKATHON 2026, deadline 2026-11-14)
+Status: **live (testnet)** — core family, registry, vault contract and the engine adapter built 2026-11-08; the demo vault is deployed on NEAR testnet (`baret-vault.aeztrest-baret.testnet`, `packages/chains/deployments/near-testnet.json`), staging serves `near:testnet`, and the web panel `/near` reads it live. Not on mainnet, not audited (ADR-0011; NEAR HACKATHON 2026, deadline 2026-11-14)
 Last verified: 2026-11-08
 
 Package: `packages/chain-near`. Contract: `contracts/near`. Chains: `near:testnet`, `near:mainnet`.
