@@ -24,7 +24,9 @@ GitHub Actions is the gate: nothing reaches staging or production unless CI is g
 | `contracts-evm.yml` | PR/push touching `contracts/evm/**` | `forge fmt --check`, `forge build --sizes`, `forge test` (checkout with submodules: `forge-std` v1.17.0) | live |
 | `contracts-stellar.yml` | `contracts/stellar/**` | `cargo fmt --check`, `clippy -D warnings`, `cargo test`, wasm build | Phase 3 |
 | `contracts-casper.yml` | `contracts/casper/**` | Odra build + tests | Phase 4 |
+| `contracts-near.yml` | PR/push touching `contracts/near/**` (and on demand) | `cargo fmt --check`, `cargo test` (Rust 1.95), `cargo near build non-reproducible-wasm`, the wasm's NEAR code hash (base58 of sha256) in the job summary, artifact `baret-near-vault-wasm` | live |
 | `release.yml` | tag `v*` | §3 | Phase 2 |
+| `keep-warm.yml` | every 10 min, 9–30 November (and on demand) | `GET /health` on the staging API, so the free Render instance does not sleep while NEAR HACKATHON judges call it (2026-11-14 → 25) | live |
 | `chain-check.yml` | nightly cron | Live testnet checks: RPCs answer, deployed contracts still exist, one analyse per chain against staging | Phase 2 |
 | `keep-warm.yml` | cron, only while the API is on Render's free plan | ping `/health` | Phase 2 (removed on a paid plan) |
 

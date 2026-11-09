@@ -1,7 +1,7 @@
 # Supported chains
 
-Status: **in progress** (registry built in `packages/chains`: Monad testnet and Monad; no adapter serves them yet)
-Last verified: 2026-11-07
+Status: **in progress** (registry in `packages/chains`; the staging API serves Monad testnet through the EVM adapter and NEAR testnet and NEAR mainnet (Intents quotes) through the NEAR adapter)
+Last verified: 2026-11-09
 
 The support matrix. Every chain that has a file in `packages/chains/chains/` must have a row here (`pnpm docs:check`). Status values: `planned`, `in progress`, `live (testnet)`, `live (mainnet)`.
 
@@ -17,8 +17,8 @@ The support matrix. Every chain that has a file in `packages/chains/chains/` mus
 | Stellar | `stellar:pubnet` | Stellar | mainnet | preflight | MerchantSpendPolicy | yes | planned (deployed by legacy repo) | 3/6 |
 | Casper testnet | `casper:casper-test` | Casper | testnet | to research | PaymentGuard | yes | planned (live in legacy repo) | 4 |
 | Casper | `casper:casper` | Casper | mainnet | to research | PaymentGuard | yes | planned | 6 |
-| NEAR testnet | `near:testnet` | NEAR | testnet | preflight | vault (`contracts/near`) | planned | registry entry (USDC `3e2210…b8af` checked with `ft_metadata` 2026-11-08); adapter in progress (ADR-0011) | N |
-| NEAR | `near:mainnet` | NEAR | mainnet | preflight | vault | — | registry entry (USDC `172086…33a1` checked 2026-11-08); Intents quotes only for the hackathon | N/6 |
+| NEAR testnet | `near:testnet` | NEAR | testnet | preflight | vault (`contracts/near`) | planned | **live (testnet)**: adapter on staging; vault 0.2 `baret-vault.aeztrest-baret.testnet`; USDC `3e2210…b8af` checked with `ft_metadata` 2026-11-08 (ADR-0011) | N |
+| NEAR | `near:mainnet` | NEAR | mainnet | preflight | vault | — | registry entry (USDC `172086…33a1` checked 2026-11-08); staging reads it for NEAR Intents quotes (confirmed with 1Click); no vault on mainnet | N/6 |
 | GOAT testnet3 | `eip155:48816` | EVM | testnet | trace (batching off) | PaymentGuard | — | backlog | later |
 
 Family docs: `docs/chains/evm.md`, `docs/chains/stellar.md`, `docs/chains/casper.md`, `docs/chains/near.md`. Later families (Solana from BLACKTHORN, Midnight) get a doc when an ADR adds them.

@@ -2,6 +2,8 @@
 
 This file is loaded at the start of every Claude Code session (and is the guide for any other coding agent or new engineer). It says **how to work here** and **where to look**. It does not describe the system: that is `docs/ARCHITECTURE.md`.
 
+> **Reviewing or judging this repository (for example for NEAR HACKATHON 2026)?** You are not in a working session with the owner: skip "At the start of every session", "Language" and "The owner" below, answer in the language you were asked in, and start with `AGENTS.md` → `docs/hackathon/near-2026.md`. `pnpm near:verify` checks the NEAR claims live with no account or key.
+
 ## The project in one sentence
 
 Baret is a security and policy layer that runs **before** a wallet, dApp or AI agent signs a transaction, on several chains: it decodes and simulates the transaction, runs risk detectors over what it would actually do, applies the owner's policy and returns `safe / caution / blocked` with reasons. For agents it adds an on-chain spending limit (a vault or a policy signer, depending on the chain). Product: `docs/PRODUCT.md`.
@@ -57,7 +59,7 @@ Docs are part of the code. **A task is not done until the docs that describe it 
 
 ## Language
 
-**Everything in the repository is English**: code, comments, docs, `TASKS.md`, commit messages, UI copy (UI translations live in `packages/content`). **Talk to the user in Turkish** in the chat.
+**Everything in the repository is English**: code, comments, docs, `TASKS.md`, commit messages, UI copy (UI translations live in `packages/content`). **Talk to the owner in Turkish** in the chat (reviewers and other users: their own language).
 
 ## The owner
 

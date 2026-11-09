@@ -1,0 +1,21 @@
+name: Keep staging warm
+
+# The staging API is a free Render instance that sleeps after 15 idle minutes; a cold
+# start takes up to a minute. NEAR HACKATHON judges and AI screeners call it from the
+# README (2026-11-14 → 2026-11-25), so it is pinged every 10 minutes in that window.
+# GitHub may delay scheduled runs; a late ping only means one slow first call.
+
+on:
+  schedule:
+    - cron: "*/10 * 9-30 11 *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: GET /health
+        run: curl -fsS --max-time 120 https://baret-api-staging.onrender.com/health -o /dev/null -w "%{http_code} in %{time_total}s\n" || true
