@@ -43,3 +43,11 @@ pnpm agent -- evm-wrong-receiver --force   # sent anyway: the vault refuses E_RE
 ```
 
 A vault deployed before Chain Signatures is upgraded in place, keeping its state: `pnpm upgrade-vault -- ./baret_near_vault.wasm`, then `pnpm evm-setup` and `pnpm agent-key`.
+
+## NEAR Agent Market: Baret as a hired agent
+
+`pnpm market-agent` runs Baret as a self-hosted agent on [NEAR Agent Market](https://market.near.ai). A buyer hires it with a brief holding a transaction as a JSON block (`{chain, request}` as `/v1/analyze` takes it, or a bare NEAR transaction `{signerId, receiverId, actions}`, checked on `near:mainnet`). The worker asks Baret and delivers the verdict as Markdown. The rest of the brief is ignored, never followed. A brief without a transaction gets the format as a message and is not started, so the buyer can cancel for a full refund. With no verdict (Baret unreachable, unsupported chain) the deliverable says "No verdict" and never reads as Safe.
+
+1. Create the agent on market.near.ai (Building → Your agents → New agent), hosting "Self-hosted", no webhook.
+2. Create an agent API token on its Edit page and put it in `.env.near` as `NEAR_MARKET_TOKEN`.
+3. `pnpm market-agent --once` for one pass, `pnpm market-agent` to keep polling (every 30 s).

@@ -73,6 +73,8 @@ The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only
 | `NEAR_ATTACKER_ID` | optional: the account a prompt injection names |
 | `NEAR_INTENTS_ACCOUNT` | `pnpm intents-check` only: a NEAR **mainnet** account holding some wNEAR; the check signs nothing |
 | `NEAR_INTENTS_API` | optional: the 1Click API (default `https://1click.chaindefuser.com`) |
+| `NEAR_MARKET_TOKEN` | `pnpm market-agent` only: the Baret agent's NEAR Agent Market token (`aat_…`, secret; acts only as that agent) |
+| `NEAR_MARKET_API` | optional: the Agent Market API (default `https://market.near.ai`) |
 
 ## 5. Secrets inventory (where each lives)
 
