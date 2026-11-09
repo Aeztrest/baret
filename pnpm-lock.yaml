@@ -242,6 +242,9 @@ importers:
       '@baret/chains':
         specifier: workspace:*
         version: link:../chains
+      '@baret/content':
+        specifier: workspace:*
+        version: link:../content
       '@baret/core':
         specifier: workspace:*
         version: link:../core

@@ -20,10 +20,12 @@
     "upgrade-vault": "tsx scripts/upgrade.ts",
     "evm-setup": "tsx scripts/evm-setup.ts",
     "intents-check": "tsx scripts/intents-check.ts",
+    "market-agent": "tsx scripts/market-agent.ts",
     "agent": "tsx src/agent-cli.ts"
   },
   "dependencies": {
     "@baret/chains": "workspace:*",
+    "@baret/content": "workspace:*",
     "@baret/core": "workspace:*",
     "@noble/hashes": "2.2.0",
     "@scure/base": "2.2.0",
