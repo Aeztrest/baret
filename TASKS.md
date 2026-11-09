@@ -53,7 +53,7 @@ Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goe
 - [~] **TN.10 Agent Market listing** — owner action with the steps written.
   → 2026-11-09: Agent Market is a hire-and-deliver marketplace, so Baret is listed as an agent that checks a transaction from the brief and delivers the verdict: `pnpm market-agent` (self-hosted worker, `src/market.ts`, 6 tests). Waits for the owner: account (confirmed email), the listing, its price, an agent token in `.env.near`, then one test hire and Live.
 - [~] **TN.11 Submission** — README (try it: do X, see Y), video, X post (owner), repo public + `hackathon-submission` tag (owner's yes), form (payload shown first).
-  → 2026-11-09: README rewritten for the hackathon (problem, how it works, a curl try-it checked against staging: Safe / E_PER_TRANSFER_LIMIT, recorded runs, contracts, baseline, limitations). Full git history scanned for keys, tokens, mnemonics, env files and keyed RPC URLs: nothing found. Open: LICENSE (proprietary today; owner's call before the repo goes public), video, X post, repo public, tag, form.
+  → 2026-11-09: README rewritten for the hackathon (problem, how it works, a curl try-it checked against staging: Safe / E_PER_TRANSFER_LIMIT, recorded runs, contracts, baseline, limitations). Full git history scanned for keys, tokens, mnemonics, env files and keyed RPC URLs: nothing found. LICENSE: the whole repository is MIT (ADR-0012, owner 2026-11-09); the commit e-mail stays public (owner). Open: video, X post, repo public, tag, form.
 
 ## Phase 0 — Foundation
 
@@ -66,6 +66,7 @@ Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goe
 - [x] **T0.4 Create the GitHub repository and push** — decided (D2, 2026-11-07): `Aeztrest/baret`, **private** until the first release, transferred to the company org when it exists. protect `main` (PR + CI required, no force-push, linear history); create `release` from `main` with the same protection; enable Dependabot alerts and secret scanning. Done when: CI runs green on GitHub.
   → done 2026-11-07: https://github.com/Aeztrest/baret (private), `main` default, `release` created, CI green on GitHub (PR #3 fixed a workflow error). **Not done:** branch protection and private vulnerability reporting: GitHub offers neither on a private repo of a free personal account (HTTP 403 "Upgrade to GitHub Pro"). See D8. Until then the PR-only rule in `CLAUDE.md` is the protection, and Render deploys only commits whose checks passed.
 - [x] **T0.5 License** — decided (D3, 2026-11-07): proprietary core; MIT for the published SDKs (`core`, `guard`, `agent-kit`). Add `LICENSE` at the root (proprietary) and per published package (MIT).
+  → 2026-11-09: superseded by ADR-0012: the whole repository is MIT.
   → root `LICENSE` added 2026-11-07; each published package adds its MIT `LICENSE` when it is created (T1.2, T1.9, T2.8).
 - [x] **T0.6 `SECURITY.md`, `CODEOWNERS`** — disclosure contact; owner as code owner of everything.
   → done 2026-11-07 (`SECURITY.md`, `.github/CODEOWNERS`); private vulnerability reporting is switched on with T0.4.

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Baret: a pre-signing transaction firewall and agent spend-limit layer for EVM, Stellar and Casper.",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "packageManager": "pnpm@11.1.3",
   "engines": {
     "node": ">=22.22.0",

@@ -141,4 +141,4 @@ All run in CI on every pull request.
 
 ## License
 
-See [`LICENSE`](LICENSE).
+MIT, see [`LICENSE`](LICENSE) (ADR-0012).
