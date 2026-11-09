@@ -10,8 +10,10 @@ name: Keep staging warm, serve Agent Market
 # GitHub may delay scheduled runs; a late run only means a slower first call or delivery.
 
 on:
+  # A plain cron: the date-limited "*/10 * 9-30 11 *" never fired in its first eight
+  # hours (2026-11-09). The window is checked in the first step instead.
   schedule:
-    - cron: "*/10 * 9-30 11 *"
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -22,13 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
+      - name: Stop after November 2026
+        id: window
+        run: echo "open=$([ "$(date -u +%Y%m%d)" -le 20261130 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: GET /health
+        if: steps.window.outputs.open == 'true' || github.event_name == 'workflow_dispatch'
         run: curl -fsS --max-time 120 https://baret-api-staging.onrender.com/health -o /dev/null -w "%{http_code} in %{time_total}s\n" || true
       - name: Check for the Agent Market token
         id: market
         env:
           TOKEN: ${{ secrets.NEAR_MARKET_TOKEN }}
-        run: echo "enabled=$([ -n "$TOKEN" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        run: echo "enabled=$([ -n "$TOKEN" ] && [ "${{ steps.window.outputs.open }}" = true ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         if: steps.market.outputs.enabled == 'true'
       - uses: pnpm/action-setup@v6
