@@ -31,6 +31,8 @@ const NATIVE = "native";
 const YOCTO = 24;
 /** Implicit accounts (64 hex, or 0x + 40 hex for ETH-implicit) are created by a transfer. */
 const IMPLICIT = /^([0-9a-f]{64}|0x[0-9a-f]{40})$/;
+/** A NEAR account id (nomicon: 2–64 chars, lowercase parts joined by "." , "-" or "_"). */
+const ACCOUNT_ID = /^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 
 /** A transfer the request makes, from whoever pays it, in base units. */
 interface Movement {
@@ -204,6 +206,14 @@ function readCall(
     });
   }
   if (method === "execute_transfer" && str("receiver") && str("amount") && str("asset")) {
+    // The vault holds "native" or NEP-141 tokens named by their contract. Anything else
+    // (a CAIP-19 id, a typo) is no asset it has a limit for: it refuses, and the id
+    // could not be written as an asset of the answer either.
+    const asset = str("asset") as string;
+    if (asset !== NATIVE && !ACCOUNT_ID.test(asset)) {
+      a.failure ??= "E_ASSET_NOT_ALLOWED";
+      return;
+    }
     a.movements.push({
       from: tx.receiverId,
       to: str("receiver") as string,
