@@ -1,28 +1,17 @@
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { readEnvFile } from "./env-file.js";
 
 /**
- * The demo's settings, from the environment or a local `.env.near` file next to this
- * package (gitignored: it holds testnet private keys). `.env.example` lists every name.
- * Nothing here has a default key: a missing value stops the script with its name.
+ * The owner's settings for the setup scripts, from the environment or a local
+ * `.env.near` file next to this package (gitignored: it holds testnet private keys,
+ * including the owner's). `.env.example` lists every name. Nothing here has a default
+ * key: a missing value stops the script with its name. The agent process never reads
+ * this file: it reads `.env.agent` through `agent-env.ts`.
  */
 
 const FILE = resolve(import.meta.dirname, "..", ".env.near");
 
-function fileValues(): Record<string, string> {
-  try {
-    const out: Record<string, string> = {};
-    for (const line of readFileSync(FILE, "utf8").split(/\r?\n/)) {
-      const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/.exec(line);
-      if (m?.[1]) out[m[1]] = (m[2] ?? "").replace(/^"(.*)"$/, "$1");
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-const values = { ...fileValues(), ...process.env } as Record<string, string | undefined>;
+const values = { ...readEnvFile(FILE), ...process.env } as Record<string, string | undefined>;
 
 export function env(name: string): string {
   const v = values[name]?.trim();

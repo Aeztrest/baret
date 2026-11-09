@@ -1,49 +1,68 @@
 //! Baret spend-limit vault for AI agents on NEAR (ADR-0011, docs/chains/near.md §3).
 //!
 //! The owner funds the vault with NEAR and NEP-141 tokens and sets the policy: for each
-//! asset a limit per transfer and a limit per rolling 24 hours, and the receivers an
-//! agent may pay. An agent's function call key reaches only `execute_transfer` on this
-//! contract, so a leaked agent key can spend at most what the policy allows and can never
-//! touch the owner's account.
+//! asset a limit per transfer, a limit per rolling 24 hours, and the receivers that asset
+//! may pay. An agent's function call key reaches only `execute_transfer` and
+//! `request_evm_signature` on this contract, so a leaked or prompt-injected agent can
+//! spend at most what the policy allows and can never touch the owner's account.
 //!
 //! Chain Signatures (TN.7): `request_evm_signature` lets the same agent pay on an EVM chain
 //! from an address the vault controls through NEAR's MPC network. The vault builds the
 //! transaction itself (evm.rs) and applies the same policy: the asset is the chain's
-//! CAIP-2 id (`eip155:10143`), the receiver a lowercase 0x address on the receiver list.
+//! CAIP-2 id (`eip155:10143`), the receiver a lowercase 0x address listed for that asset.
 //!
-//! Fail-closed: an asset with no limit cannot be spent, a receiver not on the list cannot
-//! be paid, and a paused vault pays nobody. Every refusal panics with a stable code
+//! Fail-closed: an asset with no limit cannot be spent, a receiver not listed for the asset
+//! cannot be paid, and a paused vault pays nobody. Every refusal panics with a stable code
 //! (`E_…`), never a sentence: the words live in Baret's content (CLAUDE.md rule 4).
+//!
+//! Trust (0.2): the vault's account keeps no access key once deployed (the deploy script
+//! deletes it in the deploy transaction). Its code changes only through the owner's
+//! `update_contract`, so nobody but the owner, not even whoever deployed it, can replace
+//! the rules the agent is held to.
 
 mod evm;
 
 pub use evm::EvmTransfer;
 use evm::{encode_hex, EvmError};
+use near_sdk::borsh::BorshDeserialize;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::{self, json, Value};
 use near_sdk::store::{IterableMap, IterableSet, LookupMap};
 use near_sdk::{
-    env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault,
-    Promise, PromiseError, PromiseOrValue,
+    env, ext_contract, near, require, AccountId, BorshStorageKey, Gas, GasWeight, NearToken,
+    PanicOnDefault, Promise, PromiseError, PromiseOrValue,
 };
+use std::collections::BTreeMap;
 
-/// The asset id of NEAR itself; any other asset id is a NEP-141 token contract.
+/// The contract's version, as `get_version` answers it.
+pub const VERSION: &str = "0.2.0";
+/// The asset id of NEAR itself; any other asset id is a NEP-141 token contract or, for
+/// Chain Signatures, an EVM chain's CAIP-2 id.
 pub const NATIVE: &str = "native";
-/// Length of the rolling window, in nanoseconds (block timestamps are in ns).
-pub const DAY_NS: u64 = 86_400 * 1_000_000_000;
-/// Gas for a token's `ft_transfer` and for this vault's own callback.
+/// One hour and one day, in nanoseconds (block timestamps are in ns).
+pub const HOUR_NS: u64 = 3_600 * 1_000_000_000;
+pub const DAY_NS: u64 = 24 * HOUR_NS;
+/// Spends are counted per hour; a bucket stays in the window while it may hold a spend
+/// younger than 24 hours, so the window is 24 to 25 hours: never shorter than promised.
+const WINDOW_HOURS: u64 = 24;
+/// Gas for a token's `ft_transfer`, for this vault's own callbacks, and for `migrate`.
 const FT_TRANSFER_GAS: Gas = Gas::from_tgas(10);
 const CALLBACK_GAS: Gas = Gas::from_tgas(10);
+const MIGRATE_GAS: Gas = Gas::from_tgas(20);
 /// The derivation path of the vault's EVM address: one address for every EVM chain.
 pub const EVM_PATH: &str = "eip155";
 /// NEAR's MPC signer (Chain Signatures). The vault's own account says which network it is
-/// on, so no state field is needed and an already deployed vault keeps its layout.
+/// on, so no state field is needed.
 const MPC_TESTNET: &str = "v1.signer-prod.testnet";
 const MPC_MAINNET: &str = "v1.signer";
+/// The first four bytes of a 0.2 state. A 0.1 state starts with the owner's account id
+/// length (2 to 64), so the two layouts cannot be confused (`migrate`).
+const STATE_MAGIC_V2: u32 = 0xBA2E_7002;
 
 /// Refusal codes. Public so tests and clients match them exactly.
 pub mod errors {
     pub const NOT_OWNER: &str = "E_NOT_OWNER";
+    pub const NOT_PENDING_OWNER: &str = "E_NOT_PENDING_OWNER";
     pub const NOT_AGENT: &str = "E_NOT_AGENT";
     pub const PAUSED: &str = "E_PAUSED";
     pub const AMOUNT_ZERO: &str = "E_AMOUNT_ZERO";
@@ -53,15 +72,22 @@ pub mod errors {
     pub const DAILY_LIMIT: &str = "E_DAILY_LIMIT";
     pub const BAD_LIMIT: &str = "E_BAD_LIMIT";
     pub const BAD_EVM_TX: &str = "E_BAD_EVM_TX";
+    pub const NO_CODE: &str = "E_NO_CODE";
+    pub const BAD_STATE: &str = "E_BAD_STATE";
 }
 
+/// Storage prefixes. Order matters: 0.1 wrote under the first four.
 #[near(serializers = [borsh])]
 #[derive(BorshStorageKey)]
 enum StorageKey {
     Agents,
+    /// 0.1: one receiver list for every asset. Read once by `migrate`, then emptied.
     Receivers,
     Limits,
+    /// 0.1: every spend, kept for the window. Read once by `migrate`, then emptied.
     Spent,
+    AssetReceivers,
+    Hourly,
 }
 
 /// What one asset may be spent at: per transfer and per rolling 24 hours, in base units.
@@ -72,11 +98,12 @@ pub struct Limit {
     pub per_day: U128,
 }
 
-/// One past transfer, kept for the rolling window.
+/// What one asset spent in one hour. At most 25 per asset, so a flood of small
+/// transfers cannot grow the state or the gas of a check.
 #[near(serializers = [borsh])]
 #[derive(Clone, Debug)]
-pub struct Spend {
-    pub at: u64,
+pub struct Bucket {
+    pub hour: u64,
     pub amount: u128,
 }
 
@@ -85,9 +112,11 @@ pub struct Spend {
 #[derive(Debug)]
 pub struct PolicyView {
     pub owner: AccountId,
+    pub pending_owner: Option<AccountId>,
     pub paused: bool,
     pub agents: Vec<AccountId>,
-    pub receivers: Vec<AccountId>,
+    /// `[asset, [receiver…]]`: who each asset may pay.
+    pub receivers: Vec<(String, Vec<AccountId>)>,
     pub limits: Vec<(String, Limit)>,
 }
 
@@ -100,12 +129,32 @@ trait FungibleToken {
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Vault {
+    magic: u32,
+    owner: AccountId,
+    pending_owner: Option<AccountId>,
+    paused: bool,
+    agents: IterableSet<AccountId>,
+    receivers: IterableSet<(String, AccountId)>,
+    limits: IterableMap<String, Limit>,
+    spent: LookupMap<String, Vec<Bucket>>,
+}
+
+/// The 0.1 state, read only by `migrate`.
+#[near(serializers = [borsh])]
+struct VaultV1 {
     owner: AccountId,
     paused: bool,
     agents: IterableSet<AccountId>,
     receivers: IterableSet<AccountId>,
     limits: IterableMap<String, Limit>,
-    spent: LookupMap<String, Vec<Spend>>,
+    spent: LookupMap<String, Vec<SpendV1>>,
+}
+
+#[near(serializers = [borsh])]
+#[derive(Clone)]
+struct SpendV1 {
+    at: u64,
+    amount: u128,
 }
 
 #[near]
@@ -113,13 +162,65 @@ impl Vault {
     #[init]
     pub fn new(owner: AccountId) -> Self {
         Self {
+            magic: STATE_MAGIC_V2,
             owner,
+            pending_owner: None,
             paused: false,
             agents: IterableSet::new(StorageKey::Agents),
-            receivers: IterableSet::new(StorageKey::Receivers),
+            receivers: IterableSet::new(StorageKey::AssetReceivers),
             limits: IterableMap::new(StorageKey::Limits),
-            spent: LookupMap::new(StorageKey::Spent),
+            spent: LookupMap::new(StorageKey::Hourly),
         }
+    }
+
+    /// Runs after `update_contract` (and after a deploy over a 0.1 vault). A 0.2 state is
+    /// kept as it is; a 0.1 state is converted: its shared receiver list becomes per-asset
+    /// lists (a 0x address for every EVM asset with a limit, any other account for every
+    /// other asset) and its spends become hourly buckets, so no limit resets.
+    #[private]
+    #[init(ignore_state)]
+    pub fn migrate() -> Self {
+        let raw = env::storage_read(b"STATE").unwrap_or_else(|| env::panic_str(errors::BAD_STATE));
+        if raw.len() >= 4 && raw[..4] == STATE_MAGIC_V2.to_le_bytes() {
+            return Self::try_from_slice(&raw)
+                .unwrap_or_else(|_| env::panic_str(errors::BAD_STATE));
+        }
+        let mut old =
+            VaultV1::try_from_slice(&raw).unwrap_or_else(|_| env::panic_str(errors::BAD_STATE));
+        let mut v = Self {
+            magic: STATE_MAGIC_V2,
+            owner: old.owner.clone(),
+            pending_owner: None,
+            paused: old.paused,
+            agents: old.agents,
+            receivers: IterableSet::new(StorageKey::AssetReceivers),
+            limits: old.limits,
+            spent: LookupMap::new(StorageKey::Hourly),
+        };
+        let assets: Vec<String> = v.limits.keys().cloned().collect();
+        for receiver in old.receivers.iter() {
+            let evm_address = receiver.as_str().starts_with("0x") && receiver.as_str().len() == 42;
+            for asset in &assets {
+                if asset.starts_with("eip155:") == evm_address {
+                    v.receivers.insert((asset.clone(), receiver.clone()));
+                }
+            }
+        }
+        old.receivers.clear();
+        let now = env::block_timestamp();
+        for asset in &assets {
+            if let Some(list) = old.spent.remove(asset) {
+                for s in list
+                    .into_iter()
+                    .filter(|s| s.at > now.saturating_sub(DAY_NS))
+                {
+                    v.record(asset, s.amount, s.at);
+                }
+            }
+        }
+        old.spent.flush();
+        emit("migrated", &format!("{{\"to\":\"{VERSION}\"}}"));
+        v
     }
 
     // ---------------------------------------------------------------- owner
@@ -140,20 +241,31 @@ impl Vault {
         );
     }
 
-    /// Removes an asset: it can no longer be spent.
+    /// Removes an asset and its receivers: it can no longer be spent.
     pub fn remove_asset(&mut self, asset: String) {
         self.assert_owner();
         self.limits.remove(&asset);
+        let listed: Vec<(String, AccountId)> = self
+            .receivers
+            .iter()
+            .filter(|(a, _)| *a == asset)
+            .cloned()
+            .collect();
+        for entry in listed {
+            self.receivers.remove(&entry);
+        }
     }
 
-    pub fn add_receiver(&mut self, receiver: AccountId) {
+    /// Lets `asset` pay `receiver`. Each asset has its own list: an EVM address listed for
+    /// an EVM chain cannot be paid in NEAR, and the other way round.
+    pub fn add_receiver(&mut self, asset: String, receiver: AccountId) {
         self.assert_owner();
-        self.receivers.insert(receiver);
+        self.receivers.insert((asset, receiver));
     }
 
-    pub fn remove_receiver(&mut self, receiver: AccountId) {
+    pub fn remove_receiver(&mut self, asset: String, receiver: AccountId) {
         self.assert_owner();
-        self.receivers.remove(&receiver);
+        self.receivers.remove(&(asset, receiver));
     }
 
     pub fn add_agent(&mut self, agent: AccountId) {
@@ -173,6 +285,58 @@ impl Vault {
         emit("vault_paused", &format!("{{\"paused\":{paused}}}"));
     }
 
+    /// Hands the vault to another owner in two steps, so a typo cannot lock it: the new
+    /// owner must accept from its own account.
+    pub fn propose_owner(&mut self, new_owner: AccountId) {
+        self.assert_owner();
+        emit(
+            "owner_proposed",
+            &format!(
+                "{{\"owner\":\"{}\",\"proposed\":\"{new_owner}\"}}",
+                self.owner
+            ),
+        );
+        self.pending_owner = Some(new_owner);
+    }
+
+    pub fn accept_owner(&mut self) {
+        let caller = env::predecessor_account_id();
+        require!(
+            self.pending_owner.as_ref() == Some(&caller),
+            errors::NOT_PENDING_OWNER
+        );
+        emit(
+            "owner_changed",
+            &format!("{{\"from\":\"{}\",\"to\":\"{caller}\"}}", self.owner),
+        );
+        self.owner = caller;
+        self.pending_owner = None;
+    }
+
+    /// Replaces the vault's code with the wasm sent as this call's raw input, then runs
+    /// `migrate`. The only way to change the code: the vault's account holds no key.
+    pub fn update_contract(&self) -> Promise {
+        self.assert_owner();
+        let code = env::input().unwrap_or_else(|| env::panic_str(errors::NO_CODE));
+        require!(!code.is_empty(), errors::NO_CODE);
+        emit(
+            "contract_update",
+            &format!(
+                "{{\"from\":\"{VERSION}\",\"code_sha256\":\"{}\"}}",
+                encode_hex(&env::sha256(&code))
+            ),
+        );
+        Promise::new(env::current_account_id())
+            .deploy_contract(code)
+            .function_call_weight(
+                "migrate".to_string(),
+                vec![],
+                NearToken::from_yoctonear(0),
+                MIGRATE_GAS,
+                GasWeight(1),
+            )
+    }
+
     /// Funds the vault with NEAR. Anyone may fund it; only the policy decides who is paid.
     #[payable]
     pub fn deposit(&mut self) {}
@@ -181,13 +345,17 @@ impl Vault {
     pub fn withdraw(&mut self, asset: String, amount: U128) -> Promise {
         self.assert_owner();
         require!(amount.0 > 0, errors::AMOUNT_ZERO);
+        emit(
+            "withdrawn",
+            &format!("{{\"asset\":\"{asset}\",\"amount\":\"{}\"}}", amount.0),
+        );
         self.send(&asset, self.owner.clone(), amount.0, None)
     }
 
     // ---------------------------------------------------------------- agent
 
-    /// The only call an agent's key can make. Pays `amount` of `asset` to `receiver`
-    /// when every rule allows it; refuses with an `E_…` code otherwise.
+    /// Pays `amount` of `asset` to `receiver` when every rule allows it; refuses with an
+    /// `E_…` code otherwise.
     pub fn execute_transfer(
         &mut self,
         asset: String,
@@ -261,7 +429,7 @@ impl Vault {
                 serde_json::to_vec(&args).unwrap_or_default(),
                 NearToken::from_yoctonear(1),
                 Gas::from_tgas(0),
-                near_sdk::GasWeight(1),
+                GasWeight(1),
             )
             .then(
                 Self::ext(env::current_account_id())
@@ -308,12 +476,24 @@ impl Vault {
 
     // ---------------------------------------------------------------- views
 
+    pub fn get_version(&self) -> String {
+        VERSION.to_string()
+    }
+
     pub fn get_policy(&self) -> PolicyView {
+        let mut receivers: BTreeMap<String, Vec<AccountId>> = BTreeMap::new();
+        for (asset, receiver) in self.receivers.iter() {
+            receivers
+                .entry(asset.clone())
+                .or_default()
+                .push(receiver.clone());
+        }
         PolicyView {
             owner: self.owner.clone(),
+            pending_owner: self.pending_owner.clone(),
             paused: self.paused,
             agents: self.agents.iter().cloned().collect(),
-            receivers: self.receivers.iter().cloned().collect(),
+            receivers: receivers.into_iter().collect(),
             limits: self
                 .limits
                 .iter()
@@ -322,7 +502,7 @@ impl Vault {
         }
     }
 
-    /// What `asset` has spent in the last 24 hours, in base units.
+    /// What `asset` has spent in the window, in base units.
     pub fn get_spent_today(&self, asset: String) -> U128 {
         U128(self.window_total(&asset, env::block_timestamp()))
     }
@@ -374,7 +554,8 @@ impl Vault {
             .get(asset)
             .unwrap_or_else(|| env::panic_str(errors::ASSET_NOT_ALLOWED));
         require!(
-            self.receivers.contains(receiver),
+            self.receivers
+                .contains(&(asset.to_string(), receiver.clone())),
             errors::RECEIVER_NOT_ALLOWED
         );
         require!(amount <= limit.per_transfer.0, errors::PER_TRANSFER_LIMIT);
@@ -383,29 +564,46 @@ impl Vault {
     }
 
     fn window_total(&self, asset: &str, now: u64) -> u128 {
-        let since = now.saturating_sub(DAY_NS);
+        let hour = now / HOUR_NS;
         self.spent
             .get(asset)
-            .map(|list| list.iter().filter(|s| s.at > since).map(|s| s.amount).sum())
+            .map(|list| {
+                list.iter()
+                    .filter(|b| b.hour + WINDOW_HOURS >= hour)
+                    .fold(0u128, |s, b| s.saturating_add(b.amount))
+            })
             .unwrap_or(0)
     }
 
-    /// Adds a spend and drops the ones the window no longer covers.
-    fn record(&mut self, asset: &str, amount: u128, now: u64) {
-        let since = now.saturating_sub(DAY_NS);
-        let mut list: Vec<Spend> = self
+    /// Adds a spend to its hour and drops the hours the window no longer covers.
+    fn record(&mut self, asset: &str, amount: u128, at: u64) {
+        let hour = at / HOUR_NS;
+        let now_hour = env::block_timestamp() / HOUR_NS;
+        let mut list: Vec<Bucket> = self
             .spent
             .get(asset)
-            .map(|l| l.iter().filter(|s| s.at > since).cloned().collect())
+            .map(|l| {
+                l.iter()
+                    .filter(|b| b.hour + WINDOW_HOURS >= now_hour)
+                    .cloned()
+                    .collect()
+            })
             .unwrap_or_default();
-        list.push(Spend { at: now, amount });
+        match list.iter_mut().find(|b| b.hour == hour) {
+            Some(b) => b.amount = b.amount.saturating_add(amount),
+            None => list.push(Bucket { hour, amount }),
+        }
         self.spent.insert(asset.to_string(), list);
     }
 
     fn unrecord(&mut self, asset: &str, amount: u128, at: u64) {
+        let hour = at / HOUR_NS;
         if let Some(list) = self.spent.get_mut(asset) {
-            if let Some(i) = list.iter().position(|s| s.at == at && s.amount == amount) {
-                list.remove(i);
+            if let Some(i) = list.iter().position(|b| b.hour == hour) {
+                list[i].amount = list[i].amount.saturating_sub(amount);
+                if list[i].amount == 0 {
+                    list.remove(i);
+                }
             }
         }
     }

@@ -24,7 +24,12 @@ const out = await owner.signAndSendTransaction({
       GAS,
       0n,
     ),
-    actions.functionCall("add_receiver", { receiver: shop.toLowerCase() }, GAS, 0n),
+    actions.functionCall(
+      "add_receiver",
+      { asset: EVM_CHAIN, receiver: shop.toLowerCase() },
+      GAS,
+      0n,
+    ),
   ],
   throwOnFailure: true,
 });

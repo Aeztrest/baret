@@ -20,7 +20,7 @@ const out = await owner.signAndSendTransaction({
       per_transfer: NEAR.toString(),
       per_day: (3n * NEAR).toString(),
     }),
-    call("add_receiver", { receiver: env("NEAR_SHOP_ID") }),
+    call("add_receiver", { asset: "native", receiver: env("NEAR_SHOP_ID") }),
     call("add_agent", { agent: env("NEAR_AGENT_ID") }),
     call("deposit", {}, 2n * NEAR),
   ],

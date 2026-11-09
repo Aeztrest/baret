@@ -176,6 +176,10 @@ function VaultPanel(): JSX.Element {
             <Row label={copy.labels.spent}>{amount(state.spentToday)}</Row>
             <Row label={copy.labels.next}>{amount(state.nextTransferMax)}</Row>
             <Row label={copy.labels.balance}>{amount(state.balance)}</Row>
+            <Row label={copy.labels.version}>{state.version ?? "0.1.0"}</Row>
+            <Row label={copy.labels.keys}>
+              {state.accessKeys === 0 ? copy.locked : `${state.accessKeys}. ${copy.unlocked}`}
+            </Row>
             <Row label={copy.labels.block}>{state.block.toLocaleString("en-US")}</Row>
           </dl>
         ) : null}

@@ -5,12 +5,13 @@
  * so the buyer can cancel for a full refund.
  *
  * Self-hosted: it only makes outbound calls (market.near.ai, Baret's API). The agent token
- * (`aat_…`, from the agent's Edit page) is a secret: .env.near or the environment only.
+ * (`aat_…`, from the agent's Edit page) is a secret: .env.agent or the environment only.
+ * Like the paying agent, it reads its settings by allowlist and holds no NEAR key.
  *
  *   NEAR_MARKET_TOKEN=aat_… pnpm market-agent          # loop
  *   NEAR_MARKET_TOKEN=aat_… pnpm market-agent --once   # one pass
  */
-import { BARET_API, env, envOr } from "../src/env.js";
+import { BARET_API, agentEnv as env, agentEnvOr as envOr } from "../src/agent-env.js";
 import { BRIEF_HELP, briefToBody, type Verdict, verdictMarkdown } from "../src/market.js";
 
 const TOKEN = env("NEAR_MARKET_TOKEN");

@@ -18,6 +18,8 @@
     "setup-vault": "tsx scripts/setup.ts",
     "agent-key": "tsx scripts/agent-key.ts",
     "upgrade-vault": "tsx scripts/upgrade.ts",
+    "update-vault": "tsx scripts/update.ts",
+    "verify-vault": "tsx scripts/verify-vault.ts",
     "evm-setup": "tsx scripts/evm-setup.ts",
     "intents-check": "tsx scripts/intents-check.ts",
     "market-agent": "tsx scripts/market-agent.ts",

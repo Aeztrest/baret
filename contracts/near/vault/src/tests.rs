@@ -10,7 +10,6 @@ const OWNER: &str = "owner.testnet";
 const AGENT: &str = "agent.testnet";
 const SHOP: &str = "shop.testnet";
 const USDC: &str = "usdc.testnet";
-const HOUR_NS: u64 = 3_600 * 1_000_000_000;
 
 fn as_caller(who: &str, at: u64) {
     testing_env!(VMContextBuilder::new()
@@ -27,7 +26,8 @@ fn vault() -> Vault {
     as_caller(OWNER, 1);
     let mut v = Vault::new(acc(OWNER));
     v.add_agent(acc(AGENT));
-    v.add_receiver(acc(SHOP));
+    v.add_receiver(NATIVE.into(), acc(SHOP));
+    v.add_receiver(USDC.into(), acc(SHOP));
     v.set_limit(
         NATIVE.into(),
         U128(10u128.pow(24)),
@@ -117,8 +117,11 @@ fn rolls_the_daily_window() {
         as_caller(AGENT, HOUR_NS * i);
         v.execute_transfer(NATIVE.into(), acc(SHOP), near(1), None);
     }
-    // 24 hours after the first transfer, that one leaves the window.
+    // Counted by the hour: the first transfer (hour 0) leaves the window once hour 25
+    // starts, 24 to 25 hours after it was made; never earlier than 24 hours.
     as_caller(AGENT, DAY_NS + 1);
+    assert_eq!(v.get_spent_today(NATIVE.into()), near(3));
+    as_caller(AGENT, DAY_NS + HOUR_NS);
     assert_eq!(v.get_spent_today(NATIVE.into()), near(2));
     v.execute_transfer(NATIVE.into(), acc(SHOP), near(1), None);
     assert_eq!(v.get_spent_today(NATIVE.into()), near(3));
@@ -139,7 +142,7 @@ fn pays_nobody_while_paused() {
 fn lets_only_the_owner_change_the_policy() {
     let mut v = vault();
     as_caller(AGENT, 10);
-    v.add_receiver(acc("attacker.testnet"));
+    v.add_receiver(NATIVE.into(), acc("attacker.testnet"));
 }
 
 #[test]
@@ -206,7 +209,7 @@ fn evm_vault() -> Vault {
     let mut v = vault();
     as_caller(OWNER, 2);
     v.set_limit(MONAD.into(), U128(10u128.pow(17)), U128(3 * 10u128.pow(17)));
-    v.add_receiver(acc(EVM_SHOP));
+    v.add_receiver(MONAD.into(), acc(EVM_SHOP));
     v
 }
 
@@ -297,4 +300,142 @@ fn a_failed_signature_gives_the_spend_back() {
     let out = v.on_evm_signed(MONAD.into(), U128(spent), 10, Err(PromiseError::Failed));
     assert!(out.is_none());
     assert_eq!(v.get_spent_today(MONAD.into()), U128(0));
+}
+
+// ------------------------------------------------------------ 0.2 (review, 2026-11-09)
+
+#[test]
+#[should_panic(expected = "E_RECEIVER_NOT_ALLOWED")]
+fn an_evm_receiver_cannot_be_paid_in_near() {
+    // 0x addresses are valid NEAR account ids (eth-implicit): listed for Monad, the EVM
+    // shop must still not receive NEAR from the vault.
+    let mut v = evm_vault();
+    as_caller(AGENT, 10);
+    v.execute_transfer(NATIVE.into(), acc(EVM_SHOP), U128(1), None);
+}
+
+#[test]
+fn the_policy_lists_receivers_per_asset() {
+    let v = evm_vault();
+    let p = v.get_policy();
+    assert_eq!(p.receivers.len(), 3);
+    assert!(p
+        .receivers
+        .contains(&(MONAD.to_string(), vec![acc(EVM_SHOP)])));
+    assert_eq!(v.get_version(), "0.2.0");
+}
+
+#[test]
+fn a_removed_asset_takes_its_receivers_with_it() {
+    let mut v = evm_vault();
+    as_caller(OWNER, 5);
+    v.remove_asset(MONAD.into());
+    assert!(v.get_policy().receivers.iter().all(|(a, _)| a != MONAD));
+}
+
+#[test]
+fn many_small_transfers_keep_the_spend_history_bounded() {
+    let mut v = vault();
+    as_caller(OWNER, 5);
+    v.set_limit(NATIVE.into(), U128(1), near(1000));
+    for i in 0..200u64 {
+        // 200 transfers over 50 hours: at most 25 hourly buckets are ever kept.
+        as_caller(AGENT, i * HOUR_NS / 4);
+        v.execute_transfer(NATIVE.into(), acc(SHOP), U128(1), None);
+        assert!(v.spent.get(NATIVE).map_or(0, |l| l.len()) <= 25);
+    }
+    // The last 25 hours hold 100 transfers of 1 yoctoNEAR (4 per hour).
+    assert_eq!(v.get_spent_today(NATIVE.into()), U128(100));
+}
+
+#[test]
+fn hands_the_vault_over_in_two_steps() {
+    let mut v = vault();
+    as_caller(OWNER, 5);
+    v.propose_owner(acc("new-owner.testnet"));
+    assert_eq!(v.get_policy().owner, acc(OWNER));
+    as_caller("new-owner.testnet", 6);
+    v.accept_owner();
+    let p = v.get_policy();
+    assert_eq!(p.owner, acc("new-owner.testnet"));
+    assert_eq!(p.pending_owner, None);
+}
+
+#[test]
+#[should_panic(expected = "E_NOT_PENDING_OWNER")]
+fn nobody_else_can_take_the_vault() {
+    let mut v = vault();
+    as_caller(OWNER, 5);
+    v.propose_owner(acc("new-owner.testnet"));
+    as_caller(AGENT, 6);
+    v.accept_owner();
+}
+
+#[test]
+#[should_panic(expected = "E_NOT_OWNER")]
+fn only_the_owner_can_replace_the_code() {
+    let v = vault();
+    as_caller(AGENT, 10);
+    v.update_contract();
+}
+
+#[test]
+fn migrates_a_0_1_vault_without_resetting_its_limits() {
+    as_caller("vault.testnet", HOUR_NS);
+    let mut old = VaultV1 {
+        owner: acc(OWNER),
+        paused: false,
+        agents: IterableSet::new(StorageKey::Agents),
+        receivers: IterableSet::new(StorageKey::Receivers),
+        limits: IterableMap::new(StorageKey::Limits),
+        spent: LookupMap::new(StorageKey::Spent),
+    };
+    old.agents.insert(acc(AGENT));
+    old.receivers.insert(acc(SHOP));
+    old.receivers.insert(acc(EVM_SHOP));
+    old.limits.insert(
+        NATIVE.into(),
+        Limit {
+            per_transfer: near(1),
+            per_day: near(3),
+        },
+    );
+    old.limits.insert(
+        MONAD.into(),
+        Limit {
+            per_transfer: U128(10),
+            per_day: U128(30),
+        },
+    );
+    old.spent.insert(
+        NATIVE.into(),
+        vec![SpendV1 {
+            at: HOUR_NS / 2,
+            amount: 2 * 10u128.pow(24),
+        }],
+    );
+    old.agents.flush();
+    old.receivers.flush();
+    old.limits.flush();
+    old.spent.flush();
+    env::state_write(&old);
+
+    let mut v = Vault::migrate();
+    let p = v.get_policy();
+    assert_eq!(p.agents, vec![acc(AGENT)]);
+    assert!(p.receivers.contains(&(NATIVE.to_string(), vec![acc(SHOP)])));
+    assert!(p
+        .receivers
+        .contains(&(MONAD.to_string(), vec![acc(EVM_SHOP)])));
+    // The 2 NEAR spent before the update still count.
+    assert_eq!(v.get_remaining(NATIVE.into()), near(1));
+    // Running migrate again on the 0.2 state keeps it. (On chain #[init] writes the state
+    // and its collections; here they are flushed by hand first.)
+    v.agents.flush();
+    v.receivers.flush();
+    v.limits.flush();
+    v.spent.flush();
+    env::state_write(&v);
+    let again = Vault::migrate();
+    assert_eq!(again.get_policy().receivers.len(), 2);
 }

@@ -1,12 +1,14 @@
 /**
- * Replaces the vault's code with a newer build, keeping its state (policy, spending).
- * The new code must read the same state layout: TN.7 added methods and no state field
- * for this reason. Signed by the vault account's own key.
+ * Moves a vault deployed before 0.2 (whose account still holds its deploy key) to the
+ * new code and locks it, in one transaction signed by that key: deploy the new wasm,
+ * run `migrate` (0.1's shared receiver list becomes per-asset lists and its spends become
+ * hourly buckets, so no limit resets) and delete the key. If `migrate` fails, nothing
+ * changes. Afterwards only the owner can change the code (`pnpm update-vault`).
  *
  *   pnpm --filter @baret/demo-near upgrade-vault -- path/to/baret_near_vault.wasm
  */
 import { readFileSync } from "node:fs";
-import { actions } from "near-api-js";
+import { actions, KeyPair } from "near-api-js";
 import { env } from "../src/env.js";
 import { accountFor, link } from "./lib.js";
 
@@ -16,17 +18,21 @@ if (!file) {
   process.exit(2);
 }
 const vault = accountFor("NEAR_VAULT_ID", "NEAR_VAULT_KEY");
+const vaultKey = KeyPair.fromString(env("NEAR_VAULT_KEY") as `ed25519:${string}`).getPublicKey();
 const out = await vault.signAndSendTransaction({
   receiverId: env("NEAR_VAULT_ID"),
-  actions: [actions.deployContract(readFileSync(file))],
+  actions: [
+    actions.deployContract(readFileSync(file)),
+    actions.functionCall("migrate", {}, 100_000_000_000_000n, 0n),
+    actions.deleteKey(vaultKey),
+  ],
   throwOnFailure: true,
 });
-// The state must still read: a view over it fails if the layout changed.
 const policy = await vault.provider.callFunction({
   contractId: env("NEAR_VAULT_ID"),
   method: "get_policy",
   args: {},
 });
-console.log(`Vault code replaced: ${link(out.transaction.hash)}`);
-console.log(`State still reads: ${JSON.stringify(policy).slice(0, 160)}`);
-console.log("Next: pnpm evm-setup, then pnpm agent-key");
+console.log(`Vault migrated and locked: ${link(out.transaction.hash)}`);
+console.log(`Policy now: ${JSON.stringify(policy).slice(0, 300)}`);
+console.log("Next: pnpm agent-key (rewrites .env.agent), then pnpm agent -- pay");
