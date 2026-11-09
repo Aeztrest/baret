@@ -52,7 +52,8 @@ Owner decisions 2026-11-08 (hackathon notes K1, K2, K6, K7): this repository goe
   → 2026-11-08: `/near` (header nav "NEAR"): vault read live over NEAR RPC in the browser (`demo-near` `view.ts`, `publicRpcUrl` in the registry), the four requests checked live through `/api`, the recorded runs with tx links. Checked in the browser against staging: Safe, Blocked (E_PER_TRANSFER_LIMIT), Blocked (E_RECEIVER_NOT_ALLOWED), Blocked (AUTHORITY_CHANGE).
 - [~] **TN.10 Agent Market listing** — owner action with the steps written.
   → 2026-11-09: Agent Market is a hire-and-deliver marketplace, so Baret is listed as an agent that checks a transaction from the brief and delivers the verdict: `pnpm market-agent` (self-hosted worker, `src/market.ts`, 6 tests). Waits for the owner: account (confirmed email), the listing, its price, an agent token in `.env.near`, then one test hire and Live.
-- [ ] **TN.11 Submission** — README (try it: do X, see Y), video, X post (owner), repo public + `hackathon-submission` tag (owner's yes), form (payload shown first).
+- [~] **TN.11 Submission** — README (try it: do X, see Y), video, X post (owner), repo public + `hackathon-submission` tag (owner's yes), form (payload shown first).
+  → 2026-11-09: README rewritten for the hackathon (problem, how it works, a curl try-it checked against staging: Safe / E_PER_TRANSFER_LIMIT, recorded runs, contracts, baseline, limitations). Full git history scanned for keys, tokens, mnemonics, env files and keyed RPC URLs: nothing found. Open: LICENSE (proprietary today; owner's call before the repo goes public), video, X post, repo public, tag, form.
 
 ## Phase 0 — Foundation
 
@@ -107,6 +108,7 @@ Goal: `POST /v1/analyze` on `eip155:10143` returns the same decisions as Metropo
 - [ ] **T1.12 Monad mainnet: canonical USDC and a trace-capable RPC** — the registry entry has `usdc: null` and x402 off until both are confirmed.
 - [ ] **T1.13 TypeScript 7 upgrade** — Dependabot PR #5 bumps TypeScript 6 → 7 (and Biome, Vitest) and fails CI. Do it as its own task: read the TS 7 migration notes, fix, then merge #5 or replace it. Until then Dependabot ignores TypeScript majors.
 - [ ] **T1.14 Flaky API test under load** — `apps/api` `src/app.test.ts` "answers a verdict" times out (13 s) during a full `pnpm check` on a loaded machine and passes alone (seen 2026-11-08 and 2026-11-09). Find the slow step (cold imports of the adapters?) and fix it, not the timeout.
+- [ ] **T1.15 Flaky web SSR test in CI** — `apps/web/src/entry-server.test.tsx` once ended with an unhandled `ReferenceError: window is not defined` (CI run 42542622239, PR #45, 2026-11-09); the same commit passed on main and locally. Likely a page effect (a fetch or timer) finishing after the happy-dom environment is torn down; find which page and clean it up.
 
 ## Phase 2 — Frontend, agents and staging
 
