@@ -38,6 +38,7 @@ How the docs are organised, which doc owns which code, and the rules that keep t
 | `docs/operations/environments.md` | Environments and every environment variable |
 | `docs/operations/security.md` | Threat model, keys, secrets, audit plan |
 | `docs/decisions/README.md` | ADR index and template |
+| `docs/hackathon/near-2026.md` | NEAR HACKATHON 2026 reviewer guide: claims and evidence, threat model, what was built in the window |
 | `docs/migration/porting-plan.md` | What is ported from which legacy repo, and how |
 
 ## Code ↔ doc map

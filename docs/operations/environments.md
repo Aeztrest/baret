@@ -29,7 +29,7 @@ Last verified: 2026-11-07
 | `CHAIN_<SLUG>_RPC_URL` | enables the chain | main RPC (EVM JSON-RPC, Stellar RPC, Casper node RPC) |
 | `CHAIN_<SLUG>_TRACE_RPC_URL` | EVM, no | node for `debug_traceCall` when the main RPC lacks it |
 | `CHAIN_<SLUG>_HORIZON_URL` | Stellar | Horizon endpoint |
-| `CHAIN_NEAR_TESTNET_RPC_URL`, `CHAIN_NEAR_MAINNET_RPC_URL` | NEAR | JSON-RPC endpoint (e.g. `https://rpc.testnet.near.org`); setting it serves the chain |
+| `CHAIN_NEAR_TESTNET_RPC_URL`, `CHAIN_NEAR_MAINNET_RPC_URL` | NEAR | JSON-RPC endpoint (staging: FastNEAR `https://test.rpc.fastnear.com` / `https://free.rpc.fastnear.com`; `rpc.<network>.near.org` is rate limited and answered in about 3 s on 2026-11-09, which made analyses time out); setting it serves the chain |
 | `CHAIN_<SLUG>_SPECULATIVE_URL` | Casper, no | speculative execution endpoint (if Phase 4 confirms one) |
 | `CHAIN_<SLUG>_INDEXER_URL` | no | indexer GraphQL for `/v1/audit/*` |
 | `BARET_API_KEYS` | production | comma-separated static keys |
@@ -66,7 +66,7 @@ The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only
 | Variable | Description |
 |---|---|
 | `NEAR_NETWORK` | `testnet` (default; nothing else runs) |
-| `NEAR_RPC_URL` | default `https://rpc.<network>.near.org` |
+| `NEAR_RPC_URL` | default FastNEAR (`https://test.rpc.fastnear.com`, mainnet `https://free.rpc.fastnear.com`) |
 | `BARET_API_URL` | the API the agent asks (default staging) |
 | `NEAR_OWNER_ID`, `NEAR_OWNER_KEY` | the funded testnet owner and its full access key (secret) |
 | `NEAR_VAULT_ID/KEY`, `NEAR_AGENT_ID/KEY`, `NEAR_SHOP_ID/KEY`, `NEAR_AGENT_FC_KEY` | written by `pnpm keys` (secrets) |

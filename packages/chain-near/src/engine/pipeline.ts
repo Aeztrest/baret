@@ -83,8 +83,10 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
     ? decodeAccount(parseCaip10(input.account)?.address ?? "")
     : tx.signerId;
   const pin = await deps.rpc.pin();
-  const signer = await deps.rpc.viewAccount(tx.signerId, pin.hash);
-  const receiver = await deps.rpc.viewAccount(tx.receiverId, pin.hash);
+  const [signer, receiver] = await Promise.all([
+    deps.rpc.viewAccount(tx.signerId, pin.hash),
+    deps.rpc.viewAccount(tx.receiverId, pin.hash),
+  ]);
 
   const a: Analysis = {
     tx,
@@ -365,8 +367,10 @@ async function preflight(
   // not vouched for: the request fails closed.
   const drawn = new Map<string, bigint>();
   const vaultCheck = async (vault: string, m: Movement): Promise<void> => {
-    const policy = await readPolicy(deps, vault, block);
-    const remaining = await deps.rpc.callView(vault, "get_remaining", { asset: m.asset }, block);
+    const [policy, remaining] = await Promise.all([
+      readPolicy(deps, vault, block),
+      deps.rpc.callView(vault, "get_remaining", { asset: m.asset }, block),
+    ]);
     if (!policy || typeof remaining !== "string" || !/^\d+$/.test(remaining)) {
       a.failure ??= "E_VAULT_UNREADABLE";
       return;

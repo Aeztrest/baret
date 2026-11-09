@@ -66,9 +66,26 @@ async function analyze(body: object): Promise<Verdict | null> {
 
 const told = new Set<string>();
 
+/**
+ * Deliverables this worker started but could not submit (the market or the network failed
+ * between start and submit). They are submitted again on the next pass, so a started job
+ * is never left hanging while the worker runs.
+ */
+const unsent = new Map<string, string>();
+
+async function submit(id: string, markdown: string): Promise<void> {
+  unsent.set(id, markdown);
+  await market("POST", `/v1/assignments/${id}/submit`, { deliverableMarkdown: markdown });
+  unsent.delete(id);
+}
+
 async function pass(): Promise<void> {
+  for (const [id, markdown] of unsent) {
+    await submit(id, markdown);
+    console.log(`${id}: delivered on retry`);
+  }
   for (const a of rows(await market("GET", "/v1/agents/me/assignments"))) {
-    if (a.startedAt !== null) continue; // started (or done): this loop never resumes work
+    if (a.startedAt !== null) continue; // started elsewhere or done; ours are in `unsent`
     const body = briefToBody(a.job?.description ?? "");
     if (!body) {
       if (!told.has(a.id)) {
@@ -80,9 +97,7 @@ async function pass(): Promise<void> {
     }
     await market("POST", `/v1/assignments/${a.id}/start`);
     const verdict = await analyze(body);
-    await market("POST", `/v1/assignments/${a.id}/submit`, {
-      deliverableMarkdown: verdictMarkdown(body, verdict),
-    });
+    await submit(a.id, verdictMarkdown(body, verdict));
     console.log(`${a.id}: ${body.chain} ${verdict?.decision ?? "no verdict"}, delivered`);
   }
 }

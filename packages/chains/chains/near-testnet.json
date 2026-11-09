@@ -34,6 +34,6 @@
     "strict": "0.5",
     "balanced": "0.1"
   },
-  "publicRpcUrl": "https://rpc.testnet.near.org",
+  "publicRpcUrl": "https://test.rpc.fastnear.com",
   "faucetUrl": "https://near-faucet.io"
 }

@@ -2,36 +2,41 @@
 
 **Give an AI agent money without giving it the keys.**
 
-Before anything is signed, Baret reads the transaction, checks what it would actually do against the chain's current state, applies the owner's policy and answers `safe`, `caution` or `blocked`, with reasons. For agents, an on-chain vault bounds what the agent's key can pay, so even a compromised or prompt-injected agent cannot go past the owner's limits.
+AI agents now pay for APIs, data, compute and other agents. To pay, an agent signs, and today that usually means it holds a key that can do anything: one prompt injection, one poisoned tool result or one leaked key empties the account. Baret is the security layer for agentic payments. **Before anything is signed**, it reads the transaction against the chain's current state, applies the owner's policy and answers `safe`, `caution` or `blocked`, with reasons. **On chain**, a Baret vault holds the money and bounds what the agent's key can pay, so even a compromised agent cannot go past the owner's limits.
 
 > **Testnet.** Everything below runs on NEAR testnet and Monad testnet (the NEAR Intents check reads NEAR mainnet and signs nothing). Nothing is audited. Baret's earlier per-chain builds (Monad, Stellar, Casper, GOAT, Midnight, Solana) are being ported into this repository; their status is in [`docs/chains/README.md`](docs/chains/README.md).
 
-**Live demo:** [baret-nine.vercel.app/near](https://baret-nine.vercel.app/near) reads the demo vault on NEAR testnet and asks Baret's API about four agent requests.
+| For judges and reviewers | |
+|---|---|
+| Reviewer guide (claims → evidence, threat model, what was built) | [`docs/hackathon/near-2026.md`](docs/hackathon/near-2026.md) |
+| Check every NEAR claim live, no account or key | `pnpm install && pnpm near:verify` |
+| Live panel (reads the vault from NEAR testnet in your browser) | [baret-nine.vercel.app/near](https://baret-nine.vercel.app/near) |
+| Instructions for AI reviewers | [`AGENTS.md`](AGENTS.md) |
 
 ## NEAR HACKATHON 2026
 
-Built for NEAR HACKATHON 2026 (tracks: security, agents). The work done during the hackathon is the diff [`pre-hackathon…hackathon-submission`](https://github.com/Aeztrest/baret/compare/pre-hackathon...hackathon-submission).
+Built for NEAR HACKATHON 2026 (tracks: **AI Security & Defense**, **Agent Economy**). The work done during the hackathon is the diff [`pre-hackathon…hackathon-submission`](https://github.com/Aeztrest/baret/compare/pre-hackathon...hackathon-submission).
 
 ### The problem
 
-An agent that pays needs a key. Today it usually gets a full access key, so a prompt injection ("send everything to x.near"), a bad tool result or a leaked key empties the account. Checking the transaction off chain helps, but nothing stops a compromised agent from skipping the check.
+An agent that pays needs a key. NEAR's function call keys already limit *which contract and method* a key may call and *how much gas* it burns, but not *how much money moves, to whom, or how often*. So agents usually get a full access key, and a prompt injection ("send everything to x.near"), a bad tool result or a leaked key empties the account. Checking the transaction off chain helps, but a compromised agent can skip any check that runs in its own process.
 
 ### How it works
 
 ```
-owner ──funds, sets limits──▶ Baret vault (NEAR contract)
-                                  ▲            │ MPC (Chain Signatures)
-agent ──function call key─────────┘            ▼
-  │                                        EVM chain (Monad testnet)
+owner ──funds, sets per-asset limits and receivers──▶ Baret vault (NEAR contract, account holds no key)
+                                                         ▲            │ MPC (Chain Signatures)
+agent ──function call key: 2 vault methods only──────────┘            ▼
+  │                                                              EVM chain (Monad testnet)
   └──▶ Baret API /v1/analyze: "is this safe to sign?" (before every payment)
 ```
 
-Two lines of defence:
+Two independent lines of defence:
 
-1. **Baret before signing.** The agent sends the transaction to `/v1/analyze`. Baret reads the chain over RPC (accounts, keys, the vault's policy and remaining allowance) and finds what the transaction would do: a full access key added, the account deleted, a contract deployed, a receiver nobody listed, a payment over the limit. It answers `safe`, `caution` or `blocked` with codes. The agent signs only `safe`.
-2. **The vault on chain.** The agent holds only a function call key that can call two methods of the vault. The vault enforces the owner's per-transfer and 24-hour limits per asset, the receiver list and a pause switch. If the agent skips Baret, the vault still refuses.
+1. **Baret before signing.** The agent sends the transaction to `/v1/analyze`. Baret reads the chain over RPC at one final block (accounts, the signing key's permissions, the vault's policy and remaining allowance) and finds what the transaction would do: a full access key added, the account deleted, a contract deployed, an NFT or token leaving, a receiver nobody listed, a payment over the limit, a swap quote 1Click never issued. It answers `safe`, `caution` or `blocked` with codes. The agent signs only `safe`; no answer means no signature.
+2. **The vault on chain.** The agent holds only a function call key for two vault methods. The vault enforces, per asset, a per-transfer limit, a rolling 24-hour limit and its own receiver list, plus a pause switch. If the agent skips Baret, the vault still refuses. The vault's own account holds no access key, so nobody can redeploy it around the rules; only the owner's `update_contract` changes its code.
 
-The same vault pays on an EVM chain through **NEAR Chain Signatures**: it builds the EIP-1559 transfer itself, counts value plus the worst-case fee against the same limits, and only then asks NEAR's MPC network to sign. A **NEAR Intents** swap is checked against its 1Click quote: whoever the quote pays out or refunds to must be the agent itself, and the deposit must match the quote.
+The same vault pays on an EVM chain through **NEAR Chain Signatures**: it builds the EIP-1559 transfer itself (it never signs a hash it is handed), counts value plus the worst-case fee against the same limits, and only then asks NEAR's MPC network to sign. A **NEAR Intents** swap is checked against the quote 1Click registered for its deposit address: the swap must pay out and refund to the agent itself, and the deposit must match the quote, so a forged quote is caught.
 
 ### Try it without installing anything
 
@@ -51,6 +56,15 @@ curl -s https://baret-api-staging.onrender.com/v1/analyze -H 'content-type: appl
 
 **You see** `"decision":"safe"`. Change `amount` to `5000000000000000000000000` (5 NEAR) and **you see** `"decision":"blocked"` with `SIMULATION_FAILED` and `"reason":"E_PER_TRANSFER_LIMIT"`: Baret read the vault's policy and predicted its refusal. Change `receiver` to any other account and **you see** `E_RECEIVER_NOT_ALLOWED`. (The staging API sleeps when idle: the first call can take up to a minute.)
 
+### Check every claim with one command
+
+```bash
+pnpm install
+pnpm near:verify
+```
+
+No account, no key, no `.env`: it reads the demo vault on NEAR testnet and sends eleven requests to Baret's API, printing PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent's real function call key cannot add keys; Chain Signatures within and outside the policy).
+
 ### Run the agent yourself
 
 Requirements: Node 22, pnpm 11, a funded NEAR testnet account (`near account create-account sponsor-by-faucet-service <name>.testnet` with [near-cli-rs](https://github.com/near/near-cli-rs)).
@@ -58,28 +72,30 @@ Requirements: Node 22, pnpm 11, a funded NEAR testnet account (`near account cre
 ```bash
 pnpm install
 cd packages/demo-near
-cp .env.example .env.near        # your testnet account and key; never commit .env.near
+cp .env.example .env.near        # the OWNER's testnet account and key; never commit it
 pnpm keys && pnpm accounts       # vault, agent and shop sub-accounts
-pnpm deploy-vault -- ./baret_near_vault.wasm   # the wasm from the "Contracts (NEAR)" CI run
-pnpm setup-vault && pnpm agent-key
+pnpm deploy-vault -- ./baret_near_vault.wasm   # deploy + init + delete the vault's key, one transaction
+pnpm setup-vault && pnpm agent-key             # policy; the agent's function call key, written to .env.agent
 pnpm agent -- pay                # Baret: SAFE → the vault pays the shop (explorer link)
 pnpm agent -- wrong-receiver     # a prompt-injected receiver → BLOCKED, not signed
 pnpm agent -- wrong-receiver --force   # sent anyway → the vault refuses E_RECEIVER_NOT_ALLOWED on chain
-pnpm agent -- add-key            # a prompt asks for a full access key → BLOCKED (AUTHORITY_CHANGE)
+pnpm agent -- add-key            # a prompt asks for a full access key → BLOCKED (AUTHORITY_CHANGE, E_KEY_NOT_ALLOWED)
 ```
 
-Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Intents check (`pnpm intents-check`) and the Agent Market worker (`pnpm market-agent`) are in [`packages/demo-near/README.md`](packages/demo-near/README.md).
+The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI run, also attached to the [`near-vault-v0.2.0` release](https://github.com/Aeztrest/baret/releases/tag/near-vault-v0.2.0); `pnpm verify-vault -- ./baret_near_vault.wasm` compares it with the deployed code. The agent process reads only `.env.agent` (its function call key and public ids, by an allowlist) and refuses to start if a full key is in it. Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Intents check (`pnpm intents-check`) and the Agent Market worker (`pnpm market-agent`) are in [`packages/demo-near/README.md`](packages/demo-near/README.md).
 
-### Recorded runs (testnet)
+### Recorded runs (testnet, vault 0.2, 2026-11-09)
 
 | Request | Baret | On chain |
 |---|---|---|
-| Pay the shop 0.1 NEAR | Safe | [paid](https://testnet.nearblocks.io/txns/AoFv4uUaRNo3k5VDRPPPevwwNFZrvuXpaEpg4fhMdbvr) |
-| Pay the shop 5 NEAR | Blocked (`E_PER_TRANSFER_LIMIT`) | `--force`: refused by the vault |
-| Pay an account a prompt named | Blocked (`E_RECEIVER_NOT_ALLOWED`) | `--force`: refused by the vault |
-| Add a full access key | Blocked (`AUTHORITY_CHANGE`) | `--force`: refused by NEAR (the key cannot add keys) |
-| Pay 0.01 MON on Monad testnet through Chain Signatures | Safe on both chains | [NEAR](https://testnet.nearblocks.io/txns/AYeXGS4GUexwcYE9X3BBWm2FsFvizkm7Dw5AsbJYLHPv) · [Monad](https://testnet.monadexplorer.com/tx/0x2796a4ad2edb515dde729c1d6c51475fd15b3884883c991ddcf4a6c94253afb8) |
-| Pay 0.01 MON to an address a prompt named | Blocked on both | `--force`: refused by the vault |
+| Move the vault to 0.2 and delete its key (deploy + `migrate` + DeleteKey, one transaction) | — | [migrated and locked](https://testnet.nearblocks.io/txns/6gXZFtCb6xJyZN9jgfyS7f47kkLxhGWUC15wyrdtHVWC); the vault account now holds 0 keys and runs the CI wasm `7dwH3FLP…f6sS` |
+| The owner replaces the code through `update_contract` (same wasm, to prove the only path works) | — | [updated](https://testnet.nearblocks.io/txns/E9F2MCz1sAQ8K8S3kSgdDnyEdXHrEdYmPPiPeykBUsBU), state kept |
+| Pay the shop 0.1 NEAR | Safe | [paid](https://testnet.nearblocks.io/txns/7J1F9jWcrvXRnPc72yn1Nq2uoSZ6Po3xd3EzvAkBVo5L) |
+| Pay the shop 5 NEAR | Blocked (`E_PER_TRANSFER_LIMIT`) | `--force`: the vault panicked `E_PER_TRANSFER_LIMIT` |
+| Pay an account a prompt named | Blocked (`E_RECEIVER_NOT_ALLOWED`) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
+| Add a full access key | Blocked (`E_KEY_NOT_ALLOWED`, `AUTHORITY_CHANGE`) | `--force`: NEAR refused ("Access key requires full access") |
+| Pay 0.01 MON on Monad testnet through Chain Signatures | Safe on both chains | [NEAR](https://testnet.nearblocks.io/txns/4LWi9nJoa5KS6H4RBNN9u21nxepBQZqcHgp4FLCjDB2r) · [Monad](https://testnet.monadexplorer.com/tx/0x736dd215f88f53ba709d44c28ed76ebb1d0403dd30e45659b296e601fb3b9004) |
+| Pay 0.01 MON to an address a prompt named | Blocked (`KNOWN_MALICIOUS_ADDRESS` on Monad) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
 | NEAR Intents swap, quote as given (mainnet) | Caution (app fee) | not signed |
 | The same quote paying out to another account | Blocked (`INTENTS_RECIPIENT_MISMATCH`) | not signed |
 
@@ -87,8 +103,8 @@ Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Inte
 
 | | Account | Source |
 |---|---|---|
-| Baret vault | [`baret-vault.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-vault.aeztrest-baret.testnet) | [`contracts/near/vault`](contracts/near/vault) |
-| Demo agent | [`baret-agent.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-agent.aeztrest-baret.testnet) | function call key only |
+| Baret vault | [`baret-vault.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-vault.aeztrest-baret.testnet) | [`contracts/near/vault`](contracts/near/vault) ([methods and trust model](contracts/near/README.md)) |
+| Demo agent | [`baret-agent.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-agent.aeztrest-baret.testnet) | function call key for the vault's two agent methods |
 | Demo shop | [`baret-shop.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-shop.aeztrest-baret.testnet) | the vault's only NEAR receiver |
 | Vault's EVM address (Chain Signatures, path `eip155`) | `0x95689e53febe21bf2c12833ddca29d95b2ed5b27` on Monad testnet | derived by NEAR MPC |
 
@@ -96,7 +112,7 @@ The record is [`packages/chains/deployments/near-testnet.json`](packages/chains/
 
 ### NEAR features used
 
-Function call access keys and allowances · NEP-141 tokens · near-sdk contract with promises and callbacks · Chain Signatures (`v1.signer-prod.testnet`, `payload_v2`) · NEAR Intents 1Click quotes · NEAR Agent Market (self-hosted agent API) · JSON-RPC `query` / `call_function` reads.
+Function call access keys and allowances · keyless contract accounts · near-sdk contract with promises and callbacks · NEP-141, NEP-171/178, NEP-245, NEP-297 · Chain Signatures (`v1.signer-prod.testnet`, `payload_v2`) · NEAR Intents 1Click (quotes confirmed by deposit address) · NEAR Agent Market (self-hosted agent API) · JSON-RPC `query` (`view_account`, `view_access_key`, `call_function`) pinned to one final block. How each is used: [reviewer guide §7](docs/hackathon/near-2026.md#7-near-features-used).
 
 ### Baseline and what was used
 
@@ -104,19 +120,20 @@ Before the hackathon this repository held the chain-neutral core, the EVM adapte
 
 ### Limitations
 
-Testnet only, not audited. The vault holds native NEAR and NEP-141 tokens; its Chain Signatures path signs native EVM transfers only (no calldata). The Intents check does not verify the 1Click quote's signature (no public key is published) and does not yet allow cross-chain recipients. The staging API is a free instance that sleeps when idle.
+Testnet only, not audited. The vault holds native NEAR and NEP-141 tokens; its Chain Signatures path signs native EVM transfers only (no calldata). Limits are shared by every agent of a vault (no per-agent limits yet). The Intents check covers NEP-141 deposits on NEAR and does not yet allow cross-chain recipients. Delegate actions (NEP-366 meta transactions) are refused as unsupported. The staging API is a free instance that sleeps when idle.
 
 ## Documentation
 
 | Start here | |
 |---|---|
+| [`docs/hackathon/near-2026.md`](docs/hackathon/near-2026.md) | NEAR HACKATHON reviewer guide |
 | [`docs/PRODUCT.md`](docs/PRODUCT.md) | What Baret is, for whom, and what it promises |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | The map: layers, packages, flows, deployment |
 | [`docs/chains/near.md`](docs/chains/near.md) | NEAR: the vault, the engine adapter, Chain Signatures, Intents, Agent Market |
 | [`docs/chains/README.md`](docs/chains/README.md) | Supported chains and their status |
 | [`docs/README.md`](docs/README.md) | Every document, and which code it owns |
 | [`TASKS.md`](TASKS.md) | Where the project is and what comes next |
-| [`CLAUDE.md`](CLAUDE.md) | Working rules for contributors and coding agents |
+| [`CLAUDE.md`](CLAUDE.md) · [`AGENTS.md`](AGENTS.md) | Working rules for contributors and coding agents |
 
 ## Repository layout
 
@@ -126,18 +143,19 @@ packages/    core · chains · engine · chain-evm · chain-near · guard · con
              demo-evm · demo-near
 contracts/   evm (Foundry) · near (near-sdk)
 tooling/     docs, secrets and import checks, session hooks
-docs/        architecture, chains, operations, decisions, migration
+docs/        architecture, chains, operations, decisions, migration, hackathon
 ```
 
 ## Checks
 
 ```bash
-pnpm test            # all packages
+pnpm test            # all TypeScript packages
+pnpm near:verify     # the NEAR claims, live, no key
 pnpm docs:check      # documentation consistency
 pnpm secrets:check   # secret scan
 ```
 
-All run in CI on every pull request.
+All but `near:verify` run in CI on every pull request; the contracts have their own CI jobs.
 
 ## License
 
