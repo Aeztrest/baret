@@ -171,6 +171,18 @@ export const near = {
         chain: "Refused by the vault: E_RECEIVER_NOT_ALLOWED",
         txs: [],
       },
+      {
+        title: "Swap 0.1 wNEAR to USDC through NEAR Intents (mainnet quote)",
+        baret: "Caution: the quote adds a 0.2 % app fee",
+        chain: "Not signed: a check of a real 1Click quote, no deposit made",
+        txs: [],
+      },
+      {
+        title: "The same swap, the quote changed to pay out and refund to another account",
+        baret: "Blocked: the swap would pay someone other than the agent",
+        chain: "Not signed",
+        txs: [],
+      },
     ],
     viewTx: "View on {label}",
   },
