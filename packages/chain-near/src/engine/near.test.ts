@@ -219,6 +219,27 @@ describe("NEAR adapter", () => {
     });
   });
 
+  it("refuses a vault asset that is neither native nor a token contract", async () => {
+    // A CAIP-19 id here once ended as an invalid asset id in the answer (a 500).
+    const r = await run({
+      signerId: "agent.testnet",
+      receiverId: "vault.testnet",
+      actions: [
+        {
+          type: "FunctionCall",
+          methodName: "execute_transfer",
+          args: { asset: "near:testnet/slip44:397", receiver: "shop.testnet", amount: "1" },
+          gas: "30000000000000",
+          deposit: "0",
+        },
+      ],
+    });
+    expect(r.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details).toEqual({
+      reason: "E_ASSET_NOT_ALLOWED",
+    });
+    expect(r.estimatedChanges.every((c) => !c.asset.id.includes("slip44:397/"))).toBe(true);
+  });
+
   describe("Chain Signatures through the vault (TN.7)", () => {
     const evm = (over: Record<string, unknown> = {}) => ({
       signerId: "agent.testnet",
