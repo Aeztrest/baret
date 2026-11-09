@@ -36,6 +36,21 @@ jobs:
       - name: Build the wasm
         working-directory: contracts/near/vault
         run: cargo near build non-reproducible-wasm --locked
+      # NEAR stores base58(sha256(wasm)) as an account's code hash: printed here so the
+      # deployed vault can be compared with this build (pnpm verify-vault does it locally).
+      - name: NEAR code hash of the wasm
+        working-directory: contracts/near
+        run: |
+          node -e '
+            const c = require("crypto"), f = require("fs");
+            const file = process.argv[1];
+            let n = BigInt("0x" + c.createHash("sha256").update(f.readFileSync(file)).digest("hex"));
+            const A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+            let s = "";
+            while (n > 0n) { s = A[Number(n % 58n)] + s; n /= 58n; }
+            console.log(`${file}\ncode hash ${s}`);
+            f.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `NEAR code hash of \`${file}\`: \`${s}\`\n`);
+          ' target/near/baret_near_vault/baret_near_vault.wasm
       - uses: actions/upload-artifact@v4
         with:
           name: baret-near-vault-wasm

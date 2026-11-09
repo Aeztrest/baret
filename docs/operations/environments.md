@@ -59,9 +59,9 @@ Last verified: 2026-11-07
 | `WXT_BARET_API_URL` (extension) | API base embedded in the build |
 | `VITE_ENABLED_FAMILIES` / `WXT_ENABLED_FAMILIES` | `evm,stellar,casper` — which families a build exposes |
 
-## 4b. `packages/demo-near` (local only, `.env.near`, gitignored)
+## 4b. `packages/demo-near` (local only, `.env.near` and `.env.agent`, gitignored)
 
-The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only; the scripts stop on any other network.
+The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only; the scripts stop on any other network. Two files for two parties: the owner's setup scripts read `.env.near` (all of the table below); `pnpm agent-key` writes `.env.agent` with `NEAR_NETWORK`, `NEAR_AGENT_ID`, `NEAR_AGENT_FC_KEY`, `NEAR_VAULT_ID`, `NEAR_SHOP_ID` and, when set, `NEAR_RPC_URL`, `BARET_API_URL`, `NEAR_ATTACKER_ID`, `NEAR_MARKET_TOKEN`, `NEAR_MARKET_API`. The agent process (`pnpm agent`, `pnpm market-agent`) reads only those names, from `.env.agent` or the environment (`src/agent-env.ts`), and refuses to start if `NEAR_OWNER_KEY`, `NEAR_VAULT_KEY` or `NEAR_AGENT_KEY` is in `.env.agent`.
 
 | Variable | Description |
 |---|---|

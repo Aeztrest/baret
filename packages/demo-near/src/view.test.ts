@@ -12,6 +12,7 @@ function fakeRpc(calls: unknown[]): typeof fetch {
     const ok = (result: unknown) => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result }));
     if (req.method === "block") return ok({ header: { height: 42 } });
     if (req.params.request_type === "view_account") return ok({ amount: (3n * NEAR).toString() });
+    if (req.params.request_type === "view_access_key_list") return ok({ keys: [] });
     switch (req.params.method_name) {
       case "get_policy":
         return ok({
@@ -19,7 +20,10 @@ function fakeRpc(calls: unknown[]): typeof fetch {
             owner: "o.testnet",
             paused: false,
             agents: ["a.o.testnet"],
-            receivers: ["s.o.testnet"],
+            receivers: [
+              ["native", ["s.o.testnet"]],
+              ["eip155:10143", ["0x5bb6ff1fcbe31ed8fbce6805852ce279475522fc"]],
+            ],
             limits: [
               ["native", { per_transfer: NEAR.toString(), per_day: (3n * NEAR).toString() }],
             ],
@@ -29,6 +33,8 @@ function fakeRpc(calls: unknown[]): typeof fetch {
         return ok({ result: bytes((NEAR / 10n).toString()) });
       case "get_remaining":
         return ok({ result: bytes(((29n * NEAR) / 10n).toString()) });
+      case "get_version":
+        return ok({ result: bytes("0.2.0") });
     }
     return new Response("{}", { status: 500 });
   }) as unknown as typeof fetch;
@@ -43,6 +49,10 @@ describe("readVault", () => {
     expect(s.nextTransferMax).toBe((29n * NEAR) / 10n);
     expect(s.balance).toBe(3n * NEAR);
     expect(s.block).toBe(42);
+    expect(s.receivers).toEqual(["s.o.testnet"]);
+    expect(s.receiversByAsset).toHaveLength(2);
+    expect(s.version).toBe("0.2.0");
+    expect(s.accessKeys).toBe(0);
     expect(calls.slice(1).every((c) => c.params.block_id === 42)).toBe(true);
   });
 

@@ -14,7 +14,14 @@
  */
 import { getChain } from "@baret/chains";
 import { Account, actions, JsonRpcProvider, KeyPair, KeyPairSigner, PublicKey } from "near-api-js";
-import { BARET_API, CHAIN, EXPLORER, env, envOr, RPC_URL } from "./env.js";
+import {
+  BARET_API,
+  CHAIN,
+  EXPLORER,
+  agentEnv as env,
+  agentEnvOr as envOr,
+  RPC_URL,
+} from "./agent-env.js";
 import {
   EVM_CHAIN,
   EVM_CHAIN_ID,

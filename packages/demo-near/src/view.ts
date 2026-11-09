@@ -47,8 +47,18 @@ export interface VaultState {
   owner: string;
   paused: boolean;
   agents: string[];
+  /** Who the vault may pay in NEAR. */
   receivers: string[];
+  /** Who each asset may pay (vault 0.2 lists them per asset; 0.1 had one shared list). */
+  receiversByAsset: { asset: string; receivers: string[] }[];
   limits: VaultLimit[];
+  /** The contract's `get_version`; null for 0.1, which has no such view. */
+  version: string | null;
+  /**
+   * Access keys on the vault's own account. 0: nobody can replace its code except the
+   * owner through `update_contract`; more: whoever holds one can.
+   */
+  accessKeys: number;
   /** NATIVE ("native") spending in the rolling 24 hours, yoctoNEAR. */
   spentToday: bigint;
   /** The largest NEAR transfer the vault takes now: min(per transfer, what is left of the day). */
@@ -74,7 +84,9 @@ async function rpc(url: string, method: string, params: unknown, f: Fetch): Prom
 }
 
 function toBase64(s: string): string {
-  return btoa(s);
+  let bin = "";
+  for (const b of new TextEncoder().encode(s)) bin += String.fromCharCode(b);
+  return btoa(bin);
 }
 
 async function view(
@@ -105,8 +117,18 @@ interface PolicyView {
   owner: string;
   paused: boolean;
   agents: string[];
-  receivers: string[];
+  /** 0.2: `[asset, [receiver…]]`; 0.1: one list of account ids for every asset. */
+  receivers: ([string, string[]] | string)[];
   limits: [string, { per_transfer: string; per_day: string }][];
+}
+
+/** Both vault versions as per-asset lists (0.1's shared list applies to every asset). */
+function perAsset(p: PolicyView): { asset: string; receivers: string[] }[] {
+  const shared = p.receivers.filter((r): r is string => typeof r === "string");
+  if (shared.length > 0) return p.limits.map(([asset]) => ({ asset, receivers: shared }));
+  return p.receivers
+    .filter((r): r is [string, string[]] => Array.isArray(r))
+    .map(([asset, receivers]) => ({ asset, receivers }));
 }
 
 /** The vault's policy, today's spending and its balance, all read at one final block. */
@@ -119,7 +141,7 @@ export async function readVault(
     header: { height: number };
   };
   const block = head.header.height;
-  const [policy, spent, remaining, account] = await Promise.all([
+  const [policy, spent, remaining, account, keys, version] = await Promise.all([
     view(url, block, vault, "get_policy", {}, f) as Promise<PolicyView>,
     view(url, block, vault, "get_spent_today", { asset: "native" }, f) as Promise<string>,
     view(url, block, vault, "get_remaining", { asset: "native" }, f) as Promise<string>,
@@ -131,12 +153,24 @@ export async function readVault(
     ) as Promise<{
       amount: string;
     }>,
+    rpc(
+      url,
+      "query",
+      { request_type: "view_access_key_list", block_id: block, account_id: vault },
+      f,
+    ) as Promise<{ keys?: unknown[] }>,
+    // 0.1 has no get_version: its absence is an answer, not a failure.
+    (view(url, block, vault, "get_version", {}, f) as Promise<string>).catch(() => null),
   ]);
+  const byAsset = perAsset(policy);
   return {
     owner: policy.owner,
     paused: policy.paused,
     agents: policy.agents,
-    receivers: policy.receivers,
+    receivers: byAsset.find((r) => r.asset === "native")?.receivers ?? [],
+    receiversByAsset: byAsset,
+    version: typeof version === "string" ? version : null,
+    accessKeys: Array.isArray(keys.keys) ? keys.keys.length : 0,
     limits: policy.limits.map(([asset, l]) => ({
       asset,
       perTransfer: BigInt(l.per_transfer),
