@@ -26,9 +26,8 @@ GitHub Actions is the gate: nothing reaches staging or production unless CI is g
 | `contracts-casper.yml` | `contracts/casper/**` | Odra build + tests | Phase 4 |
 | `contracts-near.yml` | PR/push touching `contracts/near/**` (and on demand) | `cargo fmt --check`, `cargo test` (Rust 1.95), `cargo near build non-reproducible-wasm`, the wasm's NEAR code hash (base58 of sha256) in the job summary, artifact `baret-near-vault-wasm` | live |
 | `release.yml` | tag `v*` | §3 | Phase 2 |
-| `keep-warm.yml` | every 10 min, 9–30 November (and on demand) | `GET /health` on the staging API, so the free Render instance does not sleep while NEAR HACKATHON judges call it (2026-11-14 → 25) | live |
+| `keep-warm.yml` | every 10 min, 9–30 November (and on demand) | `GET /health` on the staging API, so the free Render instance does not sleep while NEAR HACKATHON judges call it (2026-11-14 → 25); then, when the repository secret `NEAR_MARKET_TOKEN` is set, one pass of the Agent Market worker (`pnpm --filter @baret/demo-near market-agent --once`), which delivers Baret's verdict to new hires. Removed when the API leaves Render's free plan | live |
 | `chain-check.yml` | nightly cron | Live testnet checks: RPCs answer, deployed contracts still exist, one analyse per chain against staging | Phase 2 |
-| `keep-warm.yml` | cron, only while the API is on Render's free plan | ping `/health` | Phase 2 (removed on a paid plan) |
 
 ## 3. Release
 

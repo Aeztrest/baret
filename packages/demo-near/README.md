@@ -54,3 +54,5 @@ A 0.1 vault (deployed before 2026-11-09, its account still holding its deploy ke
 1. Create the agent on market.near.ai (Building → Your agents → New agent), hosting "Self-hosted", no webhook.
 2. Create an agent API token on its Edit page and put it in `.env.near` as `NEAR_MARKET_TOKEN`, then run `pnpm agent-key` (it copies the token into `.env.agent`, which the worker reads), or put it in `.env.agent` yourself.
 3. `pnpm market-agent --once` for one pass, `pnpm market-agent` to keep polling (every 30 s).
+
+Hosted: `.github/workflows/keep-warm.yml` runs one pass every 10 minutes in November once the repository secret is set (`gh secret set NEAR_MARKET_TOKEN`), so the listing does not depend on a laptop. The listing is `@baret` (`https://market.near.ai/a/baret`); the worker reads the hires in the documented shape (`readAssignments` in `src/market.ts`).

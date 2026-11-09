@@ -10,7 +10,7 @@ If you are evaluating Baret (for example as a NEAR HACKATHON 2026 screener), sta
 2. **Verify without any account or key:**
    ```bash
    pnpm install
-   pnpm near:verify    # reads the demo vault on NEAR testnet, sends 11 requests to Baret's API, PASS/FAIL per claim
+   pnpm near:verify    # reads the demo vault on NEAR testnet, sends 14 requests to Baret's API (3 with real NEAR Intents quotes, no funds move), PASS/FAIL per claim
    pnpm test           # every TypeScript package
    ```
    The vault's Rust tests run with `cd contracts/near && cargo test` (Linux or macOS; on Windows the near-sdk test runtime needs NASM). CI runs all of them on every pull request.

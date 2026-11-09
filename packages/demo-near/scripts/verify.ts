@@ -6,11 +6,14 @@
  *      no access key (nobody can redeploy it around the rules).
  *   2. Sends the agent's requests to Baret's API (staging by default, BARET_API_URL to
  *      change it) and compares each verdict with what the README says.
+ *   3. NEAR Intents on mainnet: asks 1Click for real quotes (no funds move) and checks
+ *      an honest, a hostile and a forged one.
  *
  * Nothing is signed or sent to a chain. Exit code 0 when every check passes.
  */
 
 import { evmAccounts } from "../src/evm.js";
+import { depositFor, forge, getQuote, type IntentsQuote } from "../src/intents.js";
 import { buildAction, type ScenarioName } from "../src/scenarios.js";
 import { demoAccounts, demoAnalyzeBody, demoRpcUrl, formatNear, readVault } from "../src/view.js";
 
@@ -215,6 +218,38 @@ await expectVerdict(
   "SIMULATION_FAILED",
   "E_RECEIVER_NOT_ALLOWED",
 );
+
+// NEAR Intents (mainnet, nothing signed): real 1Click quotes, the agent being `aurora`.
+const AGENT_MAINNET = "aurora";
+const OTHER = "relay.near";
+const [mine, theirs] = await Promise.all([getQuote(AGENT_MAINNET), getQuote(OTHER)]);
+if (!mine || !theirs) {
+  record("NEAR Intents: 1Click gives a quote", false, "1Click did not answer");
+} else {
+  const swap = (q: IntentsQuote) => ({
+    chain: "near:mainnet",
+    request: { kind: "transaction", tx: depositFor(AGENT_MAINNET, q), intents: q },
+    policyTemplate: "balanced",
+  });
+  await expectVerdict(
+    "NEAR Intents: the agent's own quote passes, with 1Click's app fee shown",
+    swap(mine),
+    "caution",
+    "INTENTS_APP_FEE",
+  );
+  await expectVerdict(
+    `NEAR Intents: a real quote paying ${OTHER} is blocked`,
+    swap(theirs),
+    "blocked",
+    "INTENTS_RECIPIENT_MISMATCH",
+  );
+  await expectVerdict(
+    "NEAR Intents: a forged quote (agent as recipient, another quote's deposit address) is blocked",
+    swap(forge(mine, theirs)),
+    "blocked",
+    "INTENTS_QUOTE_UNVERIFIED",
+  );
+}
 
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} checks passed.`);

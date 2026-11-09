@@ -63,7 +63,7 @@ pnpm install
 pnpm near:verify
 ```
 
-No account, no key, no `.env`: it reads the demo vault on NEAR testnet and sends eleven requests to Baret's API, printing PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent's real function call key cannot add keys; Chain Signatures within and outside the policy).
+No account, no key, no `.env`: it reads the demo vault on NEAR testnet, sends fourteen requests to Baret's API (three of them with real NEAR Intents quotes on mainnet; no funds move) and prints PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent's real function call key cannot add keys; Chain Signatures within and outside the policy; an honest, a hostile and a forged Intents quote).
 
 ### Run the agent yourself
 
@@ -96,8 +96,9 @@ The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI ru
 | Add a full access key | Blocked (`E_KEY_NOT_ALLOWED`, `AUTHORITY_CHANGE`) | `--force`: NEAR refused ("Access key requires full access") |
 | Pay 0.01 MON on Monad testnet through Chain Signatures | Safe on both chains | [NEAR](https://testnet.nearblocks.io/txns/4LWi9nJoa5KS6H4RBNN9u21nxepBQZqcHgp4FLCjDB2r) · [Monad](https://testnet.monadexplorer.com/tx/0x736dd215f88f53ba709d44c28ed76ebb1d0403dd30e45659b296e601fb3b9004) |
 | Pay 0.01 MON to an address a prompt named | Blocked (`KNOWN_MALICIOUS_ADDRESS` on Monad) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
-| NEAR Intents swap, quote as given (mainnet) | Caution (app fee) | not signed |
-| The same quote paying out to another account | Blocked (`INTENTS_RECIPIENT_MISMATCH`) | not signed |
+| NEAR Intents swap, the agent's own 1Click quote (mainnet) | Caution (`INTENTS_APP_FEE`) | not signed |
+| A real 1Click quote that pays out and refunds to another account | Blocked (`INTENTS_RECIPIENT_MISMATCH`) | not signed |
+| Forged: the agent's own quote with another quote's deposit address | Blocked (`INTENTS_QUOTE_UNVERIFIED`: 1Click holds a different quote) | not signed |
 
 ### Contracts (NEAR testnet)
 
