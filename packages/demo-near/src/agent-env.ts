@@ -64,7 +64,12 @@ export function agentEnvOr(name: AgentName, fallback: string): string {
 
 export const NETWORK = agentEnvOr("NEAR_NETWORK", "testnet");
 export const CHAIN = `near:${NETWORK}`;
-export const RPC_URL = agentEnvOr("NEAR_RPC_URL", `https://rpc.${NETWORK}.near.org`);
+// FastNEAR (listed on docs.near.org/api/rpc/providers): rpc.<network>.near.org is rate
+// limited and took about 3 s per call on 2026-11-09.
+export const RPC_URL = agentEnvOr(
+  "NEAR_RPC_URL",
+  NETWORK === "mainnet" ? "https://free.rpc.fastnear.com" : "https://test.rpc.fastnear.com",
+);
 export const BARET_API = agentEnvOr("BARET_API_URL", "https://baret-api-staging.onrender.com");
 export const EXPLORER =
   NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";

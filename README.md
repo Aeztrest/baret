@@ -82,18 +82,20 @@ pnpm agent -- wrong-receiver --force   # sent anyway → the vault refuses E_REC
 pnpm agent -- add-key            # a prompt asks for a full access key → BLOCKED (AUTHORITY_CHANGE, E_KEY_NOT_ALLOWED)
 ```
 
-The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI run, also attached to the GitHub release; `pnpm verify-vault -- ./baret_near_vault.wasm` compares it with the deployed code. The agent process reads only `.env.agent` (its function call key and public ids, by an allowlist) and refuses to start if a full key is in it. Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Intents check (`pnpm intents-check`) and the Agent Market worker (`pnpm market-agent`) are in [`packages/demo-near/README.md`](packages/demo-near/README.md).
+The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI run, also attached to the [`near-vault-v0.2.0` release](https://github.com/Aeztrest/baret/releases/tag/near-vault-v0.2.0); `pnpm verify-vault -- ./baret_near_vault.wasm` compares it with the deployed code. The agent process reads only `.env.agent` (its function call key and public ids, by an allowlist) and refuses to start if a full key is in it. Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Intents check (`pnpm intents-check`) and the Agent Market worker (`pnpm market-agent`) are in [`packages/demo-near/README.md`](packages/demo-near/README.md).
 
-### Recorded runs (testnet)
+### Recorded runs (testnet, vault 0.2, 2026-11-09)
 
 | Request | Baret | On chain |
 |---|---|---|
-| Pay the shop 0.1 NEAR | Safe | [paid](https://testnet.nearblocks.io/txns/AoFv4uUaRNo3k5VDRPPPevwwNFZrvuXpaEpg4fhMdbvr) |
-| Pay the shop 5 NEAR | Blocked (`E_PER_TRANSFER_LIMIT`) | `--force`: refused by the vault |
-| Pay an account a prompt named | Blocked (`E_RECEIVER_NOT_ALLOWED`) | `--force`: refused by the vault |
-| Add a full access key | Blocked (`AUTHORITY_CHANGE`) | `--force`: refused by NEAR (the key cannot add keys) |
-| Pay 0.01 MON on Monad testnet through Chain Signatures | Safe on both chains | [NEAR](https://testnet.nearblocks.io/txns/AYeXGS4GUexwcYE9X3BBWm2FsFvizkm7Dw5AsbJYLHPv) · [Monad](https://testnet.monadexplorer.com/tx/0x2796a4ad2edb515dde729c1d6c51475fd15b3884883c991ddcf4a6c94253afb8) |
-| Pay 0.01 MON to an address a prompt named | Blocked on both | `--force`: refused by the vault |
+| Move the vault to 0.2 and delete its key (deploy + `migrate` + DeleteKey, one transaction) | — | [migrated and locked](https://testnet.nearblocks.io/txns/6gXZFtCb6xJyZN9jgfyS7f47kkLxhGWUC15wyrdtHVWC); the vault account now holds 0 keys and runs the CI wasm `7dwH3FLP…f6sS` |
+| The owner replaces the code through `update_contract` (same wasm, to prove the only path works) | — | [updated](https://testnet.nearblocks.io/txns/E9F2MCz1sAQ8K8S3kSgdDnyEdXHrEdYmPPiPeykBUsBU), state kept |
+| Pay the shop 0.1 NEAR | Safe | [paid](https://testnet.nearblocks.io/txns/7J1F9jWcrvXRnPc72yn1Nq2uoSZ6Po3xd3EzvAkBVo5L) |
+| Pay the shop 5 NEAR | Blocked (`E_PER_TRANSFER_LIMIT`) | `--force`: the vault panicked `E_PER_TRANSFER_LIMIT` |
+| Pay an account a prompt named | Blocked (`E_RECEIVER_NOT_ALLOWED`) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
+| Add a full access key | Blocked (`E_KEY_NOT_ALLOWED`, `AUTHORITY_CHANGE`) | `--force`: NEAR refused ("Access key requires full access") |
+| Pay 0.01 MON on Monad testnet through Chain Signatures | Safe on both chains | [NEAR](https://testnet.nearblocks.io/txns/4LWi9nJoa5KS6H4RBNN9u21nxepBQZqcHgp4FLCjDB2r) · [Monad](https://testnet.monadexplorer.com/tx/0x736dd215f88f53ba709d44c28ed76ebb1d0403dd30e45659b296e601fb3b9004) |
+| Pay 0.01 MON to an address a prompt named | Blocked (`KNOWN_MALICIOUS_ADDRESS` on Monad) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
 | NEAR Intents swap, quote as given (mainnet) | Caution (app fee) | not signed |
 | The same quote paying out to another account | Blocked (`INTENTS_RECIPIENT_MISMATCH`) | not signed |
 

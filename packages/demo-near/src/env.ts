@@ -29,7 +29,12 @@ export const ENV_FILE = FILE;
 /** The network the demo runs on: testnet only (a mainnet run is never the default). */
 export const NETWORK = envOr("NEAR_NETWORK", "testnet");
 export const CHAIN = `near:${NETWORK}`;
-export const RPC_URL = envOr("NEAR_RPC_URL", `https://rpc.${NETWORK}.near.org`);
+// FastNEAR (listed on docs.near.org/api/rpc/providers): rpc.<network>.near.org is rate
+// limited and took about 3 s per call on 2026-11-09.
+export const RPC_URL = envOr(
+  "NEAR_RPC_URL",
+  NETWORK === "mainnet" ? "https://free.rpc.fastnear.com" : "https://test.rpc.fastnear.com",
+);
 /** Baret's API: staging by default, or a local apps/api. */
 export const BARET_API = envOr("BARET_API_URL", "https://baret-api-staging.onrender.com");
 export const EXPLORER =

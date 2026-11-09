@@ -68,23 +68,38 @@ export class JsonNearRpc implements NearRpc {
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
 
+  /**
+   * One JSON-RPC call. A network error, a 429 or a 5xx is tried once more after a short
+   * pause (public NEAR RPCs rate limit in bursts); a second failure is RpcUnavailableError,
+   * which the API answers as 503, never as a verdict.
+   */
   private async call(
     method: string,
     params: unknown,
   ): Promise<{ result?: unknown; error?: unknown }> {
-    let res: Response;
-    try {
-      res = await this.fetchImpl(this.url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: "baret", method, params }),
-        signal: AbortSignal.timeout(this.timeoutMs),
-      });
-    } catch (e) {
-      throw new RpcUnavailableError((e as Error).message);
+    let last = "";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 250));
+      let res: Response;
+      try {
+        res = await this.fetchImpl(this.url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: "baret", method, params }),
+          signal: AbortSignal.timeout(this.timeoutMs),
+        });
+      } catch (e) {
+        last = (e as Error).message;
+        continue;
+      }
+      if (res.status === 429 || res.status >= 500) {
+        last = `HTTP ${res.status}`;
+        continue;
+      }
+      if (!res.ok) throw new RpcUnavailableError(`HTTP ${res.status}`);
+      return (await res.json()) as { result?: unknown; error?: unknown };
     }
-    if (!res.ok) throw new RpcUnavailableError(`HTTP ${res.status}`);
-    return (await res.json()) as { result?: unknown; error?: unknown };
+    throw new RpcUnavailableError(last);
   }
 
   async pin(): Promise<{ height: bigint; hash: string }> {
