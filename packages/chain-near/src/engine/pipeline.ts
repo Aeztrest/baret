@@ -8,6 +8,7 @@ import type {
 } from "@baret/core";
 import { InvalidRequestError, parseCaip10, parseCaip19 } from "@baret/core";
 import { toTransaction } from "./decode.js";
+import type { IntentsClient } from "./intents.js";
 import type { IntentsQuote, NearRequest, NearTransaction } from "./request.js";
 import type { NearAccountState, NearRpc } from "./rpc.js";
 
@@ -25,6 +26,11 @@ export interface NearDeps {
   flagged: ReadonlyMap<string, string>;
   /** The Chain Signatures MPC contracts of this network. */
   mpcContracts: readonly string[];
+  /**
+   * NEAR Intents 1Click, to confirm a quote by its deposit address. Absent (testnet: Intents
+   * runs on mainnet only): a request that carries a quote cannot be confirmed and blocks.
+   */
+  intents?: IntentsClient;
 }
 
 const NATIVE = "native";
@@ -45,6 +51,14 @@ interface Movement {
   viaVault?: string;
   /** The deposit of a NEAR Intents swap: an exchange, not a loss (its loss is the quote's). */
   swap?: true;
+  /**
+   * NEAR attached to a function call (the 1 yoctoNEAR `ft_transfer` requires, a storage
+   * deposit). It leaves the signer, but it is not the payment the call makes.
+   */
+  attached?: true;
+  /** A NEP-171 piece or a NEP-245 multi-token: moved, but not priced or balance-read. */
+  kind?: "nft" | "mt";
+  tokenId?: string;
 }
 
 interface Analysis {
@@ -56,6 +70,10 @@ interface Analysis {
   failure: string | null;
   /** EVM transfers a Baret vault is asked to sign through Chain Signatures (TN.7). */
   evmSignatures: { vault: string; tx: Record<string, unknown> }[];
+  /** NEP-178 approvals the request grants. */
+  approvals: { spender: string; contract: string; tokenId: string }[];
+  /** Contracts a `*_transfer_call` hands tokens to; their code runs on them with `msg`. */
+  callReceivers: string[];
 }
 
 export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<AdapterResult> {
@@ -68,14 +86,25 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   const signer = await deps.rpc.viewAccount(tx.signerId, pin.hash);
   const receiver = await deps.rpc.viewAccount(tx.receiverId, pin.hash);
 
-  const a: Analysis = { tx, user, movements: [], drafts: [], failure: null, evmSignatures: [] };
+  const a: Analysis = {
+    tx,
+    user,
+    movements: [],
+    drafts: [],
+    failure: null,
+    evmSignatures: [],
+    approvals: [],
+    callReceivers: [],
+  };
   if (signer === null) a.failure = "E_SIGNER_MISSING";
 
   readActions(a, deps);
-  const intents = (input.request as NearRequest).intents;
+  const sent = (input.request as NearRequest).intents;
+  const intents = sent ? await confirmQuote(a, sent, deps) : undefined;
   if (intents) intentsCheck(a, intents, input.now);
+  await keyCheck(a, deps, signer, pin.hash);
   await preflight(a, deps, input, receiver, signer, pin.hash);
-  detect(a, deps, input, receiver);
+  await detect(a, deps, input, receiver, pin.hash);
 
   const balances = await balancesBefore(a, deps, signer, pin.hash);
   rules(a, input, balances, intents);
@@ -88,6 +117,7 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
     { name: "near-rpc", status: "ok" },
     { name: "reputation-registry", status: deps.flagged.size > 0 ? "ok" : "skipped" },
   ];
+  if (sent) sources.push({ name: "near-intents-1click", status: intents ? "ok" : "unavailable" });
   return {
     drafts: a.drafts,
     estimatedChanges: changes(a, input.chain, balances),
@@ -121,6 +151,7 @@ function readActions(a: Analysis, deps: NearDeps): void {
             to: tx.receiverId,
             asset: NATIVE,
             amount: deposit,
+            attached: true,
           });
         }
         const args = typeof action.args === "object" ? action.args : {};
@@ -205,6 +236,59 @@ function readCall(
       amount: toBig(str("amount")),
     });
   }
+  // NEP-171: one piece leaves the signer. It has no price, so no amount rule can pass it;
+  // NFT_TRANSFER_DETECTED puts it in front of the owner.
+  if ((method === "nft_transfer" || method === "nft_transfer_call") && str("receiver_id")) {
+    const tokenId = str("token_id") ?? "";
+    a.movements.push({
+      from: tx.signerId,
+      to: str("receiver_id") as string,
+      asset: tx.receiverId,
+      amount: 1n,
+      kind: "nft",
+      tokenId,
+    });
+    a.drafts.push({
+      code: "NFT_TRANSFER_DETECTED",
+      values: { recipient: str("receiver_id") as string, contract: tx.receiverId },
+      details: { tokenId, method },
+    });
+  }
+  // NEP-245 multi-tokens (intents.near holds balances this way): one or many ids leave.
+  if (/^mt_(batch_)?transfer(_call)?$/.test(method) && str("receiver_id")) {
+    const ids: unknown[] = Array.isArray(args.token_ids) ? args.token_ids : [args.token_id];
+    const amounts: unknown[] = Array.isArray(args.amounts) ? args.amounts : [args.amount];
+    ids.forEach((id, i) => {
+      const amt = amounts[i];
+      a.movements.push({
+        from: tx.signerId,
+        to: str("receiver_id") as string,
+        asset: tx.receiverId,
+        amount: toBig(typeof amt === "string" ? amt : null),
+        kind: "mt",
+        tokenId: String(id),
+      });
+    });
+    a.drafts.push({
+      code: "MULTI_TOKEN_TRANSFER_DETECTED",
+      values: { recipient: str("receiver_id") as string, contract: tx.receiverId },
+      details: { tokenIds: ids.map(String), method },
+    });
+  }
+  // NEP-178: a standing right to move one piece. To an account with no contract it is how
+  // NFT phishing works, like an allowance to a wallet (APPROVAL_TO_WALLET, in detect).
+  if (method === "nft_approve" && str("account_id")) {
+    a.approvals.push({
+      spender: str("account_id") as string,
+      contract: tx.receiverId,
+      tokenId: str("token_id") ?? "",
+    });
+  }
+  // `*_transfer_call` runs the receiver's code with `msg`: the receiver decides what it
+  // keeps and what it returns, so it is a contract exposure of its own.
+  if (/_transfer_call$/.test(method) && str("receiver_id")) {
+    a.callReceivers.push(str("receiver_id") as string);
+  }
   if (method === "execute_transfer" && str("receiver") && str("amount") && str("asset")) {
     // The vault holds "native" or NEP-141 tokens named by their contract. Anything else
     // (a CAIP-19 id, a typo) is no asset it has a limit for: it refuses, and the id
@@ -264,7 +348,7 @@ async function preflight(
       .reduce((s, m) => s + m.amount, 0n);
     if (out > signer.amount) a.failure ??= "E_INSUFFICIENT_NEAR";
   }
-  for (const m of a.movements.filter((x) => x.asset !== NATIVE && !x.viaVault)) {
+  for (const m of a.movements.filter((x) => x.asset !== NATIVE && !x.viaVault && !x.kind)) {
     const balance = await deps.rpc.callView(
       m.asset,
       "ft_balance_of",
@@ -276,18 +360,26 @@ async function preflight(
   }
 
   // A Baret vault: read its policy and predict its refusal before anything is signed.
-  for (const m of a.movements.filter((x) => x.viaVault)) {
-    const vault = m.viaVault as string;
-    const policy = (await deps.rpc.callView(vault, "get_policy", {}, block)) as VaultPolicy | null;
-    if (!policy || !Array.isArray(policy.limits)) continue;
+  // Several calls in one transaction draw on one window, so each is checked against what
+  // the earlier ones left (`drawn`). A vault whose policy or allowance cannot be read is
+  // not vouched for: the request fails closed.
+  const drawn = new Map<string, bigint>();
+  const vaultCheck = async (vault: string, m: Movement): Promise<void> => {
+    const policy = await readPolicy(deps, vault, block);
     const remaining = await deps.rpc.callView(vault, "get_remaining", { asset: m.asset }, block);
-    const code = vaultRefusal(
-      policy,
-      tx.signerId,
-      m,
-      typeof remaining === "string" ? BigInt(remaining) : null,
-    );
+    if (!policy || typeof remaining !== "string" || !/^\d+$/.test(remaining)) {
+      a.failure ??= "E_VAULT_UNREADABLE";
+      return;
+    }
+    const key = `${vault}|${m.asset}`;
+    const before = drawn.get(key) ?? 0n;
+    const left = BigInt(remaining) - before;
+    const code = vaultRefusal(policy, tx.signerId, m, left < 0n ? 0n : left);
     if (code) a.failure ??= code;
+    drawn.set(key, before + m.amount);
+  };
+  for (const m of a.movements.filter((x) => x.viaVault)) {
+    await vaultCheck(m.viaVault as string, m);
   }
 
   // The vault says what it would sign (receiver, asset, worst-case cost); its policy says
@@ -307,39 +399,80 @@ async function preflight(
       a.failure ??= "E_BAD_EVM_TX";
       continue;
     }
-    const policy = (await deps.rpc.callView(
-      e.vault,
-      "get_policy",
-      {},
-      block,
-    )) as VaultPolicy | null;
-    if (!policy || !Array.isArray(policy.limits)) {
-      a.failure ??= "E_BAD_EVM_TX";
-      continue;
-    }
-    const remaining = await deps.rpc.callView(
-      e.vault,
-      "get_remaining",
-      { asset: parts.asset },
-      block,
-    );
-    const code = vaultRefusal(
-      policy,
-      tx.signerId,
-      { from: e.vault, to: parts.receiver, asset: parts.asset, amount: toBig(parts.max_cost) },
-      typeof remaining === "string" ? BigInt(remaining) : null,
-    );
-    if (code) a.failure ??= code;
+    await vaultCheck(e.vault, {
+      from: e.vault,
+      to: parts.receiver,
+      asset: parts.asset,
+      amount: toBig(parts.max_cost),
+    });
   }
   void input;
+}
+
+/** A vault's policy, or null when it does not read as one (not a Baret vault). */
+async function readPolicy(
+  deps: NearDeps,
+  vault: string,
+  block: string,
+): Promise<VaultPolicy | null> {
+  const p = (await deps.rpc.callView(vault, "get_policy", {}, block)) as VaultPolicy | null;
+  if (!p || typeof p !== "object") return null;
+  if (!Array.isArray(p.limits) || !Array.isArray(p.agents) || !Array.isArray(p.receivers))
+    return null;
+  return p;
+}
+
+// ------------------------------------------------------------------ the signing key
+
+/**
+ * When the request names the key that will sign it (every borsh transaction does), read
+ * that key. A key the account does not hold, or a function call key the transaction goes
+ * past (another contract, a method it does not list, NEAR attached, any action but a
+ * call), means NEAR will refuse it. For an agent it is also the proof that it signs with
+ * the narrow key the owner gave it.
+ */
+async function keyCheck(
+  a: Analysis,
+  deps: NearDeps,
+  signer: NearAccountState | null,
+  block: string,
+): Promise<void> {
+  const { tx } = a;
+  if (!tx.publicKey || !signer) return;
+  const key = await deps.rpc.viewAccessKey(tx.signerId, tx.publicKey, block);
+  if (key === null) {
+    a.failure ??= "E_KEY_MISSING";
+    return;
+  }
+  if (key.permission === "FullAccess") return;
+  const fc = key.permission;
+  const allowed = tx.actions.every(
+    (x) =>
+      x.type === "FunctionCall" &&
+      BigInt(x.deposit) === 0n &&
+      tx.receiverId === fc.receiverId &&
+      (fc.methodNames.length === 0 || fc.methodNames.includes(x.methodName)),
+  );
+  if (!allowed) a.failure ??= "E_KEY_NOT_ALLOWED";
 }
 
 interface VaultPolicy {
   owner: string;
   paused: boolean;
   agents: string[];
-  receivers: string[];
+  /**
+   * Vault 0.2: who each asset may pay, `[asset, [receiver…]]`. Vault 0.1 kept one list for
+   * every asset (plain account ids); both are read.
+   */
+  receivers: ([string, string[]] | string)[];
   limits: [string, { per_transfer: string; per_day: string }][];
+}
+
+/** Whether the policy lets `asset` pay `to`, for either vault version. */
+function mayPay(p: VaultPolicy, asset: string, to: string): boolean {
+  return p.receivers.some((entry) =>
+    typeof entry === "string" ? entry === to : entry[0] === asset && entry[1].includes(to),
+  );
 }
 
 /** The vault's own checks, in its order (contracts/near/vault/src/lib.rs `check`). */
@@ -354,7 +487,7 @@ export function vaultRefusal(
   if (m.amount <= 0n) return "E_AMOUNT_ZERO";
   const limit = p.limits.find(([asset]) => asset === m.asset)?.[1];
   if (!limit) return "E_ASSET_NOT_ALLOWED";
-  if (!p.receivers.includes(m.to)) return "E_RECEIVER_NOT_ALLOWED";
+  if (!mayPay(p, m.asset, m.to)) return "E_RECEIVER_NOT_ALLOWED";
   if (m.amount > BigInt(limit.per_transfer)) return "E_PER_TRANSFER_LIMIT";
   if (remaining !== null && m.amount > remaining) return "E_DAILY_LIMIT";
   return null;
@@ -362,12 +495,13 @@ export function vaultRefusal(
 
 // ------------------------------------------------------------------ detectors
 
-function detect(
+async function detect(
   a: Analysis,
   deps: NearDeps,
   input: AdapterInput,
   receiver: NearAccountState | null,
-): void {
+  block: string,
+): Promise<void> {
   const { tx } = a;
   const known = new Set([...deps.knownContracts, tx.signerId]);
   for (const asset of [input.chain.usdc, input.chain.wrappedNative]) {
@@ -378,6 +512,34 @@ function detect(
   const calls = tx.actions.some((x) => x.type === "FunctionCall");
   if (calls && receiver?.hasCode && !known.has(tx.receiverId)) {
     a.drafts.push({ code: "UNKNOWN_CONTRACT_EXPOSURE", values: { contract: tx.receiverId } });
+  }
+  for (const contract of new Set(a.callReceivers)) {
+    if (known.has(contract)) continue;
+    const state = await deps.rpc.viewAccount(contract, block);
+    if (state?.hasCode) {
+      a.drafts.push({
+        code: "UNKNOWN_CONTRACT_EXPOSURE",
+        values: { contract },
+        details: { via: "transfer_call" },
+      });
+    }
+  }
+  for (const ap of a.approvals) {
+    const spender = await deps.rpc.viewAccount(ap.spender, block);
+    const details = { standard: "nep178", tokenId: ap.tokenId };
+    a.drafts.push(
+      spender?.hasCode
+        ? {
+            code: "APPROVAL_GRANTED",
+            values: { spender: ap.spender, amount: "1", asset: `${ap.contract} #${ap.tokenId}` },
+            details,
+          }
+        : {
+            code: "APPROVAL_TO_WALLET",
+            values: { spender: ap.spender, contract: ap.contract },
+            details,
+          },
+    );
   }
 
   const touched = new Set<string>([tx.receiverId, ...a.movements.map((m) => m.to)]);
@@ -408,7 +570,7 @@ async function balancesBefore(
 ): Promise<Balances> {
   const tokens = new Map<string, bigint | null>();
   for (const m of a.movements) {
-    if (m.asset === NATIVE || tokens.has(m.asset) || m.viaVault) continue;
+    if (m.asset === NATIVE || tokens.has(m.asset) || m.viaVault || m.kind) continue;
     const v = await deps.rpc.callView(m.asset, "ft_balance_of", { account_id: a.user }, block);
     tokens.set(m.asset, typeof v === "string" ? BigInt(v) : null);
   }
@@ -422,7 +584,7 @@ async function balancesBefore(
 function delta(a: Analysis, asset: string): bigint {
   let d = 0n;
   for (const m of a.movements) {
-    if (m.asset !== asset || m.viaVault || m.swap) continue;
+    if (m.asset !== asset || m.viaVault || m.swap || m.kind) continue;
     if (m.from === a.user) d -= m.amount;
     if (m.to === a.user) d += m.amount;
   }
@@ -448,7 +610,7 @@ function rules(a: Analysis, input: AdapterInput, b: Balances, intents?: IntentsQ
     }
     for (const asset of new Set([
       NATIVE,
-      ...a.movements.filter((m) => !m.viaVault && !m.swap).map((m) => m.asset),
+      ...a.movements.filter((m) => !m.viaVault && !m.swap && !m.kind).map((m) => m.asset),
     ])) {
       if (worst < 0) break;
       const d = delta(a, asset);
@@ -503,12 +665,63 @@ function rules(a: Analysis, input: AdapterInput, b: Balances, intents?: IntentsQ
 // ------------------------------------------------------------------ NEAR Intents (TN.8)
 
 /**
- * The 1Click quote the transaction deposits into. Who it pays, who it refunds and what it
- * charges are in the quote, not in the transaction, so they are checked here: the
- * output and the refund must go to the signer (an agent's own account), and the
- * transaction must send exactly the quote's amount of its origin asset to its deposit
- * address. The quote's signature is not verified (1Click publishes no key to check it
- * against); Baret reads the quote the agent will act on.
+ * The quote that counts is the one 1Click registered for the deposit address, not the
+ * one the request carries: an agent can be handed a forged quote (its own account as
+ * recipient, an attacker's deposit address). Baret asks 1Click for the quote behind the
+ * deposit address and checks that one. If 1Click cannot confirm it (unreachable, unknown
+ * address, no client on this network) or the request's quote differs from it, the check
+ * fails closed with INTENTS_QUOTE_UNVERIFIED and the registered quote, if any, is not used.
+ */
+async function confirmQuote(
+  a: Analysis,
+  sent: IntentsQuote,
+  deps: NearDeps,
+): Promise<IntentsQuote | undefined> {
+  const address = sent.quote.depositAddress;
+  if (!address) {
+    a.drafts.push({ code: "INTENTS_QUOTE_INVALID", values: {} });
+    return undefined;
+  }
+  const fail = (reason: string, extra: object = {}): undefined => {
+    a.drafts.push({
+      code: "INTENTS_QUOTE_UNVERIFIED",
+      values: { address },
+      details: { reason, ...extra },
+    });
+    return undefined;
+  };
+  if (!deps.intents) return fail("no-1click-on-this-network");
+  const registered = await deps.intents.status(address);
+  if (registered === "unavailable") return fail("1click-unreachable");
+  if (registered === null) return fail("unknown-deposit-address");
+  if (registered.status !== "PENDING_DEPOSIT") {
+    a.drafts.push({
+      code: "INTENTS_QUOTE_INVALID",
+      values: {},
+      details: { status: registered.status },
+    });
+    return undefined;
+  }
+  const q = registered.quote;
+  const fields: [string, unknown, unknown][] = [
+    ["recipient", sent.quoteRequest.recipient, q.quoteRequest.recipient],
+    ["refundTo", sent.quoteRequest.refundTo, q.quoteRequest.refundTo],
+    ["originAsset", sent.quoteRequest.originAsset, q.quoteRequest.originAsset],
+    ["destinationAsset", sent.quoteRequest.destinationAsset, q.quoteRequest.destinationAsset],
+    ["amountIn", sent.quote.amountIn, q.quote.amountIn],
+    ["amountOut", sent.quote.amountOut, q.quote.amountOut],
+  ];
+  const differs = fields.filter(([, mine, theirs]) => mine !== theirs).map(([f]) => f);
+  if (differs.length > 0) return fail("quote-differs-from-1click", { fields: differs });
+  return q;
+}
+
+/**
+ * The 1Click quote the transaction deposits into, as 1Click registered it (confirmQuote).
+ * Who it pays, who it refunds and what it charges are in the quote, not in the
+ * transaction, so they are checked here: the output and the refund must go to the signer
+ * (an agent's own account), and the transaction must send exactly the quote's amount of
+ * its origin asset to its deposit address.
  */
 function intentsCheck(a: Analysis, q: IntentsQuote, now: number): void {
   const { quote, quoteRequest: r } = q;
@@ -578,7 +791,10 @@ function payment(a: Analysis, input: AdapterInput): void {
   if (!pay) return;
   const req = pay.requirements;
   const x = input.policy.core.x402;
-  const paid = a.movements.find((m) => m.amount > 0n);
+  // The payment is what the call pays, not the 1 yoctoNEAR `ft_transfer` attaches.
+  const paid =
+    a.movements.find((m) => m.amount > 0n && !m.attached && !m.kind) ??
+    a.movements.find((m) => m.amount > 0n && !m.kind);
   if (!paid) {
     a.drafts.push({ code: "X402_SHAPE_INVALID", values: {} });
     return;
@@ -697,9 +913,11 @@ function changes(a: Analysis, chain: ChainConfig, b: Balances): BalanceChange[] 
     ...a.movements.filter((m) => m.viaVault).map((m) => m.from),
   ]);
   for (const account of accounts) {
-    for (const asset of new Set([NATIVE, ...a.movements.map((m) => m.asset)])) {
+    // NFT and multi-token movements have findings of their own and no fungible balance.
+    const fungible = a.movements.filter((m) => !m.kind);
+    for (const asset of new Set([NATIVE, ...fungible.map((m) => m.asset)])) {
       let d = 0n;
-      for (const m of a.movements) {
+      for (const m of fungible) {
         if (m.asset !== asset) continue;
         if (m.from === account) d -= m.amount;
         if (m.to === account) d += m.amount;

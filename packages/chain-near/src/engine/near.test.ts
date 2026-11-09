@@ -3,7 +3,9 @@ import type { ChainConfig } from "@baret/core";
 import { describe, expect, it } from "vitest";
 import {
   createNearAdapter,
+  type IntentsClient,
   MPC_CONTRACTS,
+  type NearAccessKey,
   type NearAccountState,
   type NearRpc,
   vaultRefusal,
@@ -74,16 +76,30 @@ function fakeRpc(over: Partial<{ remaining: string; paused: boolean }> = {}): Ne
       }
       return null;
     },
+    viewAccessKey: async (account, key) => KEYS[`${account}/${key}`] ?? null,
     chainId: async () => "testnet",
   };
 }
 
-const adapter = (rpc = fakeRpc(), flagged = new Map<string, string>()) =>
+/** The agent's narrow key and alice's full key, as view_access_key answers them. */
+const KEYS: Record<string, NearAccessKey> = {
+  "agent.testnet/ed25519:agentfc": {
+    permission: {
+      receiverId: "vault.testnet",
+      methodNames: ["execute_transfer", "request_evm_signature"],
+      allowance: NEAR,
+    },
+  },
+  "alice.testnet/ed25519:alicefull": { permission: "FullAccess" },
+};
+
+const adapter = (rpc = fakeRpc(), flagged = new Map<string, string>(), intents?: IntentsClient) =>
   createNearAdapter(() => ({
     rpc,
     knownContracts: ["vault.testnet"],
     flagged,
     mpcContracts: MPC_CONTRACTS["near:testnet"] ?? [],
+    ...(intents ? { intents } : {}),
   }));
 
 async function run(
@@ -333,7 +349,17 @@ describe("NEAR adapter", () => {
         },
       ],
     });
-    const runQuote = async (tx: unknown, intents: unknown) => {
+    /**
+     * `registered` is what 1Click answers for the deposit address: by default the very
+     * quote the request carries (an honest agent); null: unknown address; "unavailable":
+     * 1Click down; "none": no 1Click client on this network.
+     */
+    const runQuote = async (
+      tx: unknown,
+      intents: unknown,
+      registered: unknown = intents,
+      status = "PENDING_DEPOSIT",
+    ) => {
       const { createPolicy } = await import("@baret/core");
       const { policyContext } = await import("@baret/chains");
       const rpc = fakeRpc();
@@ -342,7 +368,13 @@ describe("NEAR adapter", () => {
         id === WRAP
           ? { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n }
           : base(id, "blockhash");
-      const a = adapter(rpc);
+      const client: IntentsClient = {
+        status: async () =>
+          registered === null || registered === "unavailable"
+            ? registered
+            : { status, quote: registered as never },
+      };
+      const a = adapter(rpc, undefined, registered === "none" ? undefined : client);
       return a.analyze({
         chain,
         request: a.requestSchema.parse({ kind: "transaction", tx, intents }),
@@ -383,6 +415,34 @@ describe("NEAR adapter", () => {
       expect(
         refundOnly.drafts.find((d) => d.code === "INTENTS_RECIPIENT_MISMATCH")?.details,
       ).toMatchObject({ fields: ["refundTo"] });
+    });
+
+    it("trusts the quote 1Click registered, not the one the request carries", async () => {
+      // A forged quote: the agent is told the swap pays itself, but the deposit address
+      // belongs to a quote that pays the attacker.
+      const real = quote({ quoteRequest: { recipient: "attacker.testnet" } });
+      const forged = await runQuote(deposit(), quote(), real);
+      const found = forged.drafts.find((d) => d.code === "INTENTS_QUOTE_UNVERIFIED");
+      expect(found?.details).toMatchObject({
+        reason: "quote-differs-from-1click",
+        fields: ["recipient"],
+      });
+      expect(forged.sources).toContainEqual({ name: "near-intents-1click", status: "unavailable" });
+    });
+
+    it("fails closed when 1Click cannot confirm the quote", async () => {
+      for (const [registered, reason] of [
+        [null, "unknown-deposit-address"],
+        ["unavailable", "1click-unreachable"],
+        ["none", "no-1click-on-this-network"],
+      ] as const) {
+        const r = await runQuote(deposit(), quote(), registered);
+        expect(r.drafts.find((d) => d.code === "INTENTS_QUOTE_UNVERIFIED")?.details).toEqual({
+          reason,
+        });
+      }
+      const spent = await runQuote(deposit(), quote(), undefined, "SUCCESS");
+      expect(codes(spent)).toContain("INTENTS_QUOTE_INVALID");
     });
 
     it("blocks a deposit that does not match the quote", async () => {
@@ -534,5 +594,164 @@ describe("NEAR adapter", () => {
       "E_ASSET_NOT_ALLOWED",
     );
     expect(vaultRefusal(POLICY as never, "agent.testnet", m, null)).toBeNull();
+  });
+
+  it("reads vault 0.2's per-asset receivers", () => {
+    const p = { ...POLICY, receivers: [["native", ["shop.testnet"]]] };
+    const m = { from: "vault.testnet", to: "shop.testnet", asset: "native", amount: 1n };
+    expect(vaultRefusal(p as never, "agent.testnet", m, null)).toBeNull();
+    const p2 = {
+      ...p,
+      receivers: [
+        ["eip155:10143", ["shop.testnet"]],
+        ["native", []],
+      ],
+    };
+    expect(vaultRefusal(p2 as never, "agent.testnet", m, null)).toBe("E_RECEIVER_NOT_ALLOWED");
+  });
+
+  describe("review fixes (2026-11-09)", () => {
+    const call = (amount: bigint) => ({
+      type: "FunctionCall",
+      methodName: "execute_transfer",
+      args: { asset: "native", receiver: "shop.testnet", amount: amount.toString() },
+      gas: "30000000000000",
+      deposit: "0",
+    });
+
+    it("counts several vault calls in one transaction against one window", async () => {
+      // 2 NEAR left today: two calls of 1 NEAR pass, a third is refused like the vault would.
+      const two = await run({
+        signerId: "agent.testnet",
+        receiverId: "vault.testnet",
+        actions: [call(NEAR), call(NEAR)],
+      });
+      expect(codes(two)).toEqual([]);
+      const three = await run({
+        signerId: "agent.testnet",
+        receiverId: "vault.testnet",
+        actions: [call(NEAR), call(NEAR), call(NEAR)],
+      });
+      expect(three.drafts[0]?.details).toEqual({ reason: "E_DAILY_LIMIT" });
+    });
+
+    it("fails closed on a contract whose policy does not read as a Baret vault", async () => {
+      const r = await run({
+        signerId: "agent.testnet",
+        receiverId: "random-dapp.testnet",
+        actions: [call(NEAR)],
+      });
+      expect(r.drafts[0]?.details).toEqual({ reason: "E_VAULT_UNREADABLE" });
+    });
+
+    it("pays a NEP-141 x402 request without taking the 1 yoctoNEAR for the payment", async () => {
+      const payment = {
+        origin: "https://shop.example",
+        requirements: {
+          scheme: "exact",
+          network: "near:testnet",
+          payTo: "shop.testnet",
+          asset: `near:testnet/nep141:${USDC}`,
+          amount: "5000000",
+        },
+        spendHistory: [],
+      };
+      const r = await run(
+        {
+          signerId: "alice.testnet",
+          receiverId: USDC,
+          actions: [
+            {
+              type: "FunctionCall",
+              methodName: "ft_transfer",
+              args: { receiver_id: "shop.testnet", amount: "5000000" },
+              gas: "30000000000000",
+              deposit: "1",
+            },
+          ],
+        },
+        { payment },
+      );
+      expect(codes(r).filter((c) => c.startsWith("X402_"))).toEqual([]);
+    });
+
+    it("shows an NFT or multi-token leaving, and an NFT approval to a wallet", async () => {
+      const nft = await run({
+        signerId: "alice.testnet",
+        receiverId: "random-dapp.testnet",
+        actions: [
+          {
+            type: "FunctionCall",
+            methodName: "nft_transfer",
+            args: { receiver_id: "attacker.testnet", token_id: "7" },
+            gas: "30000000000000",
+            deposit: "1",
+          },
+          {
+            type: "FunctionCall",
+            methodName: "nft_approve",
+            args: { account_id: "shop.testnet", token_id: "8" },
+            gas: "30000000000000",
+            deposit: "1000000000000000000000",
+          },
+        ],
+      });
+      expect(codes(nft)).toEqual(
+        expect.arrayContaining(["NFT_TRANSFER_DETECTED", "APPROVAL_TO_WALLET"]),
+      );
+      const mt = await run({
+        signerId: "alice.testnet",
+        receiverId: "random-dapp.testnet",
+        actions: [
+          {
+            type: "FunctionCall",
+            methodName: "mt_batch_transfer",
+            args: { receiver_id: "attacker.testnet", token_ids: ["a", "b"], amounts: ["1", "2"] },
+            gas: "30000000000000",
+            deposit: "1",
+          },
+        ],
+      });
+      expect(mt.drafts.find((d) => d.code === "MULTI_TOKEN_TRANSFER_DETECTED")?.details).toEqual({
+        tokenIds: ["a", "b"],
+        method: "mt_batch_transfer",
+      });
+    });
+
+    it("flags the contract a *_transfer_call hands tokens to", async () => {
+      const r = await run({
+        signerId: "alice.testnet",
+        receiverId: USDC,
+        actions: [
+          {
+            type: "FunctionCall",
+            methodName: "ft_transfer_call",
+            args: { receiver_id: "random-dapp.testnet", amount: "1", msg: "swap" },
+            gas: "30000000000000",
+            deposit: "1",
+          },
+        ],
+      });
+      const exposed = r.drafts.filter((d) => d.code === "UNKNOWN_CONTRACT_EXPOSURE");
+      expect(exposed.map((d) => d.values.contract)).toContain("random-dapp.testnet");
+    });
+
+    it("checks the signing key: the agent's narrow key passes, going past it fails", async () => {
+      const tx = {
+        signerId: "agent.testnet",
+        receiverId: "vault.testnet",
+        publicKey: "ed25519:agentfc",
+        actions: [call(NEAR / 10n)],
+      };
+      expect(codes(await run(tx))).toEqual([]);
+      const addKey = await run({
+        ...tx,
+        receiverId: "agent.testnet",
+        actions: [{ type: "AddKey", publicKey: "ed25519:x", accessKey: "FullAccess" }],
+      });
+      expect(addKey.drafts[0]?.details).toEqual({ reason: "E_KEY_NOT_ALLOWED" });
+      const stranger = await run({ ...tx, publicKey: "ed25519:unknown" });
+      expect(stranger.drafts[0]?.details).toEqual({ reason: "E_KEY_MISSING" });
+    });
   });
 });

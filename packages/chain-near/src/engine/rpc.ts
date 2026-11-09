@@ -29,8 +29,26 @@ export interface NearRpc {
     args: object,
     blockHash: string,
   ): Promise<unknown | null>;
+  /** An access key of an account; null when the account does not hold that key. */
+  viewAccessKey(
+    accountId: string,
+    publicKey: string,
+    blockHash: string,
+  ): Promise<NearAccessKey | null>;
   /** The chain id the node serves ("testnet", "mainnet"). */
   chainId(): Promise<string>;
+}
+
+export interface NearAccessKey {
+  permission:
+    | "FullAccess"
+    | {
+        receiverId: string;
+        /** Empty: every method of `receiverId`. */
+        methodNames: string[];
+        /** yoctoNEAR left for fees; null: unlimited. */
+        allowance: bigint | null;
+      };
 }
 
 export class RpcUnavailableError extends ChainUnavailableError {
@@ -111,7 +129,7 @@ export class JsonNearRpc implements NearRpc {
       block_id: blockHash,
       account_id: contract,
       method_name: method,
-      args_base64: btoa(JSON.stringify(args)),
+      args_base64: bytesToBase64(new TextEncoder().encode(JSON.stringify(args))),
     });
     if (error) {
       if (isUnknownAccount(error)) return null;
@@ -127,12 +145,63 @@ export class JsonNearRpc implements NearRpc {
     }
   }
 
+  async viewAccessKey(
+    accountId: string,
+    publicKey: string,
+    blockHash: string,
+  ): Promise<NearAccessKey | null> {
+    const { result, error } = await this.call("query", {
+      request_type: "view_access_key",
+      block_id: blockHash,
+      account_id: accountId,
+      public_key: publicKey,
+    });
+    if (error) {
+      if (
+        isUnknownAccount(error) ||
+        /UNKNOWN_ACCESS_KEY|does not exist/i.test(JSON.stringify(error))
+      )
+        return null;
+      throw new RpcUnavailableError(`view_access_key ${accountId}`);
+    }
+    // Older nodes answer an unknown key inside `result.error`.
+    const r = result as {
+      error?: string;
+      permission?:
+        | "FullAccess"
+        | {
+            FunctionCall: {
+              receiver_id: string;
+              method_names: string[];
+              allowance: string | null;
+            };
+          };
+    };
+    if (r.error || !r.permission) return null;
+    if (r.permission === "FullAccess") return { permission: "FullAccess" };
+    const fc = r.permission.FunctionCall;
+    return {
+      permission: {
+        receiverId: fc.receiver_id,
+        methodNames: fc.method_names,
+        allowance: fc.allowance === null ? null : BigInt(fc.allowance),
+      },
+    };
+  }
+
   async chainId(): Promise<string> {
     const { result, error } = await this.call("status", []);
     const id = (result as { chain_id?: string } | undefined)?.chain_id;
     if (error || !id) throw new RpcUnavailableError("status");
     return id;
   }
+}
+
+/** Base64 of any bytes (btoa alone throws on text outside Latin-1, e.g. a Turkish memo). */
+export function bytesToBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
 }
 
 function isUnknownAccount(error: unknown): boolean {
