@@ -10,6 +10,8 @@ import {
   JsonNearRpc,
   MPC_CONTRACTS,
   type NearDeps,
+  ONECLICK_API,
+  OneClickClient,
 } from "@baret/chain-near/engine";
 import { getDeployment, getShowcase, knownAddresses } from "@baret/chains";
 import type { ChainConfig } from "@baret/core";
@@ -82,6 +84,9 @@ function nearDepsFor(chain: ChainConfig): NearDeps {
     ),
     mpcContracts: MPC_CONTRACTS[chain.id] ?? [],
   };
+  // NEAR Intents is mainnet only: elsewhere a request carrying a quote fails closed.
+  const oneClick = ONECLICK_API[chain.id];
+  if (oneClick) deps.intents = new OneClickClient(oneClick, config.requestTimeoutMs);
   nearDeps.set(chain.id, deps);
   return deps;
 }

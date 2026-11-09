@@ -3,6 +3,7 @@ import { analyzeNear, type NearDeps } from "./pipeline.js";
 import { nearRequestSchema } from "./request.js";
 
 export { toTransaction } from "./decode.js";
+export { type IntentsClient, ONECLICK_API, OneClickClient } from "./intents.js";
 export {
   analyzeNear,
   assetOf,
@@ -20,7 +21,13 @@ export {
   nearRequestSchema,
   nearTransactionSchema,
 } from "./request.js";
-export { JsonNearRpc, type NearAccountState, type NearRpc, RpcUnavailableError } from "./rpc.js";
+export {
+  JsonNearRpc,
+  type NearAccessKey,
+  type NearAccountState,
+  type NearRpc,
+  RpcUnavailableError,
+} from "./rpc.js";
 
 export const NEAR_ADAPTER_VERSION = "0.1.0";
 

@@ -698,6 +698,30 @@ export const findings = {
     body: "The quote takes {amount} of the swap for {recipient}.",
     why: "Apps may add a fee to a swap. A fee you did not expect is worth a look before you sign.",
   },
+  INTENTS_QUOTE_UNVERIFIED: {
+    emitter: "near",
+    values: ["address"],
+    title: "The swap quote is not the one 1Click issued",
+    body: "Baret asked NEAR Intents 1Click for the quote behind deposit address {address}. 1Click does not know it, did not answer, or holds a different quote than the one sent here.",
+    why: "A quote is only text until 1Click confirms it. A forged quote can name your account as the recipient while the deposit address belongs to someone else.",
+    fix: "Decline. Ask 1Click for a new quote yourself and deposit only to the address it gives you.",
+  },
+  NFT_TRANSFER_DETECTED: {
+    emitter: "near",
+    values: ["recipient", "contract"],
+    title: "An NFT leaves your account",
+    body: "This request sends a piece of the {contract} collection to {recipient}.",
+    why: "An NFT has no price Baret can count against your limits, so this transfer is shown on its own.",
+    fix: "Sign only if you meant to give this piece to {recipient}.",
+  },
+  MULTI_TOKEN_TRANSFER_DETECTED: {
+    emitter: "near",
+    values: ["recipient", "contract"],
+    title: "Tokens held in {contract} leave your account",
+    body: "This request moves multi-tokens held in {contract} to {recipient}.",
+    why: "Multi-tokens (NEP-245, how NEAR Intents holds balances) are not priced here, so this transfer is shown on its own.",
+    fix: "Sign only if you meant to send these tokens to {recipient}.",
+  },
 } as const satisfies Record<FindingCode, Finding>;
 
 export type FindingsContent = typeof findings;

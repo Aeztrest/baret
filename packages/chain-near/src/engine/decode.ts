@@ -5,6 +5,7 @@ import {
   type NearTransaction,
   nearTransactionSchema,
 } from "./request.js";
+import { bytesToBase64 } from "./rpc.js";
 
 /**
  * A request as one readable transaction. A borsh transaction (signed or unsigned) is
@@ -123,6 +124,4 @@ function fromBase64(s: string): Uint8Array {
   return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 }
 
-function toBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
-}
+const toBase64 = bytesToBase64;

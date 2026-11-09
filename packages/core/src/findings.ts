@@ -87,6 +87,9 @@ export const FINDING_CODES = [
   "INTENTS_DEPOSIT_MISMATCH",
   "INTENTS_QUOTE_INVALID",
   "INTENTS_APP_FEE",
+  "INTENTS_QUOTE_UNVERIFIED",
+  "NFT_TRANSFER_DETECTED",
+  "MULTI_TOKEN_TRANSFER_DETECTED",
 ] as const;
 
 export type FindingCode = (typeof FINDING_CODES)[number];
@@ -359,6 +362,12 @@ export const FINDING_SPECS = {
   INTENTS_QUOTE_INVALID: { severity: "high", rule: failClosed(), families: ["near"] },
   // A fee the quote adds for an app: shown, never blocking on its own.
   INTENTS_APP_FEE: { severity: "low", rule: warning, families: ["near"] },
+  // 1Click could not confirm the quote behind the deposit address, or the request's quote
+  // differs from the one 1Click registered (a forged quote). No rule can turn it off.
+  INTENTS_QUOTE_UNVERIFIED: { severity: "critical", rule: failClosed(), families: ["near"] },
+  // A NEP-171 piece or NEP-245 multi-tokens leave: no price, so no amount rule covers them.
+  NFT_TRANSFER_DETECTED: { severity: "medium", rule: warning, families: ["near"] },
+  MULTI_TOKEN_TRANSFER_DETECTED: { severity: "medium", rule: warning, families: ["near"] },
 } as const satisfies Record<FindingCode, FindingSpec>;
 
 /**

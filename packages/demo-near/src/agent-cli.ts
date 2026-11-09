@@ -114,10 +114,15 @@ async function ask(label: string, body: object): Promise<string | null> {
   }
 }
 
+// The key the agent will sign with goes along, so Baret also checks that the transaction
+// stays inside what that function call key may do (E_KEY_NOT_ALLOWED otherwise).
+const fcPublicKey = KeyPair.fromString(env("NEAR_AGENT_FC_KEY") as `ed25519:${string}`)
+  .getPublicKey()
+  .toString();
 const verdicts = [
   await ask("the NEAR call", {
     chain: CHAIN,
-    request: { kind: "transaction", tx: action.tx },
+    request: { kind: "transaction", tx: { ...action.tx, publicKey: fcPublicKey } },
     policyTemplate: "balanced",
   }),
 ];
