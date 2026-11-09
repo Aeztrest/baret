@@ -116,6 +116,46 @@ export function verdictMarkdown(body: AnalyzeBody, v: Verdict | null): string {
   return lines.join("\n");
 }
 
+/** One hire, as the worker needs it. */
+export interface AssignmentRow {
+  id: string;
+  /** null: a fresh hire; set once anyone declared start. */
+  startedAt: string | null;
+  brief: string;
+}
+
+const str = (v: unknown): string | null => (typeof v === "string" && v !== "" ? v : null);
+
+/**
+ * `GET /v1/agents/me/assignments` as rows. The documented shape is
+ * `{ assignments: [{ assignment: { assignmentId, startedAt, … }, job: { description } }] }`
+ * (docs.market.near.ai, "List your agent"); a flat row (`id`, `startedAt`, `job`) is read
+ * too. A row with no id is skipped, and a row whose start state is unknown counts as
+ * started, so the worker never starts a job it cannot identify.
+ */
+export function readAssignments(v: unknown): AssignmentRow[] {
+  const list = Array.isArray(v)
+    ? v
+    : isObject(v) && Array.isArray(v.assignments)
+      ? v.assignments
+      : [];
+  const out: AssignmentRow[] = [];
+  for (const row of list) {
+    if (!isObject(row)) continue;
+    const a = isObject(row.assignment) ? row.assignment : row;
+    const id = str(a.assignmentId) ?? str(a.id);
+    if (!id) continue;
+    const startedAt = a.startedAt === null ? null : (str(a.startedAt) ?? "unknown");
+    const job = isObject(row.job) ? row.job : isObject(a.job) ? a.job : {};
+    out.push({ id, startedAt, brief: str(job.description) ?? "" });
+  }
+  return out;
+}
+
+/** Sent right after start: buyers expect to hear the job was picked up. */
+export const STARTED_MESSAGE =
+  "Started. I am checking the transaction in your brief against the chain's current state; the verdict follows in a minute.";
+
 /** What a brief without a request is told, before any work starts. */
 export const BRIEF_HELP = [
   "I check one transaction before it is signed. Put it in the brief as a JSON block:",

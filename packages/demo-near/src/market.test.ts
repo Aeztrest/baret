@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { briefToBody, findingTitle, verdictMarkdown } from "./market.js";
+import { briefToBody, findingTitle, readAssignments, verdictMarkdown } from "./market.js";
 
 const tx = { signerId: "alice.near", receiverId: "wrap.near", actions: [] };
 
@@ -62,5 +62,32 @@ describe("Agent Market deliverable", () => {
     expect(md).toContain("**No verdict** (CHAIN_NOT_SUPPORTED)");
     expect(md).not.toMatch(/SAFE/);
     expect(verdictMarkdown(body, null)).toContain("Baret did not answer");
+  });
+});
+
+describe("Agent Market assignments", () => {
+  it("reads the documented nested shape", () => {
+    const rows = readAssignments({
+      assignments: [
+        { assignment: { assignmentId: "a1", startedAt: null }, job: { description: "brief" } },
+        { assignment: { assignmentId: "a2", startedAt: "2026-11-09T00:00:00Z" }, job: {} },
+      ],
+    });
+    expect(rows).toEqual([
+      { id: "a1", startedAt: null, brief: "brief" },
+      { id: "a2", startedAt: "2026-11-09T00:00:00Z", brief: "" },
+    ]);
+  });
+
+  it("reads a flat row, skips rows without an id, and treats an unknown start as started", () => {
+    const rows = readAssignments([
+      { id: "b1", startedAt: null, job: { description: "x" } },
+      { startedAt: null },
+      { id: "b2" },
+    ]);
+    expect(rows).toEqual([
+      { id: "b1", startedAt: null, brief: "x" },
+      { id: "b2", startedAt: "unknown", brief: "" },
+    ]);
   });
 });
