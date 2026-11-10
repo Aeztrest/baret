@@ -98,7 +98,7 @@ A package may import only from the packages in its row (plus external libraries 
 | `web-ui` | `content`, `ui` | none |
 | `routes` | — | none |
 | `demo-evm` | `core`, `chains` | the EVM libraries (viem, wagmi), like a real dApp (ADR-0010) |
-| `demo-near` | `core`, `chains`, `content` (finding titles in the Agent Market deliverable) | near-api-js (ADR-0010, ADR-0011) |
+| `demo-near` | `core`, `chains`, `content` (finding words and simulation refusal reasons in the Agent Market deliverable) | near-api-js (ADR-0010, ADR-0011) |
 | `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core`, `routes` | none directly |
 | `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes`, `demo-evm`, `demo-near` (its browser-safe entry: read-only vault view, `/near`) | none directly |

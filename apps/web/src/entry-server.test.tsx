@@ -1,5 +1,5 @@
 import { act } from "react";
-import { hydrateRoot } from "react-dom/client";
+import { hydrateRoot, type Root } from "react-dom/client";
 import { createBrowserRouter } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -14,7 +14,14 @@ import { routes } from "./routes.js";
  * as a recoverable error.
  */
 describe("prerendered pages", () => {
-  afterEach(() => {
+  // Every hydrated root is unmounted before the next test. A root left mounted keeps
+  // React's scheduler running after the file ends and happy-dom is torn down, which
+  // surfaced in CI as an unhandled "window is not defined" from react-dom.
+  const roots: Root[] = [];
+  afterEach(async () => {
+    await act(async () => {
+      for (const root of roots.splice(0)) root.unmount();
+    });
     document.body.replaceChildren();
     window.history.replaceState({}, "", "/");
   });
@@ -51,9 +58,11 @@ describe("prerendered pages", () => {
       await resolveRoute(path);
       const errors: unknown[] = [];
       await act(async () => {
-        hydrateRoot(container, <RouterProvider router={createBrowserRouter(routeObjects)} />, {
-          onRecoverableError: (error) => errors.push(error),
-        });
+        roots.push(
+          hydrateRoot(container, <RouterProvider router={createBrowserRouter(routeObjects)} />, {
+            onRecoverableError: (error) => errors.push(error),
+          }),
+        );
       });
       expect(errors).toEqual([]);
     },

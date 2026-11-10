@@ -1,80 +1,44 @@
 /**
- * TN.8: an agent about to swap through NEAR Intents asks Baret first. It gets a real
- * 1Click quote (mainnet: Intents runs on mainnet only), builds the deposit the quote asks
- * for, and sends both to /v1/analyze. Then the same deposit with the quote changed the
- * way a prompt injection or a bad quote service would: output and refund to someone else.
+ * TN.8: an agent about to swap through NEAR Intents asks Baret first. Three cases, each
+ * with real 1Click quotes (mainnet: Intents runs on mainnet only):
  *
- * Nothing is signed or sent. A non-dry quote is asked for because only it has a deposit
- * address; no funds move until a deposit is made, and this script makes none.
+ *   1. honest: the agent's own quote and the deposit it asks for → Caution (app fee).
+ *   2. a real quote that pays out and refunds to someone else (what a prompt injection
+ *      or a bad app asks the agent to deposit into) → Blocked, INTENTS_RECIPIENT_MISMATCH.
+ *   3. forged: the agent is shown its own quote, but with the deposit address of a quote
+ *      that pays someone else → Blocked, INTENTS_QUOTE_UNVERIFIED (Baret asks 1Click for
+ *      the quote registered behind the deposit address and finds a different one).
  *
- *   NEAR_INTENTS_ACCOUNT=<mainnet account holding some wNEAR> pnpm intents-check
+ * Nothing is signed or sent; asking for a quote moves no funds.
+ *
+ *   NEAR_INTENTS_ACCOUNT=<mainnet account> pnpm intents-check
  */
 import { BARET_API, envOr } from "../src/env.js";
+import {
+  depositFor,
+  forge,
+  getQuote,
+  type IntentsQuote,
+  ONECLICK_DEFAULT,
+} from "../src/intents.js";
 
 const ACCOUNT = envOr("NEAR_INTENTS_ACCOUNT", "");
 if (!ACCOUNT) {
-  console.error("Set NEAR_INTENTS_ACCOUNT to a NEAR mainnet account that holds some wNEAR.");
+  console.error("Set NEAR_INTENTS_ACCOUNT to a NEAR mainnet account (the agent).");
   process.exit(2);
 }
-const ONECLICK = envOr("NEAR_INTENTS_API", "https://1click.chaindefuser.com");
-const WNEAR = "nep141:wrap.near";
-const USDC = "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1";
-const AMOUNT = (10n ** 23n).toString(); // 0.1 wNEAR
+/** Who the attacker's quote pays: any existing mainnet account that is not the agent. */
+const OTHER = envOr("NEAR_INTENTS_OTHER", "relay.near");
+const ONECLICK = envOr("NEAR_INTENTS_API", ONECLICK_DEFAULT);
 
-const res = await fetch(`${ONECLICK}/v0/quote`, {
-  method: "POST",
-  headers: { "content-type": "application/json" },
-  body: JSON.stringify({
-    dry: false,
-    swapType: "EXACT_INPUT",
-    slippageTolerance: 100,
-    originAsset: WNEAR,
-    depositType: "ORIGIN_CHAIN",
-    destinationAsset: USDC,
-    amount: AMOUNT,
-    refundTo: ACCOUNT,
-    refundType: "ORIGIN_CHAIN",
-    recipient: ACCOUNT,
-    recipientType: "DESTINATION_CHAIN",
-    deadline: new Date(Date.now() + 10 * 60_000).toISOString(),
-  }),
-  signal: AbortSignal.timeout(30_000),
-});
-const quote = (await res.json()) as {
-  quote: { depositAddress?: string; amountIn: string; amountOutFormatted?: string };
-  quoteRequest: Record<string, unknown>;
-};
-if (!res.ok || !quote.quote?.depositAddress) {
-  console.error(`1Click gave no quote (${res.status}).`);
-  process.exit(1);
-}
-console.log(
-  `Quote: 0.1 wNEAR -> ${quote.quote.amountOutFormatted ?? "?"} USDC, deposit to ${quote.quote.depositAddress}`,
-);
-
-/** The deposit the quote asks for: its amount of wNEAR to its deposit address. */
-const deposit = {
-  signerId: ACCOUNT,
-  receiverId: "wrap.near",
-  actions: [
-    {
-      type: "FunctionCall",
-      methodName: "ft_transfer",
-      args: { receiver_id: quote.quote.depositAddress, amount: quote.quote.amountIn },
-      gas: "30000000000000",
-      deposit: "1",
-    },
-  ],
-};
-
-async function ask(label: string, intents: unknown): Promise<void> {
+async function ask(label: string, intents: IntentsQuote): Promise<void> {
   console.log(`\n${label}`);
   const r = await fetch(`${BARET_API}/v1/analyze`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       chain: "near:mainnet",
-      request: { kind: "transaction", tx: deposit, intents },
+      request: { kind: "transaction", tx: depositFor(ACCOUNT, intents), intents },
       policyTemplate: "balanced",
     }),
     signal: AbortSignal.timeout(90_000),
@@ -99,12 +63,20 @@ async function ask(label: string, intents: unknown): Promise<void> {
   }
 }
 
-await ask("The quote as 1Click gave it:", quote);
-await ask("The same quote, changed to pay out and refund to someone else:", {
-  ...quote,
-  quoteRequest: {
-    ...quote.quoteRequest,
-    recipient: "drain-it-all.near",
-    refundTo: "drain-it-all.near",
-  },
-});
+const mine = await getQuote(ACCOUNT, ONECLICK);
+const theirs = await getQuote(OTHER, ONECLICK);
+if (!mine || !theirs) {
+  console.error("1Click gave no quote.");
+  process.exit(1);
+}
+console.log(
+  `Agent's quote: 0.1 wNEAR -> ${mine.quote.amountOutFormatted ?? "?"} USDC, deposit to ${mine.quote.depositAddress}`,
+);
+console.log(`A quote paying ${OTHER}: deposit to ${theirs.quote.depositAddress}`);
+
+await ask("1. The agent's own quote, as 1Click gave it:", mine);
+await ask(`2. A real quote that pays ${OTHER}, deposited into as asked:`, theirs);
+await ask(
+  `3. Forged: the agent's own quote, with the deposit address of the quote paying ${OTHER}:`,
+  forge(mine, theirs),
+);

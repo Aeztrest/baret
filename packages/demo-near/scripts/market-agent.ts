@@ -12,7 +12,14 @@
  *   NEAR_MARKET_TOKEN=aat_… pnpm market-agent --once   # one pass
  */
 import { BARET_API, agentEnv as env, agentEnvOr as envOr } from "../src/agent-env.js";
-import { BRIEF_HELP, briefToBody, type Verdict, verdictMarkdown } from "../src/market.js";
+import {
+  BRIEF_HELP,
+  briefToBody,
+  readAssignments,
+  STARTED_MESSAGE,
+  type Verdict,
+  verdictMarkdown,
+} from "../src/market.js";
 
 const TOKEN = env("NEAR_MARKET_TOKEN");
 const MARKET = envOr("NEAR_MARKET_API", "https://market.near.ai");
@@ -29,25 +36,6 @@ async function market(method: string, path: string, body?: object): Promise<unkn
   if (!res.ok) throw new Error(`${method} ${path}: ${res.status}`);
   const text = await res.text();
   return text ? JSON.parse(text) : null;
-}
-
-interface Assignment {
-  id: string;
-  startedAt: string | null;
-  status?: string;
-  job?: { description?: string };
-}
-
-/** The API answers a list, or an object holding one; both are read. */
-function rows(v: unknown): Assignment[] {
-  if (Array.isArray(v)) return v as Assignment[];
-  if (v && typeof v === "object") {
-    for (const key of ["assignments", "data", "items"]) {
-      const inner = (v as Record<string, unknown>)[key];
-      if (Array.isArray(inner)) return inner as Assignment[];
-    }
-  }
-  return [];
 }
 
 async function analyze(body: object): Promise<Verdict | null> {
@@ -84,9 +72,9 @@ async function pass(): Promise<void> {
     await submit(id, markdown);
     console.log(`${id}: delivered on retry`);
   }
-  for (const a of rows(await market("GET", "/v1/agents/me/assignments"))) {
+  for (const a of readAssignments(await market("GET", "/v1/agents/me/assignments"))) {
     if (a.startedAt !== null) continue; // started elsewhere or done; ours are in `unsent`
-    const body = briefToBody(a.job?.description ?? "");
+    const body = briefToBody(a.brief);
     if (!body) {
       if (!told.has(a.id)) {
         await market("POST", `/v1/assignments/${a.id}/messages`, { body: BRIEF_HELP });
@@ -96,6 +84,7 @@ async function pass(): Promise<void> {
       continue;
     }
     await market("POST", `/v1/assignments/${a.id}/start`);
+    await market("POST", `/v1/assignments/${a.id}/messages`, { body: STARTED_MESSAGE });
     const verdict = await analyze(body);
     await submit(a.id, verdictMarkdown(body, verdict));
     console.log(`${a.id}: ${body.chain} ${verdict?.decision ?? "no verdict"}, delivered`);
