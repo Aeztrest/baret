@@ -64,7 +64,7 @@ Deployed on Vercel; `/api/*` rewrites to the API of the environment (`docs/opera
 | `ui` | Tokens + components (light and dark) | none — **ported**; the network colour becomes per chain (T2.12) |
 | `web-ui` | Type, motion, layout, fonts and the check-result blocks (`CheckBlocks`) for the web app | **ported**; `CheckBlocks` reads the new chain-neutral `shared/check` content instead of showcase and wallet page strings; the `/v1/explain` client waits for its route (T2.7) |
 | `routes` | Route registry type, `buildHref`, registry and link checks (shared by the web app, the extension options page, a web wallet) | **ported** unchanged |
-| `content` | Every word: findings, policy fields, check results, screens (English; explanations can be asked in `tr`/`zh`) | **shared strings ported**: codes unified (ADR-0006), rules keyed by v2 paths, chain-neutral wording; which codes a rule decides comes from `FINDING_SPECS`, not from content |
+| `content` | Every word: findings, why a simulation failed (`shared/reasons`: refusal codes in `details.reason`), policy fields, check results, screens (English; explanations can be asked in `tr`/`zh`) | **shared strings ported**: codes unified (ADR-0006), rules keyed by v2 paths, chain-neutral wording; which codes a rule decides comes from `FINDING_SPECS`, not from content |
 
 ## 5. Not taken over (now)
 
