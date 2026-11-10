@@ -19,6 +19,6 @@
   },
   "devDependencies": {
     "@baret/chain-evm": "workspace:*",
-    "viem": "2.56.5"
+    "viem": "2.57.16"
   }
 }
