@@ -30,12 +30,16 @@ jobs:
         with:
           workspaces: contracts/near
       - run: cargo fmt --check
+      - run: cargo clippy --locked --target wasm32-unknown-unknown -- -D warnings
       - run: cargo test --locked
       - name: Install cargo-near
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
-      - name: Build the wasm
+      # NEP-330 reproducible build: inside the image pinned by digest in vault/Cargo.toml,
+      # so the same commit always gives the same bytes (the same NEAR code hash), and the
+      # wasm carries its source (repository and commit) in `contract_source_metadata`.
+      - name: Build the wasm (reproducible)
         working-directory: contracts/near/vault
-        run: cargo near build non-reproducible-wasm --locked
+        run: cargo near build reproducible-wasm
       # NEAR stores base58(sha256(wasm)) as an account's code hash: printed here so the
       # deployed vault can be compared with this build (pnpm verify-vault does it locally).
       - name: NEAR code hash of the wasm
@@ -50,8 +54,8 @@ jobs:
             while (n > 0n) { s = A[Number(n % 58n)] + s; n /= 58n; }
             console.log(`${file}\ncode hash ${s}`);
             f.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `NEAR code hash of \`${file}\`: \`${s}\`\n`);
-          ' target/near/baret_near_vault/baret_near_vault.wasm
+          ' "$(find target/near -name baret_near_vault.wasm | head -1)"
       - uses: actions/upload-artifact@v4
         with:
           name: baret-near-vault-wasm
-          path: contracts/near/target/near/baret_near_vault/*.wasm
+          path: contracts/near/target/near/**/baret_near_vault.wasm
