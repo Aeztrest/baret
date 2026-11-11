@@ -610,6 +610,157 @@ describe("NEAR adapter", () => {
     expect(vaultRefusal(p2 as never, "agent.testnet", m, null)).toBe("E_RECEIVER_NOT_ALLOWED");
   });
 
+  describe("judge review fixes (2026-11-11)", () => {
+    const owner = (method: string, args: Record<string, unknown>, signerId = "alice.testnet") => ({
+      signerId,
+      receiverId: "vault.testnet",
+      actions: [
+        { type: "FunctionCall", methodName: method, args, gas: "30000000000000", deposit: "0" },
+      ],
+    });
+    const reason = (r: { drafts: { code: string; details?: unknown }[] }) =>
+      r.drafts.find((d) => d.code === "SIMULATION_FAILED")?.details;
+
+    it("predicts the vault's refusal of an owner method called by anyone else", async () => {
+      const r = await run(
+        owner("add_receiver", { asset: "native", receiver: "evil.testnet" }, "agent.testnet"),
+      );
+      expect(reason(r)).toEqual({ reason: "E_NOT_OWNER" });
+      const w = await run(owner("withdraw", { asset: "native", amount: "1" }, "agent.testnet"));
+      expect(reason(w)).toEqual({ reason: "E_NOT_OWNER" });
+      const accept = await run(owner("accept_owner", {}, "agent.testnet"));
+      expect(reason(accept)).toEqual({ reason: "E_NOT_PENDING_OWNER" });
+    });
+
+    it("names every owner change that widens what the agents may spend", async () => {
+      const receiver = await run(
+        owner("add_receiver", { asset: "native", receiver: "evil.testnet" }),
+      );
+      expect(codes(receiver)).toEqual(["VAULT_RECEIVER_ADDED"]);
+      expect(receiver.drafts[0]?.values).toEqual({
+        contract: "vault.testnet",
+        recipient: "evil.testnet",
+        asset: "NEAR",
+      });
+      const agent = await run(owner("add_agent", { agent: "other-agent.testnet" }));
+      expect(codes(agent)).toEqual(["VAULT_AGENT_ADDED"]);
+      const raised = await run(
+        owner("set_limit", {
+          asset: "native",
+          per_transfer: (5n * NEAR).toString(),
+          per_day: (5n * NEAR).toString(),
+        }),
+      );
+      expect(codes(raised)).toEqual(["VAULT_LIMIT_RAISED"]);
+      expect(raised.drafts[0]?.values).toMatchObject({ amount: "5", cap: "5" });
+      const newAsset = await run(
+        owner("set_limit", { asset: "usdc.testnet", per_transfer: "1", per_day: "1" }),
+      );
+      expect(codes(newAsset)).toEqual(["VAULT_LIMIT_RAISED"]);
+      const handover = await run(owner("propose_owner", { new_owner: "evil.testnet" }));
+      expect(codes(handover)).toEqual(["AUTHORITY_CHANGE"]);
+      expect(handover.drafts[0]?.details).toMatchObject({ kind: "owner-transfer" });
+      const code = await run(owner("update_contract", {}));
+      expect(codes(code)).toEqual(["CONTRACT_DEPLOY_DETECTED"]);
+      const resumed = await run(owner("set_paused", { paused: false }), {
+        rpc: fakeRpc({ paused: true }),
+      });
+      expect(codes(resumed)).toEqual(["VAULT_UNPAUSED"]);
+    });
+
+    it("lets the owner tighten the rules without a finding", async () => {
+      for (const [method, args] of [
+        ["add_receiver", { asset: "native", receiver: "shop.testnet" }],
+        ["remove_receiver", { asset: "native", receiver: "shop.testnet" }],
+        ["remove_agent", { agent: "agent.testnet" }],
+        ["set_paused", { paused: true }],
+        ["set_paused", { paused: false }],
+        ["set_limit", { asset: "native", per_transfer: "1", per_day: "1" }],
+        ["withdraw", { asset: "native", amount: "1" }],
+      ] as const) {
+        const r = await run(owner(method, args));
+        expect(codes(r), method).toEqual([]);
+      }
+    });
+
+    it("checks the accounts an owner change names against the reputation list", async () => {
+      const r = await run(owner("add_receiver", { asset: "native", receiver: "evil.testnet" }), {
+        flagged: new Map([["evil.testnet", "drainer"]]),
+      });
+      expect(codes(r)).toEqual(["KNOWN_MALICIOUS_ADDRESS", "VAULT_RECEIVER_ADDED"]);
+    });
+
+    it("treats the same method names on a contract that is not a Baret vault as plain calls", async () => {
+      const r = await run({
+        signerId: "alice.testnet",
+        receiverId: "random-dapp.testnet",
+        actions: [
+          {
+            type: "FunctionCall",
+            methodName: "withdraw",
+            args: { amount: "1" },
+            gas: "1",
+            deposit: "0",
+          },
+        ],
+      });
+      expect(reason(r)).toBeUndefined();
+      expect(codes(r)).toEqual(["UNKNOWN_CONTRACT_EXPOSURE"]);
+    });
+
+    it("names a Stake action and counts it against the spendable balance, not as a loss", async () => {
+      const stake = (amount: bigint) => ({
+        signerId: "alice.testnet",
+        receiverId: "alice.testnet",
+        actions: [{ type: "Stake", stake: amount.toString(), publicKey: "ed25519:validatorkey" }],
+      });
+      const r = await run(stake(8n * NEAR));
+      expect(codes(r)).toContain("STAKE_DETECTED");
+      expect(codes(r)).not.toContain("ESTIMATED_LOSS_EXCEEDS_MAX");
+      expect(r.estimatedChanges.find((c) => c.asset.kind === "native")?.delta).toBe(
+        (-8n * NEAR).toString(),
+      );
+      const all = await run(stake(10n * NEAR - 1n));
+      expect(codes(all)).toContain("POST_BALANCE_TOO_LOW");
+      const tooMuch = await run(stake(100n * NEAR));
+      expect(reason(tooMuch)).toEqual({ reason: "E_INSUFFICIENT_NEAR" });
+    });
+
+    it("answers a payment above the balance with a refusal, never an impossible balance", async () => {
+      const { balanceChangeSchema } = await import("@baret/core");
+      const native = await run({
+        signerId: "alice.testnet",
+        receiverId: "shop.testnet",
+        actions: [{ type: "Transfer", deposit: (100n * NEAR).toString() }],
+      });
+      const token = await run({
+        signerId: "alice.testnet",
+        receiverId: USDC,
+        actions: [
+          {
+            type: "FunctionCall",
+            methodName: "ft_transfer",
+            args: { receiver_id: "shop.testnet", amount: "99000000" },
+            gas: "30000000000000",
+            deposit: "1",
+          },
+        ],
+      });
+      expect(native.drafts[0]?.details).toEqual({ reason: "E_INSUFFICIENT_NEAR" });
+      expect(token.drafts[0]?.details).toEqual({ reason: "E_INSUFFICIENT_TOKEN" });
+      for (const [r, kind] of [
+        [native, "native"],
+        [token, "fungible"],
+      ] as const) {
+        for (const c of r.estimatedChanges)
+          expect(balanceChangeSchema.safeParse(c).success).toBe(true);
+        const short = r.estimatedChanges.find((c) => c.asset.kind === kind);
+        expect(short?.before).not.toBeNull();
+        expect(short?.after).toBeNull();
+      }
+    });
+  });
+
   describe("review fixes (2026-11-09)", () => {
     const call = (amount: bigint) => ({
       type: "FunctionCall",

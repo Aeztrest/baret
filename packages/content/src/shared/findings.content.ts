@@ -722,6 +722,46 @@ export const findings = {
     why: "Multi-tokens (NEP-245, how NEAR Intents holds balances) are not priced here, so this transfer is shown on its own.",
     fix: "Sign only if you meant to send these tokens to {recipient}.",
   },
+  STAKE_DETECTED: {
+    emitter: "near",
+    values: ["amount", "asset"],
+    title: "This locks {amount} {asset} in staking",
+    body: "This request stakes {amount} {asset} of your account with a validator key. Staked NEAR cannot be spent until it is unstaked, which takes several epochs (about two days or more).",
+    why: "A Stake action makes the account itself a validator candidate. It does not pay anyone, but the funds stop being spendable, and apps that stake for you use a staking pool contract, not this action.",
+    fix: "Sign only if you run the validator this key belongs to. To earn staking rewards, deposit to a staking pool instead.",
+  },
+  VAULT_RECEIVER_ADDED: {
+    emitter: "near",
+    values: ["contract", "recipient", "asset"],
+    title: "The vault may now pay {recipient}",
+    body: "This request changes the rules of the Baret vault {contract}: its agents may now pay {asset} to {recipient}.",
+    why: "The receiver list is what stops an agent from paying an address a prompt or a tool slipped in. Adding to it widens what a compromised agent can reach.",
+    fix: "Sign only if you, the vault's owner, chose {recipient} yourself.",
+  },
+  VAULT_AGENT_ADDED: {
+    emitter: "near",
+    values: ["contract", "recipient"],
+    title: "{recipient} may now spend from the vault",
+    body: "This request makes {recipient} an agent of the Baret vault {contract}: it may pay from the vault within the vault's limits.",
+    why: "Every agent of a vault shares its limits. An agent you do not control can spend them before yours does.",
+    fix: "Sign only if {recipient} is an agent you run.",
+  },
+  VAULT_LIMIT_RAISED: {
+    emitter: "near",
+    values: ["contract", "asset", "amount", "cap"],
+    title: "The vault's {asset} limits go up",
+    body: "This request raises what the agents of the Baret vault {contract} may spend in {asset}: {amount} per transfer and {cap} per 24 hours.",
+    why: "The limits bound what a compromised agent can spend. Raising them raises that bound.",
+    fix: "Sign only if you, the vault's owner, chose these limits yourself.",
+  },
+  VAULT_UNPAUSED: {
+    emitter: "near",
+    values: ["contract"],
+    title: "The vault resumes payments",
+    body: "This request unpauses the Baret vault {contract}: its agents may pay again.",
+    why: "A vault is usually paused because something went wrong with an agent. Resuming lets that agent spend again.",
+    fix: "Sign only if you, the vault's owner, know why it was paused and that it is fixed.",
+  },
 } as const satisfies Record<FindingCode, Finding>;
 
 export type FindingsContent = typeof findings;

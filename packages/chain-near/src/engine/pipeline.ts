@@ -59,6 +59,11 @@ interface Movement {
   /** A NEP-171 piece or a NEP-245 multi-token: moved, but not priced or balance-read. */
   kind?: "nft" | "mt";
   tokenId?: string;
+  /**
+   * NEAR a Stake action locks: it leaves the spendable balance (post-balance floor) but is
+   * not paid to anyone (no loss). Its amount is the stake minus what is already locked.
+   */
+  locked?: true;
 }
 
 interface Analysis {
@@ -74,7 +79,27 @@ interface Analysis {
   approvals: { spender: string; contract: string; tokenId: string }[];
   /** Contracts a `*_transfer_call` hands tokens to; their code runs on them with `msg`. */
   callReceivers: string[];
+  /** Calls to owner methods of what may be a Baret vault; the preflight reads its policy. */
+  vaultCalls: { vault: string; method: string; args: Record<string, unknown> }[];
 }
+
+/**
+ * The vault's owner-only methods (contracts/near/vault/src/lib.rs). `accept_owner` is the
+ * pending owner's. A call to one of these names on a contract that does not answer
+ * `get_policy` as a Baret vault is an ordinary call.
+ */
+const VAULT_OWNER_METHODS = new Set([
+  "set_limit",
+  "remove_asset",
+  "add_receiver",
+  "remove_receiver",
+  "add_agent",
+  "remove_agent",
+  "set_paused",
+  "propose_owner",
+  "update_contract",
+  "withdraw",
+]);
 
 export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<AdapterResult> {
   const tx = await toTransaction(input.request as NearRequest);
@@ -97,10 +122,18 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
     evmSignatures: [],
     approvals: [],
     callReceivers: [],
+    vaultCalls: [],
   };
   if (signer === null) a.failure = "E_SIGNER_MISSING";
 
   readActions(a, deps);
+  // A Stake action sets the account's total stake: only what it adds to the stake already
+  // locked leaves the spendable balance.
+  for (const m of a.movements) {
+    if (!m.locked) continue;
+    const already = signer?.locked ?? 0n;
+    m.amount = m.amount > already ? m.amount - already : 0n;
+  }
   const sent = (input.request as NearRequest).intents;
   const intents = sent ? await confirmQuote(a, sent, deps) : undefined;
   if (intents) intentsCheck(a, intents, input.now);
@@ -211,8 +244,24 @@ function readActions(a: Analysis, deps: NearDeps): void {
       case "DeployContract":
         a.drafts.push({ code: "CONTRACT_DEPLOY_DETECTED", values: { address: tx.receiverId } });
         break;
-      case "CreateAccount":
       case "Stake":
+        a.drafts.push({
+          code: "STAKE_DETECTED",
+          values: {
+            amount: units(BigInt(action.stake), YOCTO),
+            asset: "NEAR",
+          },
+          details: { publicKey: action.publicKey },
+        });
+        a.movements.push({
+          from: tx.signerId,
+          to: "",
+          asset: NATIVE,
+          amount: BigInt(action.stake),
+          locked: true,
+        });
+        break;
+      case "CreateAccount":
         break;
     }
   }
@@ -312,6 +361,9 @@ function readCall(
   // CHAIN_SIGNATURE_REQUEST here: the vault builds the transaction itself and bounds it by
   // its policy, which the preflight reads below; the EVM transfer is checked on its own
   // chain by a second /v1/analyze. A direct `sign` on the MPC contract has no such bound.
+  if (VAULT_OWNER_METHODS.has(method) || method === "accept_owner") {
+    a.vaultCalls.push({ vault: tx.receiverId, method, args });
+  }
   if (method === "request_evm_signature" && typeof args.tx === "object" && args.tx !== null) {
     a.evmSignatures.push({ vault: tx.receiverId, tx: args.tx as Record<string, unknown> });
   }
@@ -410,7 +462,107 @@ async function preflight(
       amount: toBig(parts.max_cost),
     });
   }
+  await vaultAdmin(a, deps, block);
   void input;
+}
+
+/**
+ * Owner methods called on a Baret vault. From anyone but the owner (or, for
+ * `accept_owner`, the pending owner) the vault refuses: predicted like its other refusals.
+ * From the owner, a change that widens what the agents may spend is named, never passed
+ * as Safe on its own: an owner agent that a prompt steered could loosen the very rules
+ * that bound it. Tightening (removing, pausing, lowering) is not flagged.
+ */
+async function vaultAdmin(a: Analysis, deps: NearDeps, block: string): Promise<void> {
+  const { tx } = a;
+  const policies = new Map<string, VaultPolicy | null>();
+  for (const c of a.vaultCalls) {
+    if (!policies.has(c.vault)) policies.set(c.vault, await readPolicy(deps, c.vault, block));
+    const p = policies.get(c.vault);
+    if (!p) continue; // not a Baret vault: an ordinary call
+    if (c.method === "accept_owner") {
+      if ((p.pending_owner ?? null) !== tx.signerId) a.failure ??= "E_NOT_PENDING_OWNER";
+      continue;
+    }
+    if (tx.signerId !== p.owner) {
+      a.failure ??= "E_NOT_OWNER";
+      continue;
+    }
+    const str = (k: string) => (typeof c.args[k] === "string" ? (c.args[k] as string) : null);
+    const contract = c.vault;
+    switch (c.method) {
+      case "add_receiver": {
+        const asset = str("asset");
+        const receiver = str("receiver");
+        if (asset && receiver && !mayPay(p, asset, receiver)) {
+          a.drafts.push({
+            code: "VAULT_RECEIVER_ADDED",
+            values: { contract, recipient: receiver, asset: assetName(asset) },
+            details: { asset },
+          });
+        }
+        break;
+      }
+      case "add_agent": {
+        const agent = str("agent");
+        if (agent && !p.agents.includes(agent)) {
+          a.drafts.push({ code: "VAULT_AGENT_ADDED", values: { contract, recipient: agent } });
+        }
+        break;
+      }
+      case "set_limit": {
+        const asset = str("asset");
+        const per = str("per_transfer");
+        const day = str("per_day");
+        if (!asset || !per || !day || !/^\d+$/.test(per) || !/^\d+$/.test(day)) break;
+        const old = p.limits.find(([x]) => x === asset)?.[1];
+        const raised =
+          !old || BigInt(per) > BigInt(old.per_transfer) || BigInt(day) > BigInt(old.per_day);
+        if (raised) {
+          const decimals = asset === NATIVE ? YOCTO : 0;
+          a.drafts.push({
+            code: "VAULT_LIMIT_RAISED",
+            values: {
+              contract,
+              asset: assetName(asset),
+              amount: units(BigInt(per), decimals),
+              cap: units(BigInt(day), decimals),
+            },
+            details: { asset, before: old ?? null, after: { per_transfer: per, per_day: day } },
+          });
+        }
+        break;
+      }
+      case "set_paused":
+        if (c.args.paused === false && p.paused) {
+          a.drafts.push({ code: "VAULT_UNPAUSED", values: { contract } });
+        }
+        break;
+      case "propose_owner": {
+        const next = str("new_owner");
+        if (next && next !== p.owner) {
+          a.drafts.push({
+            code: "AUTHORITY_CHANGE",
+            values: { contract, recipient: next },
+            details: { kind: "owner-transfer", method: c.method },
+          });
+        }
+        break;
+      }
+      case "update_contract":
+        a.drafts.push({
+          code: "CONTRACT_DEPLOY_DETECTED",
+          values: { address: contract },
+          details: { method: c.method },
+        });
+        break;
+    }
+  }
+}
+
+/** How a vault asset id reads in a finding: NEAR, or the token contract / EVM chain id. */
+function assetName(asset: string): string {
+  return asset === NATIVE ? "NEAR" : asset;
 }
 
 /** A vault's policy, or null when it does not read as one (not a Baret vault). */
@@ -462,6 +614,8 @@ async function keyCheck(
 
 interface VaultPolicy {
   owner: string;
+  /** Vault 0.2: the account `propose_owner` named, until it accepts. */
+  pending_owner?: string | null;
   paused: boolean;
   agents: string[];
   /**
@@ -546,7 +700,16 @@ async function detect(
     );
   }
 
-  const touched = new Set<string>([tx.receiverId, ...a.movements.map((m) => m.to)]);
+  const touched = new Set<string>([
+    tx.receiverId,
+    ...a.movements.filter((m) => !m.locked).map((m) => m.to),
+    // The accounts an owner call would let a vault pay, add as an agent or hand over to.
+    ...a.vaultCalls.flatMap((c) =>
+      ["receiver", "agent", "new_owner"]
+        .map((k) => c.args[k])
+        .filter((v): v is string => typeof v === "string"),
+    ),
+  ]);
   for (const account of touched) {
     const reason = deps.flagged.get(account);
     if (reason !== undefined) {
@@ -584,11 +747,15 @@ async function balancesBefore(
   return { native, tokens };
 }
 
-/** What the user's balance of `asset` changes by (negative: it goes down). */
-function delta(a: Analysis, asset: string): bigint {
+/**
+ * What the user's balance of `asset` changes by (negative: it goes down). A stake is not
+ * a loss, but it does leave the spendable balance: `spendable` counts it.
+ */
+function delta(a: Analysis, asset: string, spendable = false): bigint {
   let d = 0n;
   for (const m of a.movements) {
     if (m.asset !== asset || m.viaVault || m.swap || m.kind) continue;
+    if (m.locked && !spendable) continue;
     if (m.from === a.user) d -= m.amount;
     if (m.to === a.user) d += m.amount;
   }
@@ -650,7 +817,7 @@ function rules(a: Analysis, input: AdapterInput, b: Balances, intents?: IntentsQ
       });
       continue;
     }
-    const d = delta(a, NATIVE);
+    const d = delta(a, NATIVE, true);
     const after = b.native + d;
     if (d < 0n && after < BigInt(floor.min)) {
       a.drafts.push({
@@ -935,6 +1102,9 @@ function changes(a: Analysis, chain: ChainConfig, b: Balances): BalanceChange[] 
           : { symbol: null, decimals: null };
       const before =
         account === a.user ? (isNative ? b.native : (b.tokens.get(asset) ?? null)) : null;
+      // A balance cannot cover more than it holds: such a transaction fails on chain
+      // (E_INSUFFICIENT_…), so there is no balance after it to report.
+      const after = before === null || before + d < 0n ? null : before + d;
       out.push({
         account: `${chain.id}:${encodeAccount(account)}`,
         asset: {
@@ -944,7 +1114,7 @@ function changes(a: Analysis, chain: ChainConfig, b: Balances): BalanceChange[] 
           decimals: meta.decimals,
         },
         before: before === null ? null : before.toString(),
-        after: before === null ? null : (before + d).toString(),
+        after: after === null ? null : after.toString(),
         delta: d.toString(),
       });
     }

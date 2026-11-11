@@ -61,25 +61,38 @@ export class RpcUnavailableError extends ChainUnavailableError {
 /** 1111… is the hash of "no code". */
 const NO_CODE = "11111111111111111111111111111111";
 
+/** Pauses before the second and third try of a failed call (before jitter). */
+export const RPC_RETRY_DELAYS_MS = [250, 1000] as const;
+/** The longest `Retry-After` honoured: an analysis must still answer within its timeout. */
+const MAX_RETRY_AFTER_MS = 2000;
+
 export class JsonNearRpc implements NearRpc {
   constructor(
     private readonly url: string,
     private readonly timeoutMs: number,
     private readonly fetchImpl: typeof fetch = fetch,
+    private readonly retryDelaysMs: readonly number[] = RPC_RETRY_DELAYS_MS,
   ) {}
 
   /**
-   * One JSON-RPC call. A network error, a 429 or a 5xx is tried once more after a short
-   * pause (public NEAR RPCs rate limit in bursts); a second failure is RpcUnavailableError,
-   * which the API answers as 503, never as a verdict.
+   * One JSON-RPC call. A network error, a 429 or a 5xx is tried again, up to twice, with a
+   * growing pause (public NEAR RPCs rate limit in bursts): the server's `Retry-After` when
+   * it sends one (capped), otherwise the next delay, each with +-20% jitter so concurrent
+   * analyses do not retry in step. A last failure is RpcUnavailableError, which the API
+   * answers as 503, never as a verdict.
    */
   private async call(
     method: string,
     params: unknown,
   ): Promise<{ result?: unknown; error?: unknown }> {
     let last = "";
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, 250));
+    let wait = 0;
+    for (let attempt = 0; attempt <= this.retryDelaysMs.length; attempt++) {
+      if (attempt > 0) {
+        const base = wait || (this.retryDelaysMs[attempt - 1] ?? 0);
+        await new Promise((r) => setTimeout(r, base * (0.8 + Math.random() * 0.4)));
+      }
+      wait = 0;
       let res: Response;
       try {
         res = await this.fetchImpl(this.url, {
@@ -94,6 +107,7 @@ export class JsonNearRpc implements NearRpc {
       }
       if (res.status === 429 || res.status >= 500) {
         last = `HTTP ${res.status}`;
+        wait = retryAfterMs(res.headers.get("retry-after"));
         continue;
       }
       if (!res.ok) throw new RpcUnavailableError(`HTTP ${res.status}`);
@@ -222,4 +236,13 @@ export function bytesToBase64(bytes: Uint8Array): string {
 function isUnknownAccount(error: unknown): boolean {
   const text = JSON.stringify(error);
   return /UNKNOWN_ACCOUNT|does not exist|CodeDoesNotExist|MethodNotFound/i.test(text);
+}
+
+/** A `Retry-After` header (seconds or an HTTP date) in ms, capped; 0 when absent or bad. */
+export function retryAfterMs(header: string | null, now = Date.now()): number {
+  if (!header) return 0;
+  const seconds = Number(header);
+  const ms = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(header) - now;
+  if (!Number.isFinite(ms) || ms <= 0) return 0;
+  return Math.min(ms, MAX_RETRY_AFTER_MS);
 }
