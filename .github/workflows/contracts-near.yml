@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   vault:
-    name: fmt, clippy, test, wasm build
+    name: fmt, clippy, test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -32,6 +32,19 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --target wasm32-unknown-unknown -- -D warnings
       - run: cargo test --locked
+
+  # The release wasm: a clean checkout with no build cache, so nothing of an earlier build
+  # can reach it. Two runs of this job on one commit give the same code hash.
+  wasm:
+    name: reproducible wasm build
+    needs: vault
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: contracts/near
+    steps:
+      - uses: actions/checkout@v7
       - name: Install cargo-near
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
       # NEP-330 reproducible build: inside the image pinned by digest in vault/Cargo.toml,
