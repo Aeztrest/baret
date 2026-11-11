@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Baret: a pre-signing transaction firewall and agent spend-limit layer for EVM, Stellar and Casper.",
+  "description": "Baret: a pre-signing transaction firewall and agent spend-limit layer. NEAR (vault, Chain Signatures, Intents, Agent Market) and EVM live on testnet; Stellar and Casper being ported.",
   "license": "MIT",
   "packageManager": "pnpm@11.1.3",
   "engines": {

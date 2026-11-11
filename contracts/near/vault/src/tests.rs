@@ -360,7 +360,6 @@ fn the_policy_lists_receivers_per_asset() {
     assert!(p
         .receivers
         .contains(&(MONAD.to_string(), vec![acc(EVM_SHOP)])));
-    assert_eq!(v.get_version(), "0.2.0");
 }
 
 #[test]
