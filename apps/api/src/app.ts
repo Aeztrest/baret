@@ -15,6 +15,7 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { clientOf, viaEdge } from "./client.js";
 import type { ApiConfig } from "./config.js";
+import { MARKET_WEBHOOK_PATH, type MarketWebhookDeps, registerMarketWebhook } from "./market.js";
 
 export interface ApiDeps {
   config: Pick<
@@ -26,6 +27,8 @@ export interface ApiDeps {
   health: (chain: ChainConfig) => Promise<ChainHealth>;
   /** The commit this build came from, when the host says (Render: RENDER_GIT_COMMIT). */
   commit?: string | null;
+  /** NEAR Agent Market webhook (TN.13); absent: the route does not exist. */
+  market?: MarketWebhookDeps | null;
 }
 
 /** The API's one error envelope (docs/architecture/api.md §3). */
@@ -86,9 +89,11 @@ export async function buildApp(deps: ApiDeps): Promise<FastifyInstance> {
     reply.header("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
   });
 
-  // API keys: required when configured. Health stays open for uptime checks.
+  // API keys: required when configured. Health stays open for uptime checks; the market's
+  // webhook carries no key but is signed, and is checked by its signature instead.
   app.addHook("onRequest", async (req, reply) => {
     if (config.apiKeys.length === 0 || req.url.startsWith("/health")) return;
+    if (deps.market && req.url === MARKET_WEBHOOK_PATH) return;
     const key = req.headers["x-api-key"];
     if (typeof key !== "string" || !config.apiKeys.includes(key)) {
       return sendError(reply, 401, "unauthorized", "missing or unknown x-api-key");
@@ -143,6 +148,8 @@ export async function buildApp(deps: ApiDeps): Promise<FastifyInstance> {
       ),
     };
   });
+
+  if (deps.market) await registerMarketWebhook(app, deps.market, sendError);
 
   app.post("/v1/analyze", async (req, reply) => {
     try {

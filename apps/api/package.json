@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@baret/agent-market": "workspace:*",
     "@baret/chain-evm": "workspace:*",
     "@baret/chain-near": "workspace:*",
     "@baret/chains": "workspace:*",

@@ -27,6 +27,7 @@
     "agent": "tsx src/agent-cli.ts"
   },
   "dependencies": {
+    "@baret/agent-market": "workspace:*",
     "@baret/chains": "workspace:*",
     "@baret/content": "workspace:*",
     "@baret/core": "workspace:*",

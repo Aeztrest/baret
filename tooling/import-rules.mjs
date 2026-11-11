@@ -42,9 +42,19 @@ const RULES = {
   "packages/routes": [],
   // ADR-0010: the demo sites' chain code; the only package besides chain-evm that may use viem.
   "packages/demo-evm": ["core", "chains"],
-  "packages/demo-near": ["core", "chains", "content"],
+  "packages/demo-near": ["core", "chains", "content", "agent-market"],
+  // Baret on NEAR Agent Market: shared by the API's webhook and the demo poller (TN.13).
+  "packages/agent-market": ["content"],
   // The API is the composition root: it builds each family's adapter (chain-*/engine).
-  "apps/api": ["engine", "providers", "chains", "core", "content", ...CHAIN_ADAPTERS],
+  "apps/api": [
+    "engine",
+    "providers",
+    "chains",
+    "core",
+    "content",
+    "agent-market",
+    ...CHAIN_ADAPTERS,
+  ],
   "apps/extension": ["wallet-core", "guard", "ui", "content", "chains", "core", "routes"],
   "apps/web": [
     "guard",
