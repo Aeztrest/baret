@@ -160,21 +160,75 @@ await expectVerdict(
   "E_RECEIVER_NOT_ALLOWED",
 );
 
+// The vault's own rules can be changed only by its owner, and loosening them is never Safe.
+const addReceiver = (signerId: string) =>
+  near({
+    signerId,
+    receiverId: a.vault,
+    actions: [
+      {
+        type: "FunctionCall",
+        methodName: "add_receiver",
+        args: { asset: "native", receiver: "drain-it-all.testnet" },
+        gas: "30000000000000",
+        deposit: "0",
+      },
+    ],
+  });
+await expectVerdict(
+  "The agent tries to add a receiver to its own vault: Baret predicts the vault's refusal",
+  addReceiver(a.agent),
+  "blocked",
+  "SIMULATION_FAILED",
+  "E_NOT_OWNER",
+);
+await expectVerdict(
+  "The owner (or an owner agent a prompt steered) adds a receiver: named, never Safe",
+  addReceiver(a.owner),
+  "caution",
+  "VAULT_RECEIVER_ADDED",
+);
+await expectVerdict(
+  "A payment above the signer's balance is refused with a reason, not an error",
+  near({
+    signerId: a.agent,
+    receiverId: a.shop,
+    actions: [{ type: "Transfer", deposit: (10n ** 30n).toString() }],
+  }),
+  "blocked",
+  "SIMULATION_FAILED",
+  "E_INSUFFICIENT_NEAR",
+);
+
 // The agent's real function call key (public, read from chain) cannot add keys.
-const keys = (await (
-  await fetch(demoRpcUrl(), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "query",
-      params: { request_type: "view_access_key_list", finality: "final", account_id: a.agent },
-    }),
-  })
-).json()) as {
+interface KeyList {
   result?: { keys?: { public_key: string; access_key: { permission: unknown } }[] };
-};
+}
+/** The agent's keys from NEAR; a public RPC that rate limits gets a second, later try. */
+async function agentKeys(): Promise<KeyList> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const res = await fetch(demoRpcUrl(), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "query",
+          params: { request_type: "view_access_key_list", finality: "final", account_id: a.agent },
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const v = (await res.json()) as KeyList;
+      if (res.ok && v.result?.keys) return v;
+    } catch {
+      // tried again below
+    }
+  }
+  return {};
+}
+const keys = await agentKeys();
 const fcKey = keys.result?.keys?.find((k) => k.access_key.permission !== "FullAccess");
 if (fcKey) {
   const addKey = scenario("add-key").request.tx;
@@ -185,6 +239,9 @@ if (fcKey) {
     "SIMULATION_FAILED",
     "E_KEY_NOT_ALLOWED",
   );
+} else if (!keys.result?.keys) {
+  // An RPC that rate limits or fails is not evidence that the key is missing.
+  record("The agent holds a function call key", false, "could not read its keys (RPC error)");
 } else {
   record("The agent holds a function call key", false, "none found on chain");
 }

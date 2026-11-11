@@ -90,6 +90,11 @@ export const FINDING_CODES = [
   "INTENTS_QUOTE_UNVERIFIED",
   "NFT_TRANSFER_DETECTED",
   "MULTI_TOKEN_TRANSFER_DETECTED",
+  "STAKE_DETECTED",
+  "VAULT_RECEIVER_ADDED",
+  "VAULT_AGENT_ADDED",
+  "VAULT_LIMIT_RAISED",
+  "VAULT_UNPAUSED",
 ] as const;
 
 export type FindingCode = (typeof FINDING_CODES)[number];
@@ -368,6 +373,14 @@ export const FINDING_SPECS = {
   // A NEP-171 piece or NEP-245 multi-tokens leave: no price, so no amount rule covers them.
   NFT_TRANSFER_DETECTED: { severity: "medium", rule: warning, families: ["near"] },
   MULTI_TOKEN_TRANSFER_DETECTED: { severity: "medium", rule: warning, families: ["near"] },
+  // NEAR locked by a Stake action leaves the spendable balance for epochs; never stolen.
+  STAKE_DETECTED: { severity: "medium", rule: warning, families: ["near"] },
+  // An owner's change that lets a Baret vault's agents spend more (vault 0.2). The owner
+  // may mean it; a prompt-injected owner agent may not, so it is never Safe on its own.
+  VAULT_RECEIVER_ADDED: { severity: "medium", rule: warning, families: ["near"] },
+  VAULT_AGENT_ADDED: { severity: "medium", rule: warning, families: ["near"] },
+  VAULT_LIMIT_RAISED: { severity: "medium", rule: warning, families: ["near"] },
+  VAULT_UNPAUSED: { severity: "medium", rule: warning, families: ["near"] },
 } as const satisfies Record<FindingCode, FindingSpec>;
 
 /**

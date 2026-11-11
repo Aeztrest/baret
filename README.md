@@ -63,7 +63,7 @@ pnpm install
 pnpm near:verify
 ```
 
-No account, no key, no `.env`: it reads the demo vault on NEAR testnet, sends fourteen requests to Baret's API (three of them with real NEAR Intents quotes on mainnet; no funds move) and prints PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent's real function call key cannot add keys; Chain Signatures within and outside the policy; an honest, a hostile and a forged Intents quote).
+No account, no key, no `.env`: it reads the demo vault on NEAR testnet, sends seventeen requests to Baret's API (three of them with real NEAR Intents quotes on mainnet; no funds move) and prints PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent cannot change its own vault's rules, and an owner who loosens them is told, never shown Safe; a payment above the balance is refused with its reason; the agent's real function call key cannot add keys; Chain Signatures within and outside the policy; an honest, a hostile and a forged Intents quote).
 
 ### Run the agent yourself
 
