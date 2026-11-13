@@ -82,12 +82,14 @@ pnpm agent -- wrong-receiver --force   # sent anyway → the vault refuses E_REC
 pnpm agent -- add-key            # a prompt asks for a full access key → BLOCKED (AUTHORITY_CHANGE, E_KEY_NOT_ALLOWED)
 ```
 
-The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI run, also attached to the [`near-vault-v0.2.0` release](https://github.com/Aeztrest/baret/releases/tag/near-vault-v0.2.0); `pnpm verify-vault -- ./baret_near_vault.wasm` compares it with the deployed code. The agent process reads only `.env.agent` (its function call key and public ids, by an allowlist) and refuses to start if a full key is in it. Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Intents check (`pnpm intents-check`) and the Agent Market worker (`pnpm market-agent`) are in [`packages/demo-near/README.md`](packages/demo-near/README.md).
+The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI run, also attached to the [`near-vault-v0.2.1` release](https://github.com/Aeztrest/baret/releases/tag/near-vault-v0.2.1); `pnpm verify-vault -- ./baret_near_vault.wasm` compares it with the deployed code. The agent process reads only `.env.agent` (its function call key and public ids, by an allowlist) and refuses to start if a full key is in it. Chain Signatures (`pnpm evm-setup`, then `pnpm agent -- evm-pay`), the NEAR Intents check (`pnpm intents-check`) and the Agent Market worker (`pnpm market-agent`) are in [`packages/demo-near/README.md`](packages/demo-near/README.md).
 
-### Recorded runs (testnet, vault 0.2, 2026-11-09)
+### Recorded runs (testnet, vault 0.2, 2026-11-09; 0.2.1 since 2026-11-13)
 
 | Request | Baret | On chain |
 |---|---|---|
+| The owner moves the vault to 0.2.1 through `update_contract` (2026-11-13) | — | [updated](https://testnet.nearblocks.io/txns/BBPo4oxeGPSN5W6PfVcpkfCsgSreXr8s8pry7QAHZv4d); still 0 keys, runs the CI wasm `EzvurumZ…JbYF`; its NEP-330 metadata names the commit |
+| Pay the shop 0.1 NEAR on 0.2.1 (2026-11-13) | Safe | [paid](https://testnet.nearblocks.io/txns/82urQp8eUX4aNcryPnpQLiR4W3SKUKSgZXjyCBsLiCZr) |
 | Move the vault to 0.2 and delete its key (deploy + `migrate` + DeleteKey, one transaction) | — | [migrated and locked](https://testnet.nearblocks.io/txns/6gXZFtCb6xJyZN9jgfyS7f47kkLxhGWUC15wyrdtHVWC); the vault account now holds 0 keys and runs the CI wasm `7dwH3FLP…f6sS` |
 | The owner replaces the code through `update_contract` (same wasm, to prove the only path works) | — | [updated](https://testnet.nearblocks.io/txns/E9F2MCz1sAQ8K8S3kSgdDnyEdXHrEdYmPPiPeykBUsBU), state kept |
 | Pay the shop 0.1 NEAR | Safe | [paid](https://testnet.nearblocks.io/txns/7J1F9jWcrvXRnPc72yn1Nq2uoSZ6Po3xd3EzvAkBVo5L) |
