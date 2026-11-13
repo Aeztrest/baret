@@ -1,6 +1,8 @@
 /**
  * The demo agent. For each scenario it builds the transaction, asks Baret first, and
- * signs only on Safe, with a function call key that reaches nothing but the vault.
+ * signs on Safe, asks its human on Caution (`gate.ts`; `--approve` / `--deny` answer for a
+ * recorded run, no terminal means no) and refuses on Blocked or no answer, with a function
+ * call key that reaches nothing but the vault.
  * `--force` sends a refused request anyway, to show the second line of defence: the
  * vault (or NEAR's key permissions) refuses it on chain.
  *
@@ -12,6 +14,7 @@
  *   pnpm --filter @baret/demo-near agent -- wrong-receiver --force
  *   pnpm --filter @baret/demo-near agent -- evm-pay
  */
+import { createInterface } from "node:readline/promises";
 import { getChain } from "@baret/chains";
 import { Account, actions, JsonRpcProvider, KeyPair, KeyPairSigner, PublicKey } from "near-api-js";
 import {
@@ -30,12 +33,15 @@ import {
   signedTransaction,
   vaultEvmAddress,
 } from "./evm.js";
+import { gate, humanAnswerSource, isYes } from "./gate.js";
 import { buildAction, type EvmBase, SCENARIOS, type ScenarioName } from "./scenarios.js";
 
 const name = process.argv.slice(2).find((a) => !a.startsWith("--")) as ScenarioName | undefined;
 const force = process.argv.includes("--force");
 if (!name || !(name in SCENARIOS)) {
-  console.error(`usage: agent <${Object.keys(SCENARIOS).join("|")}> [--force]`);
+  console.error(
+    `usage: agent <${Object.keys(SCENARIOS).join("|")}> [--force] [--approve | --deny]`,
+  );
   process.exit(2);
 }
 const isEvm = name.startsWith("evm-");
@@ -154,12 +160,36 @@ if (action.evm && evmFrom) {
   );
 }
 
-const safe = verdicts.every((v) => v === "safe");
-if (!safe && !force) {
-  console.log("Not signed: the agent signs only what Baret calls Safe.");
+/** Caution: the agent stops and asks its human. Only an explicit yes signs. */
+async function humanApproves(): Promise<boolean> {
+  const source = humanAnswerSource(process.argv, Boolean(process.stdin.isTTY));
+  if (source === "nobody") {
+    console.log("Caution, and no human to ask (no terminal): not signed.");
+    return false;
+  }
+  if (source !== "ask") {
+    console.log(`Caution: asking the human... (recorded answer: ${source})`);
+    return source === "approve";
+  }
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return isYes(await rl.question("Caution: sign this anyway? [y/N] "));
+  } finally {
+    rl.close();
+  }
+}
+
+const decision = gate(verdicts);
+let send = decision === "sign";
+if (decision === "ask") {
+  send = await humanApproves();
+  console.log(send ? "The human approved: signing." : "The human did not approve: not signed.");
+}
+if (!send && !force) {
+  if (decision === "refuse") console.log("Not signed: Baret blocked it or gave no answer.");
   process.exit(verdicts.includes(null) ? 1 : 0);
 }
-if (!safe) console.log("--force: sending anyway, to show the chain refuse it.");
+if (!send) console.log("--force: sending anyway, to show the chain refuse it.");
 
 const provider = new JsonRpcProvider({ url: RPC_URL });
 const signer = KeyPairSigner.fromSecretKey(env("NEAR_AGENT_FC_KEY") as `ed25519:${string}`);

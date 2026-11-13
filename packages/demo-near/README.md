@@ -29,6 +29,8 @@ pnpm agent -- wrong-receiver       # a prompt names another account → Baret pr
 pnpm agent -- add-key              # a prompt asks for a full access key → AUTHORITY_CHANGE, Blocked
 pnpm agent -- wrong-receiver --force   # sent anyway: the vault refuses it on chain
 pnpm agent -- add-key --force          # sent anyway: the function call key cannot add keys
+# On Caution the agent asks its human: "sign this anyway? [y/N]". Only y/yes signs.
+# --approve / --deny answer for a recorded run; with no terminal and neither flag the answer is no.
 ```
 
 The API is staging by default (`BARET_API_URL`); it must serve `near:testnet` (`CHAIN_NEAR_TESTNET_RPC_URL` set on the API).
