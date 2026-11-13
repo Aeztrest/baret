@@ -162,7 +162,7 @@ await expectVerdict(
 );
 
 // The vault's own rules can be changed only by its owner, and loosening them is never Safe.
-const addReceiver = (signerId: string) =>
+const addReceiver = (signerId: string, receiver = "drain-it-all.testnet") =>
   near({
     signerId,
     receiverId: a.vault,
@@ -170,7 +170,7 @@ const addReceiver = (signerId: string) =>
       {
         type: "FunctionCall",
         methodName: "add_receiver",
-        args: { asset: "native", receiver: "drain-it-all.testnet" },
+        args: { asset: "native", receiver },
         gas: "30000000000000",
         deposit: "0",
       },
@@ -185,7 +185,8 @@ await expectVerdict(
 );
 await expectVerdict(
   "The owner (or an owner agent a prompt steered) adds a receiver: named, never Safe",
-  addReceiver(a.owner),
+  // An account on no list: the change itself is what is named (the reported one is Blocked).
+  addReceiver(a.owner, "another-shop.testnet"),
   "caution",
   "VAULT_RECEIVER_ADDED",
 );
@@ -241,6 +242,21 @@ if (a.newShop) {
     "The agent pays a shop the owner listed but it never paid: Caution, so it asks its human",
     v?.decision === "caution" && codes.includes("COUNTERPARTY_FIRST_PAYMENT"),
     summary(v),
+  );
+}
+
+// The shared blocklist (TN.14): the prompt's receiver was reported on chain, with the
+// transaction in which the agent was steered to pay it.
+{
+  const v = await analyze(scenario("wrong-receiver"));
+  const hit = (v?.findings ?? []).find((f) => f.code === "KNOWN_MALICIOUS_ADDRESS") as
+    | { details?: { registry?: { source?: string; evidence?: string } } }
+    | undefined;
+  const registry = hit?.details?.registry;
+  record(
+    "The prompt's receiver is on the shared NEAR blocklist, reported with evidence: Blocked",
+    v?.decision === "blocked" && Boolean(registry?.source && registry.evidence),
+    `${summary(v)}; ${registry ? `${registry.source}, evidence ${registry.evidence}` : "not on the blocklist"}`,
   );
 }
 

@@ -98,6 +98,7 @@ export const FINDING_CODES = [
   "COUNTERPARTY_FIRST_PAYMENT",
   "CONTRACT_CODE_CHANGED_RECENTLY",
   "COUNTERPARTY_HISTORY_UNAVAILABLE",
+  "COUNTERPARTY_REPORTED",
 ] as const;
 
 export type FindingCode = (typeof FINDING_CODES)[number];
@@ -388,6 +389,8 @@ export const FINDING_SPECS = {
   COUNTERPARTY_FIRST_PAYMENT: { severity: "low", rule: warning, families: ["near"] },
   CONTRACT_CODE_CHANGED_RECENTLY: { severity: "medium", rule: warning, families: ["near"] },
   COUNTERPARTY_HISTORY_UNAVAILABLE: { severity: "medium", rule: warning, families: ["near"] },
+  // Reported on the shared NEAR blocklist, below its threshold and not confirmed.
+  COUNTERPARTY_REPORTED: { severity: "medium", rule: warning, families: ["near"] },
 } as const satisfies Record<FindingCode, FindingSpec>;
 
 /**

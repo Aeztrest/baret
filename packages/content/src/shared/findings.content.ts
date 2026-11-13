@@ -786,6 +786,14 @@ export const findings = {
     why: "A check that cannot run counts as a warning, not a pass.",
     fix: "Check again in a moment, or confirm the receiver another way.",
   },
+  COUNTERPARTY_REPORTED: {
+    emitter: "near",
+    values: ["address"],
+    title: "{address} was reported by another agent",
+    body: "{address} is on Baret's shared NEAR blocklist with a report and the transaction it points to, but not enough reports, or no confirmation, to block it.",
+    why: "Agents that were attacked report the account, with evidence anyone can open. One report is a warning, not a verdict: reporters are not vetted.",
+    fix: "Open the reported transaction, and pay {address} only if you know who it is.",
+  },
 } as const satisfies Record<FindingCode, Finding>;
 
 export type FindingsContent = typeof findings;

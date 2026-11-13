@@ -17,6 +17,8 @@
     "deploy-vault": "tsx scripts/deploy.ts",
     "setup-vault": "tsx scripts/setup.ts",
     "new-shop": "tsx scripts/new-shop.ts",
+    "deploy-blocklist": "tsx scripts/deploy-blocklist.ts",
+    "report": "tsx scripts/report.ts",
     "agent-key": "tsx scripts/agent-key.ts",
     "upgrade-vault": "tsx scripts/upgrade.ts",
     "update-vault": "tsx scripts/update.ts",

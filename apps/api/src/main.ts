@@ -94,6 +94,9 @@ function nearDepsFor(chain: ChainConfig): NearDeps {
   // Counterparty history (TN.14): FastNEAR's transaction index and an archival node.
   const history = NEAR_HISTORY_API[chain.id];
   if (history) deps.history = new FastNearHistory(history, config.requestTimeoutMs);
+  // The shared blocklist (TN.14), when it is deployed on this chain (registry).
+  const blocklist = getDeployment(chain.id, "BaretBlocklist");
+  if (blocklist) deps.blocklist = blocklist.address;
   const archival = NEAR_ARCHIVAL_RPC[chain.id];
   if (archival) deps.archive = new JsonNearRpc(archival, config.requestTimeoutMs);
   nearDeps.set(chain.id, deps);
