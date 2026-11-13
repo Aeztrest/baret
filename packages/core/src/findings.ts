@@ -95,6 +95,9 @@ export const FINDING_CODES = [
   "VAULT_AGENT_ADDED",
   "VAULT_LIMIT_RAISED",
   "VAULT_UNPAUSED",
+  "COUNTERPARTY_FIRST_PAYMENT",
+  "CONTRACT_CODE_CHANGED_RECENTLY",
+  "COUNTERPARTY_HISTORY_UNAVAILABLE",
 ] as const;
 
 export type FindingCode = (typeof FINDING_CODES)[number];
@@ -381,6 +384,10 @@ export const FINDING_SPECS = {
   VAULT_AGENT_ADDED: { severity: "medium", rule: warning, families: ["near"] },
   VAULT_LIMIT_RAISED: { severity: "medium", rule: warning, families: ["near"] },
   VAULT_UNPAUSED: { severity: "medium", rule: warning, families: ["near"] },
+  // Counterparty history (TN.14). Unavailable history is a Caution, never a pass.
+  COUNTERPARTY_FIRST_PAYMENT: { severity: "low", rule: warning, families: ["near"] },
+  CONTRACT_CODE_CHANGED_RECENTLY: { severity: "medium", rule: warning, families: ["near"] },
+  COUNTERPARTY_HISTORY_UNAVAILABLE: { severity: "medium", rule: warning, families: ["near"] },
 } as const satisfies Record<FindingCode, FindingSpec>;
 
 /**

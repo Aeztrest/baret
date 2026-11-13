@@ -13,6 +13,8 @@ export interface NearAccountState {
   locked: bigint;
   /** True when the account has a contract deployed. */
   hasCode: boolean;
+  /** Base58 sha256 of the deployed code ("1111…" for none). */
+  codeHash: string;
   /** Bytes of storage used (each costs a deposit the account cannot spend). */
   storageUsage: bigint;
 }
@@ -20,8 +22,8 @@ export interface NearAccountState {
 export interface NearRpc {
   /** The latest final block, which every later read is pinned to. */
   pin(): Promise<{ height: bigint; hash: string }>;
-  /** null: the account does not exist. */
-  viewAccount(accountId: string, blockHash: string): Promise<NearAccountState | null>;
+  /** null: the account does not exist. `block`: a block hash, or a height (archival reads). */
+  viewAccount(accountId: string, block: string | bigint): Promise<NearAccountState | null>;
   /** A view call; null when the method does not exist or panics. */
   callView(
     contract: string,
@@ -123,10 +125,10 @@ export class JsonNearRpc implements NearRpc {
     return { height: BigInt(header.height), hash: header.hash };
   }
 
-  async viewAccount(accountId: string, blockHash: string): Promise<NearAccountState | null> {
+  async viewAccount(accountId: string, block: string | bigint): Promise<NearAccountState | null> {
     const { result, error } = await this.call("query", {
       request_type: "view_account",
-      block_id: blockHash,
+      block_id: typeof block === "bigint" ? Number(block) : block,
       account_id: accountId,
     });
     if (error) {
@@ -143,6 +145,7 @@ export class JsonNearRpc implements NearRpc {
       amount: BigInt(r.amount),
       locked: BigInt(r.locked),
       hasCode: r.code_hash !== NO_CODE,
+      codeHash: r.code_hash,
       storageUsage: BigInt(r.storage_usage),
     };
   }

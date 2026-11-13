@@ -762,6 +762,30 @@ export const findings = {
     why: "A vault is usually paused because something went wrong with an agent. Resuming lets that agent spend again.",
     fix: "Sign only if you, the vault's owner, know why it was paused and that it is fixed.",
   },
+  COUNTERPARTY_FIRST_PAYMENT: {
+    emitter: "near",
+    values: ["address"],
+    title: "First time paying {address}",
+    body: "No earlier transaction links the signer and {address}: this is their first contact.",
+    why: "An agent that pays someone new is where a prompt injection or a swapped address shows. A receiver the agent has paid before has a track record with it.",
+    fix: "Confirm {address} is who you mean to pay, through a second channel, before the first payment.",
+  },
+  CONTRACT_CODE_CHANGED_RECENTLY: {
+    emitter: "near",
+    values: ["contract"],
+    title: "{contract} changed its code in the last days",
+    body: "The code deployed on {contract} differs from the code it ran at least 72 hours ago, or it had none then.",
+    why: "A contract that was safe last week can be replaced by one that keeps what it is sent. Fresh code has had no time to be looked at.",
+    fix: "Sign only if you know why {contract} was updated, or wait until its new code has a record.",
+  },
+  COUNTERPARTY_HISTORY_UNAVAILABLE: {
+    emitter: "near",
+    values: [],
+    title: "Counterparty history did not load",
+    body: "The transaction index or the archival node did not answer, so the age, the activity and the past contacts of the accounts in this request were not checked.",
+    why: "A check that cannot run counts as a warning, not a pass.",
+    fix: "Check again in a moment, or confirm the receiver another way.",
+  },
 } as const satisfies Record<FindingCode, Finding>;
 
 export type FindingsContent = typeof findings;

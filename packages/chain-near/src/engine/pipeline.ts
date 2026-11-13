@@ -8,6 +8,7 @@ import type {
 } from "@baret/core";
 import { InvalidRequestError, parseCaip10, parseCaip19 } from "@baret/core";
 import { toTransaction } from "./decode.js";
+import type { NearHistory } from "./history.js";
 import type { IntentsClient } from "./intents.js";
 import type { IntentsQuote, NearRequest, NearTransaction } from "./request.js";
 import type { NearAccountState, NearRpc } from "./rpc.js";
@@ -31,7 +32,22 @@ export interface NearDeps {
    * runs on mainnet only): a request that carries a quote cannot be confirmed and blocks.
    */
   intents?: IntentsClient;
+  /**
+   * Counterparty history (TN.14): account age, activity and past contacts, and an archival
+   * node for code changes. Absent (no index for this network): the checks are skipped and
+   * the source says so; failing at runtime: COUNTERPARTY_HISTORY_UNAVAILABLE (Caution).
+   */
+  history?: NearHistory;
+  archive?: NearRpc;
 }
+
+/** An account first used less than this long ago is fresh (REPUTATION_FRESH_ACCOUNT). */
+export const FRESH_ACCOUNT_MS = 72 * 3600 * 1000;
+/**
+ * How far back the code of a called contract is compared: 72 hours at 2 blocks a second,
+ * so at least 72 hours on mainnet and testnet, which produce fewer blocks than that.
+ */
+export const CODE_WINDOW_BLOCKS = 72n * 3600n * 2n;
 
 const NATIVE = "native";
 const YOCTO = 24;
@@ -140,6 +156,7 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   await keyCheck(a, deps, signer, pin.hash);
   await preflight(a, deps, input, receiver, signer, pin.hash);
   await detect(a, deps, input, receiver, pin.hash);
+  const counterpartySources = await counterparties(a, deps, input, receiver, pin);
 
   const balances = await balancesBefore(a, deps, signer, pin.hash);
   rules(a, input, balances, intents);
@@ -151,6 +168,7 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   const sources: SourceStatus[] = [
     { name: "near-rpc", status: "ok" },
     { name: "reputation-registry", status: deps.flagged.size > 0 ? "ok" : "skipped" },
+    ...counterpartySources,
   ];
   if (sent) sources.push({ name: "near-intents-1click", status: intents ? "ok" : "unavailable" });
   return {
@@ -720,6 +738,123 @@ async function detect(
       });
     }
   }
+}
+
+// ------------------------------------------------------------------ counterparties
+
+/**
+ * Who the request pays and which contracts it runs (TN.14): a receiver first used less
+ * than 72 hours ago or never, a receiver the signer has never dealt with, a contract whose
+ * code changed in the window. Baret's own contracts, the MPC contract, the signer and the
+ * protected account are not counterparties; neither is a NEAR Intents deposit address
+ * (fresh by design: the quote check covers it) nor the token contract a 1 yoctoNEAR
+ * deposit goes to.
+ */
+async function counterparties(
+  a: Analysis,
+  deps: NearDeps,
+  input: AdapterInput,
+  receiver: NearAccountState | null,
+  pin: { height: bigint; hash: string },
+): Promise<SourceStatus[]> {
+  const { tx } = a;
+  const own = new Set([...deps.knownContracts, ...deps.mpcContracts, tx.signerId, a.user]);
+  const payees = [
+    ...new Set(
+      a.movements
+        .filter((m) => !m.locked && !m.swap && !m.attached && !own.has(m.to))
+        .map((m) => m.to),
+    ),
+  ];
+  const calls = tx.actions.some((x) => x.type === "FunctionCall");
+  const contracts = [
+    ...new Set([...(calls && receiver?.hasCode ? [tx.receiverId] : []), ...a.callReceivers]),
+  ].filter((c) => !own.has(c));
+
+  const sources: SourceStatus[] = [];
+  let unavailable = false;
+  if (!deps.history) {
+    if (payees.length > 0) sources.push({ name: "near-history", status: "skipped" });
+  } else if (payees.length > 0) {
+    const history = deps.history;
+    try {
+      const seen = await Promise.all(
+        payees.map(async (p) => ({
+          p,
+          h: await history.account(p),
+          dealt: await history.dealtWith(tx.signerId, p),
+        })),
+      );
+      for (const { p, h, dealt } of seen) {
+        const fresh =
+          h.transactions === 0 ||
+          (h.firstSeenMs !== null && input.now * 1000 - h.firstSeenMs < FRESH_ACCOUNT_MS);
+        if (fresh) {
+          a.drafts.push({
+            code: "REPUTATION_FRESH_ACCOUNT",
+            values: { address: p },
+            details: {
+              transactions: h.transactions,
+              firstSeenAt: h.firstSeenMs === null ? null : new Date(h.firstSeenMs).toISOString(),
+            },
+          });
+        }
+        if (!dealt) a.drafts.push({ code: "COUNTERPARTY_FIRST_PAYMENT", values: { address: p } });
+      }
+      sources.push({ name: "near-history", status: "ok" });
+    } catch {
+      unavailable = true;
+      sources.push({ name: "near-history", status: "unavailable" });
+    }
+  }
+
+  if (!deps.archive) {
+    if (contracts.length > 0) sources.push({ name: "near-archival-rpc", status: "skipped" });
+  } else if (contracts.length > 0) {
+    const archive = deps.archive;
+    const then = pin.height > CODE_WINDOW_BLOCKS ? pin.height - CODE_WINDOW_BLOCKS : 1n;
+    try {
+      for (const c of contracts) {
+        const [now, before] = await Promise.all([
+          c === tx.receiverId ? receiver : deps.rpc.viewAccount(c, pin.hash),
+          codeThen(archive, c, then),
+        ]);
+        if (now?.hasCode && (before === null || before.codeHash !== now.codeHash)) {
+          a.drafts.push({
+            code: "CONTRACT_CODE_CHANGED_RECENTLY",
+            values: { contract: c },
+            details: { comparedWithBlock: then.toString() },
+          });
+        }
+      }
+      sources.push({ name: "near-archival-rpc", status: "ok" });
+    } catch {
+      unavailable = true;
+      sources.push({ name: "near-archival-rpc", status: "unavailable" });
+    }
+  }
+  if (unavailable) a.drafts.push({ code: "COUNTERPARTY_HISTORY_UNAVAILABLE", values: {} });
+  return sources;
+}
+
+/**
+ * An account's state at a past height. NEAR can skip a height (no block was produced), and
+ * the node answers such a read with an error: the next lower heights are tried, a few.
+ */
+async function codeThen(
+  archive: NearRpc,
+  account: string,
+  height: bigint,
+): Promise<NearAccountState | null> {
+  let last: unknown;
+  for (let k = 0n; k < 5n; k++) {
+    try {
+      return await archive.viewAccount(account, height - k);
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw last;
 }
 
 // ------------------------------------------------------------------ policy rules
