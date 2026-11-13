@@ -49,3 +49,9 @@ services:
       # that come through the web app's /api rewrite (apps/web/middleware.ts).
       - key: BARET_EDGE_SECRET
         sync: false
+      # NEAR Agent Market webhook (ADR-0013): the agent token (aat_) and the webhook
+      # signing secret (whsec_) from the agent's Edit page; both or neither.
+      - key: NEAR_MARKET_TOKEN
+        sync: false
+      - key: NEAR_MARKET_WEBHOOK_SECRET
+        sync: false

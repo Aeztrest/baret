@@ -53,7 +53,7 @@ When you change a path on the left, update the docs on the right in the same com
 | `packages/chain-evm/**` | `docs/chains/evm.md` |
 | `packages/chain-stellar/**` | `docs/chains/stellar.md` |
 | `packages/chain-casper/**` | `docs/chains/casper.md` |
-| `packages/chain-near/**`, `contracts/near/**` | `docs/chains/near.md` |
+| `packages/chain-near/**`, `contracts/near/**`, `packages/agent-market/**` | `docs/chains/near.md` (Agent Market: §2c, ADR-0013) |
 | `packages/providers/**` | `docs/architecture/providers.md`, `docs/operations/environments.md` |
 | `packages/guard/**`, `packages/agent-kit/**` | `docs/architecture/sdk.md`, the package README, `CHANGELOG` via changeset |
 | `packages/wallet-core/**`, `packages/ui/**`, `packages/web-ui/**`, `packages/routes/**`, `packages/content/**` | `docs/architecture/frontend.md` |

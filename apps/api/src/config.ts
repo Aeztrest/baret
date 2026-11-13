@@ -49,6 +49,20 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v && v.trim() !== "" ? v : null)),
+  /**
+   * NEAR Agent Market (TN.13): the agent's token (`aat_…`) and the webhook signing secret
+   * (`whsec_…`, the agent's Edit page). Both set: POST /v1/market/webhook answers hires.
+   */
+  NEAR_MARKET_TOKEN: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v.trim() : null)),
+  NEAR_MARKET_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v.trim() : null))
+    .pipe(z.string().min(32, "must be the market's signing secret (32+ characters)").nullable()),
+  NEAR_MARKET_API: z.string().url().default("https://market.near.ai"),
 });
 
 export interface ChainEndpoints {
@@ -70,6 +84,8 @@ export interface ApiConfig {
   verdictTtlSeconds: number;
   proxyTrust: { directHops: number | null; edgeHops: number | null; edgeSecret: string | null };
   chains: ChainEndpoints[];
+  /** Agent Market webhook settings; null when the webhook is off. */
+  market: { token: string; webhookSecret: string; apiUrl: string } | null;
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): ApiConfig {
@@ -81,6 +97,13 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   const e = parsed.data;
   if (e.BARET_ENV === "production" && e.BARET_API_KEYS.length === 0) {
     throw new Error("BARET_API_KEYS must be set in production");
+  }
+  // Half a market setup is a mistake, not a choice: a secret with no token cannot deliver,
+  // a token with no secret cannot tell the market's calls from anyone's.
+  if ((e.NEAR_MARKET_TOKEN === null) !== (e.NEAR_MARKET_WEBHOOK_SECRET === null)) {
+    throw new Error(
+      "NEAR_MARKET_TOKEN and NEAR_MARKET_WEBHOOK_SECRET are set together or not at all",
+    );
   }
   return {
     port: e.PORT,
@@ -102,5 +125,13 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
       const trace = (env[chainEnvName(chain, "TRACE_RPC_URL")] ?? "").trim();
       return { chain, rpcUrl, traceRpcUrl: trace === "" ? rpcUrl : trace };
     }),
+    market:
+      e.NEAR_MARKET_TOKEN && e.NEAR_MARKET_WEBHOOK_SECRET
+        ? {
+            token: e.NEAR_MARKET_TOKEN,
+            webhookSecret: e.NEAR_MARKET_WEBHOOK_SECRET,
+            apiUrl: e.NEAR_MARKET_API,
+          }
+        : null,
   };
 }

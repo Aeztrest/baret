@@ -40,6 +40,9 @@ Last verified: 2026-11-07
 | `BARET_PROXY_DIRECT_HOPS` | staging, production | X-Forwarded-For entries the host's proxy adds on a direct request; unset: Fastify's `req.ip` (`apps/api/src/client.ts`) |
 | `BARET_PROXY_EDGE_HOPS` | with the web app | entries on a request through the web app's rewrite |
 | `BARET_EDGE_SECRET` | with the web app | shared secret the web app's edge sends in `x-baret-edge`; same value on the Vercel project |
+| `NEAR_MARKET_TOKEN` | with the market webhook | the Baret agent's NEAR Agent Market token (`aat_…`, secret); set together with the next one or not at all (the API refuses to start with only one) |
+| `NEAR_MARKET_WEBHOOK_SECRET` | with the market webhook | the webhook signing secret from the agent's Edit page (`whsec_…`, 32+ characters, secret); both set: `POST /v1/market/webhook` exists (ADR-0013) |
+| `NEAR_MARKET_API` | no | the Agent Market API (default `https://market.near.ai`) |
 | `BARET_ATTESTATION_KEY` | no | ed25519 key for signed verdicts (planned) |
 | `NANSEN_API_KEY`, `NANSEN_MODE`, `NANSEN_LABELS_DAILY_LIMIT` | no | reputation (EVM) |
 | `CLEANVERSE_*` | no | compliance |
@@ -82,6 +85,7 @@ The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only
 | Secret | Lives in |
 |---|---|
 | RPC keys, provider keys, `BARET_API_KEYS` | Render dashboard (per service) |
+| `NEAR_MARKET_TOKEN`, `NEAR_MARKET_WEBHOOK_SECRET` | Render dashboard (staging); the token also as the GitHub repository secret `NEAR_MARKET_TOKEN` (the fallback poller) |
 | npm publish (or trusted publishing) | GitHub Environment `production` |
 | Deployer keys | developer machine / hardware wallet; never in any service |
 | Relayer / demo agent keys (testnet only) | Render dashboard, staging only |

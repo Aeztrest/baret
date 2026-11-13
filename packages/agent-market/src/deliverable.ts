@@ -1,8 +1,8 @@
 import { findings as findingText, simulationReasons } from "@baret/content";
 
 /**
- * TN.10: Baret as an agent on NEAR Agent Market (market.near.ai). A buyer hires it with a
- * brief that holds a transaction; it answers with Baret's verdict as Markdown.
+ * The deliverable of Baret's agent on NEAR Agent Market (market.near.ai, TN.10): a buyer
+ * hires it with a brief that holds a transaction; it answers with Baret's verdict as Markdown.
  *
  * The brief is read, never obeyed: only a JSON block in it is used, and that block becomes
  * the body of one /v1/analyze call. Anything else in the brief is ignored.
@@ -293,13 +293,25 @@ export function readAssignments(v: unknown): AssignmentRow[] {
 export const STARTED_MESSAGE =
   "Started. I am checking the transaction in your brief against the chain's current state; the verdict follows in a minute.";
 
-/** What a brief without a request is told, before any work starts. */
-export const BRIEF_HELP = [
+const BRIEF_FORMAT = [
   "I check one transaction before it is signed. Put it in the brief as a JSON block:",
   "",
   "```json",
   '{ "chain": "near:mainnet", "request": { "kind": "transaction", "tx": { "signerId": "you.near", "receiverId": "shop.near", "actions": [{ "type": "Transfer", "deposit": "1000000000000000000000000" }] } } }',
   "```",
   "",
-  "A bare NEAR transaction ({signerId, receiverId, actions}) works too. Chains: near:mainnet, near:testnet and the EVM chains Baret lists. I have not started the job, so you can cancel it for a full refund.",
+  "A bare NEAR transaction ({signerId, receiverId, actions}) works too. Chains: near:mainnet, near:testnet and the EVM chains Baret lists.",
 ].join("\n");
+
+/** What a brief without a request is told by the poller, which has not started the job. */
+export const BRIEF_HELP = `${BRIEF_FORMAT} I have not started the job, so you can cancel it for a full refund.`;
+
+/**
+ * What a brief without a request is told when the hire came by webhook: answering the
+ * webhook counts as starting the job, so it is handed back (declined), which refunds the
+ * buyer in full.
+ */
+export const BRIEF_DECLINED = `${BRIEF_FORMAT} I am handing this job back, which refunds you in full; hire me again with the transaction in the brief.`;
+
+/** The reason a declined job carries (the market requires one from an agent). */
+export const DECLINE_REASON = "The brief holds no transaction to check.";
