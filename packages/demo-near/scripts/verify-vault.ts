@@ -7,9 +7,11 @@
  *
  *   pnpm --filter @baret/demo-near verify-vault                      # hash and keys
  *   pnpm --filter @baret/demo-near verify-vault -- baret_near_vault.wasm
+ *   pnpm --filter @baret/demo-near verify-vault -- baret_near_blocklist.wasm --blocklist
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { getDeployment } from "@baret/chains";
 import { base58 } from "@scure/base";
 import { demoAccounts, demoRpcUrl } from "../src/view.js";
 
@@ -28,13 +30,16 @@ async function query(params: object): Promise<Record<string, unknown> | undefine
   return ((await res.json()) as { result?: Record<string, unknown> }).result;
 }
 
-const vault = demoAccounts().vault;
+// `--blocklist`: the shared blocklist (registry BaretBlocklist) instead of the vault.
+const vault = process.argv.includes("--blocklist")
+  ? (getDeployment("near:testnet", "BaretBlocklist")?.address ?? "")
+  : demoAccounts().vault;
 const account = await query({ request_type: "view_account", account_id: vault });
 const keys = await query({ request_type: "view_access_key_list", account_id: vault });
 const onChain = account?.code_hash as string | undefined;
 const keyCount = Array.isArray(keys?.keys) ? keys.keys.length : undefined;
 
-console.log(`Vault:              ${vault}`);
+console.log(`Contract:           ${vault}`);
 console.log(`Code hash on chain: ${onChain ?? "(not read)"}`);
 console.log(
   `Keys on the vault:  ${keyCount ?? "(not read)"}${keyCount === 0 ? " (locked: only the owner's update_contract can change the code)" : ""}`,
@@ -43,6 +48,6 @@ const file = process.argv.slice(2).find((a) => a.endsWith(".wasm"));
 if (file) {
   const local = base58.encode(createHash("sha256").update(readFileSync(file)).digest());
   console.log(`Code hash of wasm:  ${local}`);
-  console.log(local === onChain ? "MATCH: the vault runs this wasm." : "NO MATCH.");
+  console.log(local === onChain ? "MATCH: the contract runs this wasm." : "NO MATCH.");
   process.exit(local === onChain ? 0 : 1);
 }
