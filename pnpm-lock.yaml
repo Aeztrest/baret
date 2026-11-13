@@ -23,6 +23,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@baret/agent-market':
+        specifier: workspace:*
+        version: link:../../packages/agent-market
       '@baret/chain-evm':
         specifier: workspace:*
         version: link:../../packages/chain-evm
@@ -146,6 +149,12 @@ importers:
         specifier: 8.3.6
         version: 8.3.6(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
 
+  packages/agent-market:
+    dependencies:
+      '@baret/content':
+        specifier: workspace:*
+        version: link:../content
+
   packages/chain-evm:
     dependencies:
       '@baret/chains':
@@ -239,6 +248,9 @@ importers:
 
   packages/demo-near:
     dependencies:
+      '@baret/agent-market':
+        specifier: workspace:*
+        version: link:../agent-market
       '@baret/chains':
         specifier: workspace:*
         version: link:../chains

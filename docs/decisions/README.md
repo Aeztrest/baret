@@ -21,6 +21,7 @@ One file per decision: `NNNN-short-title.md`. An ADR is never edited to reverse 
 | [0010](0010-demo-packages-per-family.md) | Demo sites keep their chain code in a demo package per family | Accepted |
 | [0011](0011-near-family.md) | NEAR is a chain family, built first for the NEAR HACKATHON | Accepted (point 5's licence superseded by 0012) |
 | [0012](0012-mit-license.md) | The whole repository is MIT | Accepted |
+| [0013](0013-agent-market-webhook-in-the-api.md) | Agent Market hires are answered by a webhook in the API | Accepted |
 
 ## Template
 

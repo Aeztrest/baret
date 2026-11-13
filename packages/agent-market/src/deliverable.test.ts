@@ -7,7 +7,7 @@ import {
   formatUnits,
   readAssignments,
   verdictMarkdown,
-} from "./market.js";
+} from "./deliverable.js";
 
 const tx = { signerId: "alice.near", receiverId: "wrap.near", actions: [] };
 

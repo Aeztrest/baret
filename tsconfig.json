@@ -38,6 +38,9 @@
       "path": "./packages/demo-near"
     },
     {
+      "path": "./packages/agent-market"
+    },
+    {
       "path": "./packages/engine"
     },
     {

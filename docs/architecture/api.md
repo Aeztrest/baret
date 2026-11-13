@@ -18,6 +18,7 @@ Fastify + TypeScript, Zod for every request and response, pino logs (JSON), `@fa
 | GET | `/v1/chains` | Enabled chains and their capabilities (`docs/architecture/chain-adapters.md` §6) — **built** | 1 |
 | POST | `/v1/analyze` | One transaction / message → `Verdict` — **built** | 1 |
 | GET | `/v1/policy/templates?chain=` | Templates filled for one chain — **built** | 1 |
+| POST | `/v1/market/webhook` | NEAR Agent Market events (ADR-0013): only when `NEAR_MARKET_TOKEN` and `NEAR_MARKET_WEBHOOK_SECRET` are set. Authenticated by the market's HMAC signature (`X-Market-Signature` over `<timestamp>.<raw body>`, timestamp within 5 min), not by API key; 401 otherwise. `hire.created` → 202 at once, then the brief is analysed in process and the verdict delivered; a repeated `X-Market-Delivery` → 200 `duplicate`; other events → 200 `ignored` — **built** | NEAR |
 | POST | `/v1/explain` | Plain-language explanation of a verdict this server returned (LLM; decision copied, never generated) | 2 |
 | POST | `/v1/policy/draft` | Rules proposed from a sentence (LLM; a proposal only) | 2 |
 | GET | `/v1/audit/*` | History from the indexer of a chain that has one; 503 per chain otherwise, never an empty list | 2 |

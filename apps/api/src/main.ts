@@ -1,3 +1,4 @@
+import { MarketClient, type Verdict } from "@baret/agent-market";
 import {
   createEvmAdapter,
   type EvmDeps,
@@ -105,11 +106,23 @@ const app = await buildApp({
   engine,
   health: (chain) => (chain.family === "near" ? near : evm).health(chain),
   commit: process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? null,
+  // A hire is analysed in process, by the same engine as /v1/analyze; any error is "no
+  // verdict", which the deliverable says plainly (never Safe).
+  market: config.market
+    ? {
+        secret: config.market.webhookSecret,
+        client: new MarketClient(config.market.token, config.market.apiUrl),
+        analyze: async (body) => (await engine.analyze(body)) as Verdict,
+      }
+    : null,
 });
 
 if (engine.chains.length === 0) {
   app.log.warn("no chain is enabled: set CHAIN_<SLUG>_RPC_URL (docs/operations/environments.md)");
 }
+app.log.info(
+  config.market ? "Agent Market webhook on POST /v1/market/webhook" : "Agent Market webhook off",
+);
 if (config.apiKeys.length === 0) {
   app.log.warn("BARET_API_KEYS is empty: /v1 endpoints are open. Set it before production.");
 }

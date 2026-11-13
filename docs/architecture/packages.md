@@ -22,6 +22,7 @@ baret/
 │   ├── chain-near/     NEAR adapter           ./engine  (ADR-0011)
 │   ├── demo-evm/       the web app's EVM demo sites: addresses, builders (ADR-0010)
 │   ├── demo-near/      the NEAR demo: testnet setup scripts and the agent (ADR-0011)
+│   ├── agent-market/   Baret on NEAR Agent Market: brief → verdict, market client, webhook check (ADR-0013)
 │   ├── engine/         pipeline, universal detectors, policy evaluation
 │   ├── providers/      reputation, compliance, prices, LLM clients
 │   ├── guard/          @baret/guard — public SDK (published)
@@ -59,7 +60,8 @@ baret/
 | `packages/chain-casper` | `@baret/chain-casper` | no | Casper adapter (`casper-js-sdk`) | `docs/chains/casper.md` |
 | `packages/chain-near` | `@baret/chain-near` | no — **engine built** (NEAR HACKATHON) | NEAR adapter: decode, preflight, effects, detectors (near-api-js) | `docs/chains/near.md` |
 | `packages/demo-evm` | `@baret/demo-evm` | no — **built** | Demo sites' EVM code: addresses from the registry, transaction and x402 builders, analyze bodies (ADR-0010) | `docs/architecture/frontend.md` |
-| `packages/demo-near` | `@baret/demo-near` | no — **built** | NEAR demo: vault setup scripts (keys, accounts, deploy, policy, function call key) the agent CLI (NEAR and Chain Signatures scenarios), the NEAR Intents check and the Agent Market worker | `docs/chains/near.md` |
+| `packages/demo-near` | `@baret/demo-near` | no — **built** | NEAR demo: vault setup scripts (keys, accounts, deploy, policy, function call key) the agent CLI (NEAR and Chain Signatures scenarios), the NEAR Intents check and the Agent Market poller | `docs/chains/near.md` |
+| `packages/agent-market` | `@baret/agent-market` | no — **built** | Baret on NEAR Agent Market: a brief's transaction → one `/v1/analyze` body, the verdict as Markdown, the agent-token market client, webhook signature check, one hire end to end (ADR-0013) | `docs/chains/near.md` §2c |
 | `packages/engine` | `@baret/engine` | no — **built** | `createEngine`, `decide`; Metropolis parity tests | `docs/architecture/engine.md` |
 | `packages/providers` | `@baret/providers` | no | Optional data sources and LLM client | `docs/architecture/providers.md` |
 | `packages/guard` | `@baret/guard` | **yes** — **built** (0.2.0, not yet published) | Client for `/v1/analyze`, verdict helpers; re-exports `@baret/core` | `docs/architecture/sdk.md` |
@@ -98,8 +100,9 @@ A package may import only from the packages in its row (plus external libraries 
 | `web-ui` | `content`, `ui` | none |
 | `routes` | — | none |
 | `demo-evm` | `core`, `chains` | the EVM libraries (viem, wagmi), like a real dApp (ADR-0010) |
-| `demo-near` | `core`, `chains`, `content` (finding words and simulation refusal reasons in the Agent Market deliverable) | near-api-js (ADR-0010, ADR-0011) |
-| `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `chain-*/engine` (composition root: it builds the adapters) | none directly |
+| `demo-near` | `core`, `chains`, `content`, `agent-market` (the Agent Market poller) | near-api-js (ADR-0010, ADR-0011) |
+| `agent-market` | `content` (finding words and simulation refusal reasons in the deliverable) | none |
+| `apps/api` | `engine`, `providers`, `chains`, `core`, `content`, `agent-market` (the market webhook), `chain-*/engine` (composition root: it builds the adapters) | none directly |
 | `apps/extension` | `wallet-core`, `guard`, `ui`, `content`, `chains`, `core`, `routes` | none directly |
 | `apps/web` | `guard`, `ui`, `web-ui`, `content`, `chains`, `core`, `wallet-core` (demo signing), `routes`, `demo-evm`, `demo-near` (its browser-safe entry: read-only vault view, `/near`) | none directly |
 
