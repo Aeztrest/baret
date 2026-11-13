@@ -8,6 +8,14 @@
       "source": "contracts/near/vault",
       "sourceVerified": false,
       "checkedOnChain": "2026-11-09"
+    },
+    "BaretBlocklist": {
+      "address": "baret-blocklist.aeztrest-baret.testnet",
+      "block": 277460866,
+      "txHash": "C1UvtYXmwWUGHVadHQNXaF6KKhF6uXvRCnoVT6PL1R6T",
+      "source": "contracts/near/blocklist",
+      "sourceVerified": false,
+      "checkedOnChain": "2026-11-13"
     }
   },
   "showcase": {

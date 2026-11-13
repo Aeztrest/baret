@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["vault"]
+members = ["vault", "blocklist"]
 
 [workspace.package]
 edition = "2021"

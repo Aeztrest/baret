@@ -50,14 +50,18 @@ jobs:
       # NEP-330 reproducible build: inside the image pinned by digest in vault/Cargo.toml,
       # so the same commit always gives the same bytes (the same NEAR code hash), and the
       # wasm carries its source (repository and commit) in `contract_source_metadata`.
-      - name: Build the wasm (reproducible)
+      - name: Build the vault wasm (reproducible)
         working-directory: contracts/near/vault
+        run: cargo near build reproducible-wasm
+      - name: Build the blocklist wasm (reproducible)
+        working-directory: contracts/near/blocklist
         run: cargo near build reproducible-wasm
       # NEAR stores base58(sha256(wasm)) as an account's code hash: printed here so the
       # deployed vault can be compared with this build (pnpm verify-vault does it locally).
-      - name: NEAR code hash of the wasm
+      - name: NEAR code hash of each wasm
         working-directory: contracts/near
         run: |
+          for wasm in baret_near_vault.wasm baret_near_blocklist.wasm; do
           node -e '
             const c = require("crypto"), f = require("fs");
             const file = process.argv[1];
@@ -67,8 +71,13 @@ jobs:
             while (n > 0n) { s = A[Number(n % 58n)] + s; n /= 58n; }
             console.log(`${file}\ncode hash ${s}`);
             f.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `NEAR code hash of \`${file}\`: \`${s}\`\n`);
-          ' "$(find target/near -name baret_near_vault.wasm | head -1)"
+          ' "$(find target/near -name "$wasm" | head -1)"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: baret-near-vault-wasm
           path: contracts/near/target/near/**/baret_near_vault.wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: baret-near-blocklist-wasm
+          path: contracts/near/target/near/**/baret_near_blocklist.wasm

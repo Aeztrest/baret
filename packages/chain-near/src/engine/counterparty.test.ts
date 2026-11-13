@@ -289,3 +289,93 @@ describe("FastNearHistory", () => {
     await expect(odd.account("a.testnet")).rejects.toBeInstanceOf(HistoryUnavailableError);
   });
 });
+
+describe("NEAR shared blocklist", () => {
+  const TX = "7J1F9jWcrvXRnPc72yn1Nq2uoSZ6Po3xd3EzvAkBVo5L";
+  const ENTRIES: Record<string, object> = {
+    "old-shop.testnet": {
+      account: "old-shop.testnet",
+      flagged: false,
+      confirmed: false,
+      reports: 1,
+      reason: "SCAM_PAYEE",
+      evidence: TX,
+    },
+    "dapp.testnet": {
+      account: "dapp.testnet",
+      flagged: true,
+      confirmed: true,
+      reports: 1,
+      reason: "DRAINER",
+      evidence: TX,
+    },
+  };
+
+  function withList(answer: "entries" | "null" | "throw", asked: string[][] = []): NearRpc {
+    return {
+      ...rpc(),
+      callView: async (contract, method, args) => {
+        if (contract !== "blocklist.testnet" || method !== "get_flags") return null;
+        if (answer === "throw") throw new Error("down");
+        if (answer === "null") return null;
+        const accounts = (args as { accounts: string[] }).accounts;
+        asked.push(accounts);
+        return accounts.flatMap((x) => (ENTRIES[x] ? [ENTRIES[x]] : []));
+      },
+    };
+  }
+
+  async function check(tx: unknown, list: NearRpc) {
+    const adapter = createNearAdapter(() => ({
+      rpc: list,
+      knownContracts: [],
+      flagged: new Map(),
+      mpcContracts: [],
+      blocklist: "blocklist.testnet",
+    }));
+    return adapter.analyze({
+      chain,
+      request: adapter.requestSchema.parse({ kind: "transaction", tx }),
+      account: null,
+      policy: createPolicy("balanced", policyContext(chain)),
+      payment: null,
+      now: NOW_S,
+    });
+  }
+
+  it("blocks a flagged account and shows the report's evidence", async () => {
+    const r = await check(call("dapp.testnet"), withList("entries"));
+    const f = r.drafts.find((d) => d.code === "KNOWN_MALICIOUS_ADDRESS");
+    expect(f?.values).toEqual({ address: "dapp.testnet" });
+    expect(f?.details).toEqual({
+      registry: {
+        source: "blocklist.testnet",
+        reasonCode: "DRAINER",
+        evidence: TX,
+        reports: 1,
+        confirmed: true,
+      },
+    });
+    expect(r.sources).toContainEqual({ name: "near-blocklist", status: "ok" });
+  });
+
+  it("warns about an account reported below the threshold", async () => {
+    const r = await check(pay("old-shop.testnet"), withList("entries"));
+    expect(codes(r)).toEqual(["COUNTERPARTY_REPORTED"]);
+  });
+
+  it("asks once for every account the request touches", async () => {
+    const asked: string[][] = [];
+    const r = await check(pay("new-shop.testnet"), withList("entries", asked));
+    expect(asked).toEqual([["new-shop.testnet"]]);
+    expect(codes(r)).toEqual([]);
+  });
+
+  it("fails closed when the blocklist cannot be read", async () => {
+    for (const answer of ["null", "throw"] as const) {
+      const r = await check(pay("old-shop.testnet"), withList(answer));
+      expect(codes(r)).toEqual(["REPUTATION_DATA_UNAVAILABLE"]);
+      expect(r.sources).toContainEqual({ name: "near-blocklist", status: "unavailable" });
+    }
+  });
+});

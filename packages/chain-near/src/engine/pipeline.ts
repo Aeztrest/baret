@@ -39,6 +39,23 @@ export interface NearDeps {
    */
   history?: NearHistory;
   archive?: NearRpc;
+  /**
+   * The shared blocklist contract agents report to (TN.14, contracts/near/blocklist).
+   * Absent: not deployed on this network. A failed read is REPUTATION_DATA_UNAVAILABLE.
+   */
+  blocklist?: string;
+}
+
+/** The most accounts one `get_flags` read takes (the contract's MAX_QUERY). */
+const BLOCKLIST_QUERY = 50;
+
+interface BlocklistFlag {
+  account: string;
+  flagged: boolean;
+  confirmed: boolean;
+  reports: number;
+  reason: string;
+  evidence: string;
 }
 
 /** An account first used less than this long ago is fresh (REPUTATION_FRESH_ACCOUNT). */
@@ -156,6 +173,7 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   await keyCheck(a, deps, signer, pin.hash);
   await preflight(a, deps, input, receiver, signer, pin.hash);
   await detect(a, deps, input, receiver, pin.hash);
+  const blocklistSource = await blocklistCheck(a, deps, pin.hash);
   const counterpartySources = await counterparties(a, deps, input, receiver, pin);
 
   const balances = await balancesBefore(a, deps, signer, pin.hash);
@@ -168,6 +186,7 @@ export async function analyzeNear(input: AdapterInput, deps: NearDeps): Promise<
   const sources: SourceStatus[] = [
     { name: "near-rpc", status: "ok" },
     { name: "reputation-registry", status: deps.flagged.size > 0 ? "ok" : "skipped" },
+    ...(blocklistSource ? [blocklistSource] : []),
     ...counterpartySources,
   ];
   if (sent) sources.push({ name: "near-intents-1click", status: intents ? "ok" : "unavailable" });
@@ -738,6 +757,74 @@ async function detect(
       });
     }
   }
+}
+
+// ------------------------------------------------------------------ shared blocklist
+
+/** Every account the request pays, calls, approves or names in a vault change. */
+function touchedAccounts(a: Analysis): string[] {
+  const { tx } = a;
+  return [
+    ...new Set<string>([
+      tx.receiverId,
+      ...a.movements.filter((m) => !m.locked).map((m) => m.to),
+      ...a.approvals.map((x) => x.spender),
+      ...a.callReceivers,
+      ...a.vaultCalls.flatMap((c) =>
+        ["receiver", "agent", "new_owner"]
+          .map((k) => c.args[k])
+          .filter((v): v is string => typeof v === "string"),
+      ),
+    ]),
+  ].filter((x) => ACCOUNT_ID.test(x) || IMPLICIT.test(x));
+}
+
+/**
+ * The shared blocklist (TN.14): one `get_flags` view at the pinned block. Flagged (the
+ * owner confirmed it, or enough reporters agree): KNOWN_MALICIOUS_ADDRESS. Reported but
+ * not flagged: COUNTERPARTY_REPORTED, a warning. The answer cannot be read: fail closed.
+ */
+async function blocklistCheck(
+  a: Analysis,
+  deps: NearDeps,
+  block: string,
+): Promise<SourceStatus | null> {
+  if (!deps.blocklist) return null;
+  const accounts = touchedAccounts(a).filter((x) => !deps.flagged.has(x));
+  if (accounts.length === 0) return { name: "near-blocklist", status: "ok" };
+  let flags: BlocklistFlag[] = [];
+  try {
+    for (let i = 0; i < accounts.length; i += BLOCKLIST_QUERY) {
+      const got = await deps.rpc.callView(
+        deps.blocklist,
+        "get_flags",
+        { accounts: accounts.slice(i, i + BLOCKLIST_QUERY) },
+        block,
+      );
+      if (!Array.isArray(got)) throw new Error("get_flags");
+      flags = flags.concat(got as BlocklistFlag[]);
+    }
+  } catch {
+    a.drafts.push({ code: "REPUTATION_DATA_UNAVAILABLE", values: {} });
+    return { name: "near-blocklist", status: "unavailable" };
+  }
+  for (const f of flags) {
+    const details = {
+      registry: {
+        source: deps.blocklist,
+        reasonCode: f.reason,
+        evidence: f.evidence,
+        reports: f.reports,
+        confirmed: f.confirmed,
+      },
+    };
+    a.drafts.push(
+      f.flagged
+        ? { code: "KNOWN_MALICIOUS_ADDRESS", values: { address: f.account }, details }
+        : { code: "COUNTERPARTY_REPORTED", values: { address: f.account }, details },
+    );
+  }
+  return { name: "near-blocklist", status: "ok" };
 }
 
 // ------------------------------------------------------------------ counterparties

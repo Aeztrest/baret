@@ -89,10 +89,12 @@ describe("deployments", () => {
     expect(getDeployment("eip155:143", "PaymentGuardFactory")).toBeNull();
   });
 
-  it("has the NEAR testnet demo vault, known to the engine", () => {
+  it("has the NEAR testnet demo vault and the shared blocklist, known to the engine", () => {
     const vault = getDeployment("near:testnet", "BaretVault");
+    const blocklist = getDeployment("near:testnet", "BaretBlocklist");
     expect(vault?.address).toBe("baret-vault.aeztrest-baret.testnet");
-    expect(knownAddresses("near:testnet")).toEqual([vault?.address]);
+    expect(blocklist?.address).toBe("baret-blocklist.aeztrest-baret.testnet");
+    expect(knownAddresses("near:testnet")).toEqual([vault?.address, blocklist?.address]);
     expect(knownAddresses("near:mainnet")).toEqual([]);
   });
 });
