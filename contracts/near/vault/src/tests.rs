@@ -231,6 +231,44 @@ fn signs_an_evm_transfer_and_counts_value_plus_max_fee() {
 }
 
 #[test]
+fn the_owner_withdraws_evm_funds_past_every_rule_even_while_paused() {
+    let mut v = evm_vault();
+    v.set_paused(true);
+    // Far above the limits, to an address on no list: the owner's own money.
+    let mut tx = evm_tx("5000000000000000000");
+    tx.to = "0x000000000000000000000000000000000000dEaD".into();
+    v.withdraw_evm(tx);
+    assert_eq!(v.get_spent_today(MONAD.into()), U128(0));
+    assert!(get_logs()
+        .iter()
+        .any(|l| l.contains("\"event\":\"evm_withdrawal_requested\"")
+            && l.contains("0x000000000000000000000000000000000000dead")));
+}
+
+#[test]
+#[should_panic(expected = "E_NOT_OWNER")]
+fn only_the_owner_withdraws_evm_funds() {
+    let v = evm_vault();
+    as_caller(AGENT, 10);
+    v.withdraw_evm(evm_tx("1"));
+}
+
+#[test]
+#[should_panic(expected = "E_BAD_EVM_TX")]
+fn an_evm_withdrawal_is_built_by_the_vault_too() {
+    let v = evm_vault();
+    let mut tx = evm_tx("1");
+    tx.to = "not-an-address".into();
+    v.withdraw_evm(tx);
+}
+
+#[test]
+fn reports_its_version() {
+    let v = vault();
+    assert_eq!(v.get_version(), "0.2.1");
+}
+
+#[test]
 fn the_payload_view_is_the_eip1559_hash_viem_computes() {
     let v = evm_vault();
     let p = v.get_evm_payload(evm_tx("10000000000000000"));
@@ -322,7 +360,6 @@ fn the_policy_lists_receivers_per_asset() {
     assert!(p
         .receivers
         .contains(&(MONAD.to_string(), vec![acc(EVM_SHOP)])));
-    assert_eq!(v.get_version(), "0.2.0");
 }
 
 #[test]

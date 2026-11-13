@@ -105,7 +105,7 @@ The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI ru
 | | Account | Source |
 |---|---|---|
 | Baret vault | [`baret-vault.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-vault.aeztrest-baret.testnet) | [`contracts/near/vault`](contracts/near/vault) ([methods and trust model](contracts/near/README.md)) |
-| Demo agent | [`baret-agent.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-agent.aeztrest-baret.testnet) | function call key for the vault's two agent methods |
+| Demo agent | [`baret-agent.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-agent.aeztrest-baret.testnet) | the agent process holds only a function call key for the vault's two agent methods; the account's full access key is the owner's (it created the account) and never reaches the agent (`.env.agent` refuses it) |
 | Demo shop | [`baret-shop.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-shop.aeztrest-baret.testnet) | the vault's only NEAR receiver |
 | Vault's EVM address (Chain Signatures, path `eip155`) | `0x95689e53febe21bf2c12833ddca29d95b2ed5b27` on Monad testnet | derived by NEAR MPC |
 
@@ -121,7 +121,7 @@ Before the hackathon this repository held the chain-neutral core, the EVM adapte
 
 ### Limitations
 
-Testnet only, not audited. The vault holds native NEAR and NEP-141 tokens; its Chain Signatures path signs native EVM transfers only (no calldata). Limits are shared by every agent of a vault (no per-agent limits yet). The Intents check covers NEP-141 deposits on NEAR and does not yet allow cross-chain recipients. Delegate actions (NEP-366 meta transactions) are refused as unsupported. The staging API is a free instance that sleeps when idle.
+Testnet only, not audited. The vault holds native NEAR and NEP-141 tokens; its Chain Signatures path signs native EVM transfers only (no calldata). An EVM signature does not expire: the vault counts it when it signs, so an agent could hold signatures back and broadcast them later; the owner voids them by sweeping the EVM address with `withdraw_evm`. Limits are shared by every agent of a vault (no per-agent limits yet). The Intents check covers NEP-141 deposits on NEAR and does not yet allow cross-chain recipients. Delegate actions (NEP-366 meta transactions) are refused as unsupported. The staging API is a free instance that sleeps when idle.
 
 ## Documentation
 

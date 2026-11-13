@@ -35,7 +35,7 @@ use near_sdk::{
 use std::collections::BTreeMap;
 
 /// The contract's version, as `get_version` answers it.
-pub const VERSION: &str = "0.2.0";
+pub const VERSION: &str = "0.2.1";
 /// The asset id of NEAR itself; any other asset id is a NEP-141 token contract or, for
 /// Chain Signatures, an EVM chain's CAIP-2 id.
 pub const NATIVE: &str = "native";
@@ -341,7 +341,8 @@ impl Vault {
     #[payable]
     pub fn deposit(&mut self) {}
 
-    /// The owner takes funds back, with no limits.
+    /// The owner takes NEAR or a NEP-141 token back, with no limits. The vault's EVM funds
+    /// come back through `withdraw_evm`.
     pub fn withdraw(&mut self, asset: String, amount: U128) -> Promise {
         self.assert_owner();
         require!(amount.0 > 0, errors::AMOUNT_ZERO);
@@ -350,6 +351,41 @@ impl Vault {
             &format!("{{\"asset\":\"{asset}\",\"amount\":\"{}\"}}", amount.0),
         );
         self.send(&asset, self.owner.clone(), amount.0, None)
+    }
+
+    /// The owner moves the vault's EVM funds (0.2.1): with no limits, to any address, even
+    /// while paused. It is how the owner takes them back, and how EVM signatures already
+    /// given to an agent are voided: an EVM signature never expires and pausing the vault
+    /// cannot recall it, but a sweep of the balance with the address's next nonce leaves
+    /// those transfers nothing to spend. Returns the MPC signature, or null when the MPC
+    /// network failed.
+    pub fn withdraw_evm(&self, tx: EvmTransfer) -> Promise {
+        self.assert_owner();
+        let (receiver, unsigned, cost) = evm_parts(&tx);
+        let payload = encode_hex(&env::keccak256(&unsigned));
+        emit(
+            "evm_withdrawal_requested",
+            &format!(
+                "{{\"asset\":\"{}\",\"receiver\":\"{receiver}\",\"value\":\"{}\",\"max_cost\":\"{cost}\",\"nonce\":{},\"payload\":\"{payload}\"}}",
+                tx.asset(),
+                tx.value,
+                tx.nonce
+            ),
+        );
+        mpc_sign(&payload).then(
+            Self::ext(env::current_account_id())
+                .with_static_gas(CALLBACK_GAS)
+                .on_evm_withdrawal_signed(),
+        )
+    }
+
+    /// The MPC answer to the owner's withdrawal; nothing was counted, so nothing to undo.
+    #[private]
+    pub fn on_evm_withdrawal_signed(
+        &self,
+        #[callback_result] result: Result<Value, PromiseError>,
+    ) -> Option<Value> {
+        result.ok()
     }
 
     // ---------------------------------------------------------------- agent
@@ -420,22 +456,11 @@ impl Vault {
                 tx.value
             ),
         );
-        let args = json!({
-            "request": { "path": EVM_PATH, "payload_v2": { "Ecdsa": payload }, "domain_id": 0 }
-        });
-        Promise::new(mpc_account())
-            .function_call_weight(
-                "sign".to_string(),
-                serde_json::to_vec(&args).unwrap_or_default(),
-                NearToken::from_yoctonear(1),
-                Gas::from_tgas(0),
-                GasWeight(1),
-            )
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(CALLBACK_GAS)
-                    .on_evm_signed(asset, U128(cost), now),
-            )
+        mpc_sign(&payload).then(
+            Self::ext(env::current_account_id())
+                .with_static_gas(CALLBACK_GAS)
+                .on_evm_signed(asset, U128(cost), now),
+        )
     }
 
     /// The MPC answer. A failed signature gives its spend back to the window.
@@ -641,6 +666,20 @@ fn evm_parts(tx: &EvmTransfer) -> (AccountId, Vec<u8>, u128) {
         .parse()
         .unwrap_or_else(|_| env::panic_str(errors::BAD_EVM_TX));
     (receiver, unsigned, cost)
+}
+
+/// One signature from NEAR's MPC network over `payload` (hex keccak256), path `eip155`.
+fn mpc_sign(payload: &str) -> Promise {
+    let args = json!({
+        "request": { "path": EVM_PATH, "payload_v2": { "Ecdsa": payload }, "domain_id": 0 }
+    });
+    Promise::new(mpc_account()).function_call_weight(
+        "sign".to_string(),
+        serde_json::to_vec(&args).unwrap_or_default(),
+        NearToken::from_yoctonear(1),
+        Gas::from_tgas(0),
+        GasWeight(1),
+    )
 }
 
 fn mpc_account() -> AccountId {
