@@ -26,6 +26,14 @@
       "role": "NEAR demo: the AI agent; the vault's only agent, holds a function call key limited to the vault's execute_transfer and request_evm_signature",
       "source": null,
       "checkedOnChain": "2026-11-09"
+    },
+    "DemoNewShop": {
+      "address": "baret-newshop.aeztrest-baret.testnet",
+      "kind": "account",
+      "listed": false,
+      "role": "NEAR demo (TN.14): a shop the owner listed on the vault on 2026-11-13 and the agent has never paid; Baret answers Caution (first contact, and a fresh account until 2026-11-16), so the agent asks its human",
+      "source": null,
+      "checkedOnChain": "2026-11-13"
     }
   }
 }

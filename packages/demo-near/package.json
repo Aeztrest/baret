@@ -16,6 +16,7 @@
     "accounts": "tsx scripts/accounts.ts",
     "deploy-vault": "tsx scripts/deploy.ts",
     "setup-vault": "tsx scripts/setup.ts",
+    "new-shop": "tsx scripts/new-shop.ts",
     "agent-key": "tsx scripts/agent-key.ts",
     "upgrade-vault": "tsx scripts/upgrade.ts",
     "update-vault": "tsx scripts/update.ts",

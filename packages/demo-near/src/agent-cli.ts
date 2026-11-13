@@ -35,6 +35,7 @@ import {
 } from "./evm.js";
 import { gate, humanAnswerSource, isYes } from "./gate.js";
 import { buildAction, type EvmBase, SCENARIOS, type ScenarioName } from "./scenarios.js";
+import { demoAccounts } from "./view.js";
 
 const name = process.argv.slice(2).find((a) => !a.startsWith("--")) as ScenarioName | undefined;
 const force = process.argv.includes("--force");
@@ -81,10 +82,12 @@ async function evmBase(from: string): Promise<EvmBase> {
   };
 }
 
+const newShop = demoAccounts().newShop;
 const ids = {
   agent: env("NEAR_AGENT_ID"),
   vault: vaultId,
   shop: env("NEAR_SHOP_ID"),
+  ...(newShop ? { newShop } : {}),
   attacker: envOr("NEAR_ATTACKER_ID", "drain-it-all.testnet"),
   attackerKey: KeyPair.fromRandom("ed25519").getPublicKey().toString(),
   ...(evm ? { evmShop: evm.shop, evmAttacker: evm.attacker } : {}),

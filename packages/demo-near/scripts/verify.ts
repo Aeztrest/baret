@@ -234,6 +234,16 @@ await expectVerdict(
   );
 }
 
+if (a.newShop) {
+  const v = await analyze(scenario("new-receiver"));
+  const codes = (v?.findings ?? []).map((f) => f.code);
+  record(
+    "The agent pays a shop the owner listed but it never paid: Caution, so it asks its human",
+    v?.decision === "caution" && codes.includes("COUNTERPARTY_FIRST_PAYMENT"),
+    summary(v),
+  );
+}
+
 // The agent's real function call key (public, read from chain) cannot add keys.
 interface KeyList {
   result?: { keys?: { public_key: string; access_key: { permission: unknown } }[] };

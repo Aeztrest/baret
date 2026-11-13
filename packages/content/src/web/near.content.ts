@@ -81,7 +81,7 @@ export const near = {
 
   requests: {
     title: "Ask Baret about the agent's requests.",
-    body: "The same four requests the demo agent makes. Press one: this page sends it to Baret's API and shows the verdict it would get. Nothing is signed or sent to the chain.",
+    body: "The same five requests the demo agent makes. Press one: this page sends it to Baret's API and shows the verdict it would get. Nothing is signed or sent to the chain.",
     ask: "Ask Baret",
     asking: "Asking Baret...",
     failed:
@@ -93,6 +93,12 @@ export const near = {
         title: "Pay the shop 0.1 NEAR",
         body: "An ordinary payment for an API answer, inside every limit, to the one listed receiver.",
         expected: "safe",
+      },
+      {
+        id: "new-receiver",
+        title: "Pay 0.1 NEAR to a shop the owner just listed",
+        body: "The vault would pay it, but the agent has never dealt with this account. Baret says Caution, and the agent stops to ask its human.",
+        expected: "caution",
       },
       {
         id: "over-limit",

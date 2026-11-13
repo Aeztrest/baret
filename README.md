@@ -63,7 +63,7 @@ pnpm install
 pnpm near:verify
 ```
 
-No account, no key, no `.env`: it reads the demo vault on NEAR testnet, sends nineteen requests to Baret's API (three of them with real NEAR Intents quotes on mainnet; no funds move) and prints PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent cannot change its own vault's rules, and an owner who loosens them is told, never shown Safe; a payment above the balance is refused with its reason; the shop the agent has paid before passes while an account nobody has used is Caution (fresh, first contact); the agent's real function call key cannot add keys; Chain Signatures within and outside the policy; an honest, a hostile and a forged Intents quote).
+No account, no key, no `.env`: it reads the demo vault on NEAR testnet, sends twenty requests to Baret's API (three of them with real NEAR Intents quotes on mainnet; no funds move) and prints PASS/FAIL per claim (the vault's account holds no key; Safe for a normal payment; Blocked over the limit, to a receiver a prompt named, for a full access key; several payments in one transaction counted against one window; the EVM receiver cannot be paid NEAR; the agent cannot change its own vault's rules, and an owner who loosens them is told, never shown Safe; a payment above the balance is refused with its reason; the shop the agent has paid before passes while an account nobody has used, and a shop the owner just listed that the agent never paid, are Caution (fresh, first contact); the agent's real function call key cannot add keys; Chain Signatures within and outside the policy; an honest, a hostile and a forged Intents quote).
 
 ### Run the agent yourself
 
@@ -77,6 +77,7 @@ pnpm keys && pnpm accounts       # vault, agent and shop sub-accounts
 pnpm deploy-vault -- ./baret_near_vault.wasm   # deploy + init + delete the vault's key, one transaction
 pnpm setup-vault && pnpm agent-key             # policy; the agent's function call key, written to .env.agent
 pnpm agent -- pay                # Baret: SAFE → the vault pays the shop (explorer link)
+pnpm agent -- new-receiver       # a shop the owner just listed, never paid → CAUTION: the agent asks its human (y/N)
 pnpm agent -- wrong-receiver     # a prompt-injected receiver → BLOCKED, not signed
 pnpm agent -- wrong-receiver --force   # sent anyway → the vault refuses E_RECEIVER_NOT_ALLOWED on chain
 pnpm agent -- add-key            # a prompt asks for a full access key → BLOCKED (AUTHORITY_CHANGE, E_KEY_NOT_ALLOWED)
