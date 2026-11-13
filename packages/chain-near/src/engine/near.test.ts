@@ -20,15 +20,52 @@ import {
 const chain = getChain("near:testnet") as ChainConfig;
 const NEAR = 10n ** 24n;
 const USDC = "3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af";
+const NO_CODE = "11111111111111111111111111111111";
 
 const ACCOUNTS: Record<string, NearAccountState> = {
-  "alice.testnet": { amount: 10n * NEAR, locked: 0n, hasCode: false, storageUsage: 500n },
-  "shop.testnet": { amount: NEAR, locked: 0n, hasCode: false, storageUsage: 500n },
-  "vault.testnet": { amount: 50n * NEAR, locked: 0n, hasCode: true, storageUsage: 9000n },
-  "agent.testnet": { amount: NEAR, locked: 0n, hasCode: false, storageUsage: 500n },
-  "random-dapp.testnet": { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n },
-  "v1.signer-prod.testnet": { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n },
-  [USDC]: { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n },
+  "alice.testnet": {
+    amount: 10n * NEAR,
+    locked: 0n,
+    hasCode: false,
+    storageUsage: 500n,
+    codeHash: NO_CODE,
+  },
+  "shop.testnet": {
+    amount: NEAR,
+    locked: 0n,
+    hasCode: false,
+    storageUsage: 500n,
+    codeHash: NO_CODE,
+  },
+  "vault.testnet": {
+    amount: 50n * NEAR,
+    locked: 0n,
+    hasCode: true,
+    storageUsage: 9000n,
+    codeHash: "code1",
+  },
+  "agent.testnet": {
+    amount: NEAR,
+    locked: 0n,
+    hasCode: false,
+    storageUsage: 500n,
+    codeHash: NO_CODE,
+  },
+  "random-dapp.testnet": {
+    amount: NEAR,
+    locked: 0n,
+    hasCode: true,
+    storageUsage: 9000n,
+    codeHash: "code1",
+  },
+  "v1.signer-prod.testnet": {
+    amount: NEAR,
+    locked: 0n,
+    hasCode: true,
+    storageUsage: 9000n,
+    codeHash: "code1",
+  },
+  [USDC]: { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n, codeHash: "code1" },
 };
 
 const POLICY = {
@@ -366,7 +403,7 @@ describe("NEAR adapter", () => {
       const base = rpc.viewAccount;
       rpc.viewAccount = async (id) =>
         id === WRAP
-          ? { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n }
+          ? { amount: NEAR, locked: 0n, hasCode: true, storageUsage: 9000n, codeHash: "code1" }
           : base(id, "blockhash");
       const client: IntentsClient = {
         status: async () =>

@@ -3,12 +3,22 @@ import { analyzeNear, type NearDeps } from "./pipeline.js";
 import { nearRequestSchema } from "./request.js";
 
 export { toTransaction } from "./decode.js";
+export {
+  type AccountHistory,
+  FastNearHistory,
+  HISTORY_SCAN_LIMIT,
+  HistoryUnavailableError,
+  NEAR_HISTORY_API,
+  type NearHistory,
+} from "./history.js";
 export { type IntentsClient, ONECLICK_API, OneClickClient } from "./intents.js";
 export {
   analyzeNear,
   assetOf,
+  CODE_WINDOW_BLOCKS,
   decodeAccount,
   encodeAccount,
+  FRESH_ACCOUNT_MS,
   type NearDeps,
   units,
   vaultRefusal,
@@ -30,6 +40,12 @@ export {
 } from "./rpc.js";
 
 export const NEAR_ADAPTER_VERSION = "0.1.0";
+
+/** Archival NEAR RPC per network, for code-change reads (TN.14). */
+export const NEAR_ARCHIVAL_RPC: Record<string, string> = {
+  "near:testnet": "https://archival-rpc.testnet.fastnear.com",
+  "near:mainnet": "https://archival-rpc.mainnet.fastnear.com",
+};
 
 /** The Chain Signatures MPC contract per network (docs/chains/near.md §3). */
 export const MPC_CONTRACTS: Record<string, readonly string[]> = {

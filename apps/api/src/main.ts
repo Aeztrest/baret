@@ -8,8 +8,11 @@ import {
 } from "@baret/chain-evm/engine";
 import {
   createNearAdapter,
+  FastNearHistory,
   JsonNearRpc,
   MPC_CONTRACTS,
+  NEAR_ARCHIVAL_RPC,
+  NEAR_HISTORY_API,
   type NearDeps,
   ONECLICK_API,
   OneClickClient,
@@ -88,6 +91,11 @@ function nearDepsFor(chain: ChainConfig): NearDeps {
   // NEAR Intents is mainnet only: elsewhere a request carrying a quote fails closed.
   const oneClick = ONECLICK_API[chain.id];
   if (oneClick) deps.intents = new OneClickClient(oneClick, config.requestTimeoutMs);
+  // Counterparty history (TN.14): FastNEAR's transaction index and an archival node.
+  const history = NEAR_HISTORY_API[chain.id];
+  if (history) deps.history = new FastNearHistory(history, config.requestTimeoutMs);
+  const archival = NEAR_ARCHIVAL_RPC[chain.id];
+  if (archival) deps.archive = new JsonNearRpc(archival, config.requestTimeoutMs);
   nearDeps.set(chain.id, deps);
   return deps;
 }

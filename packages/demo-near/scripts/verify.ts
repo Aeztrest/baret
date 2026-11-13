@@ -28,6 +28,7 @@ const record = (check: string, ok: boolean, got: string) => {
 interface Verdict {
   decision?: string;
   findings?: { code: string; details?: { reason?: string } }[];
+  sources?: { name: string; status: string }[];
 }
 
 async function analyze(body: object): Promise<Verdict | null> {
@@ -199,6 +200,39 @@ await expectVerdict(
   "SIMULATION_FAILED",
   "E_INSUFFICIENT_NEAR",
 );
+
+// Counterparties (TN.14): who the money goes to, read from FastNEAR's transaction index.
+{
+  const v = await analyze(scenario("pay"));
+  const read = v?.sources?.some((x) => x.name === "near-history" && x.status === "ok");
+  const codes = (v?.findings ?? []).map((f) => f.code);
+  record(
+    "The shop the agent has paid before: its history was read, nothing new about it",
+    v?.decision === "safe" && Boolean(read) && !codes.includes("COUNTERPARTY_FIRST_PAYMENT"),
+    `${summary(v)}; near-history ${v?.sources?.find((x) => x.name === "near-history")?.status ?? "absent"}`,
+  );
+}
+{
+  // An implicit account made up now: nobody has ever used it.
+  const fresh = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+  const v = await analyze(
+    near({
+      signerId: a.owner,
+      receiverId: fresh,
+      actions: [{ type: "Transfer", deposit: (10n ** 23n).toString() }],
+    }),
+  );
+  const codes = (v?.findings ?? []).map((f) => f.code);
+  record(
+    "Paying an account nobody has used: Caution (fresh, first contact), so the agent asks its human",
+    v?.decision === "caution" &&
+      codes.includes("REPUTATION_FRESH_ACCOUNT") &&
+      codes.includes("COUNTERPARTY_FIRST_PAYMENT"),
+    summary(v),
+  );
+}
 
 // The agent's real function call key (public, read from chain) cannot add keys.
 interface KeyList {
