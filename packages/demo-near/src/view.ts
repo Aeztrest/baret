@@ -9,13 +9,20 @@ import { type AgentAction, buildAction, type ScenarioName } from "./scenarios.js
 export const DEMO_CHAIN = "near:testnet" as const;
 
 /** The demo accounts, from the registry (packages/chains/deployments/near-testnet.json). */
-export function demoAccounts(): { vault: string; shop: string; agent: string; owner: string } {
+export function demoAccounts(): {
+  vault: string;
+  shop: string;
+  newShop: string | undefined;
+  agent: string;
+  owner: string;
+} {
   const vault = getDeployment(DEMO_CHAIN, "BaretVault")?.address;
   const shop = getShowcase(DEMO_CHAIN).DemoShop?.address;
   const agent = getShowcase(DEMO_CHAIN).DemoAgent?.address;
   if (!vault || !shop || !agent)
     throw new Error("near:testnet demo accounts missing from registry");
-  return { vault, shop, agent, owner: vault.slice(vault.indexOf(".") + 1) };
+  const newShop = getShowcase(DEMO_CHAIN).DemoNewShop?.address;
+  return { vault, shop, newShop, agent, owner: vault.slice(vault.indexOf(".") + 1) };
 }
 
 /** The chain's public RPC URL from the registry. */
@@ -210,6 +217,7 @@ export function demoAnalyzeBody(name: ScenarioName): {
     agent: a.agent,
     vault: a.vault,
     shop: a.shop,
+    ...(a.newShop ? { newShop: a.newShop } : {}),
     attacker: "drain-it-all.testnet",
     attackerKey: PANEL_ATTACKER_KEY,
   });

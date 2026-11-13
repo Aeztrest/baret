@@ -5,6 +5,7 @@ const ids = {
   agent: "baret-agent.owner.testnet",
   vault: "baret-vault.owner.testnet",
   shop: "baret-shop.owner.testnet",
+  newShop: "baret-newshop.owner.testnet",
   attacker: "drain-it-all.testnet",
   attackerKey: "ed25519:11111111111111111111111111111111",
   evmShop: "0x1365566191bAA9872A64AcDce963751d5343ff49",
@@ -21,7 +22,7 @@ const evmBase = {
 
 describe("demo scenarios", () => {
   it("pays through the vault in every payment scenario, signed by the agent", () => {
-    for (const name of ["pay", "over-limit", "wrong-receiver"] as ScenarioName[]) {
+    for (const name of ["pay", "new-receiver", "over-limit", "wrong-receiver"] as ScenarioName[]) {
       const { tx } = buildAction(name, ids);
       expect(tx.signerId).toBe(ids.agent);
       expect(tx.receiverId).toBe(ids.vault);
@@ -42,6 +43,7 @@ describe("demo scenarios", () => {
     );
     expect(expected).toEqual({
       pay: "paid",
+      "new-receiver": "asks",
       "over-limit": "refused",
       "wrong-receiver": "refused",
       "add-key": "refused",
