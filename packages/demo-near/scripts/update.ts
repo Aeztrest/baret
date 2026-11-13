@@ -4,6 +4,9 @@
  * account holds no key, so this owner-signed call is the only way its code changes.
  *
  *   pnpm --filter @baret/demo-near update-vault -- path/to/baret_near_vault.wasm
+ *   pnpm --filter @baret/demo-near update-vault -- path/to/baret_near_blocklist.wasm --blocklist
+ *
+ * `--blocklist`: the same owner path for the shared blocklist (`baret-blocklist.<owner>`).
  */
 import { readFileSync } from "node:fs";
 import { actions } from "near-api-js";
@@ -16,8 +19,11 @@ if (!file) {
   process.exit(2);
 }
 const owner = accountFor("NEAR_OWNER_ID", "NEAR_OWNER_KEY");
+const target = process.argv.includes("--blocklist")
+  ? `baret-blocklist.${env("NEAR_OWNER_ID")}`
+  : env("NEAR_VAULT_ID");
 const out = await owner.signAndSendTransaction({
-  receiverId: env("NEAR_VAULT_ID"),
+  receiverId: target,
   actions: [
     actions.functionCall(
       "update_contract",
@@ -28,4 +34,4 @@ const out = await owner.signAndSendTransaction({
   ],
   throwOnFailure: true,
 });
-console.log(`Vault code replaced by the owner: ${link(out.transaction.hash)}`);
+console.log(`${target}: code replaced by the owner: ${link(out.transaction.hash)}`);
