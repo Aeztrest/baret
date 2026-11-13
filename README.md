@@ -2,7 +2,9 @@
 
 **Give an AI agent money without giving it the keys.**
 
-AI agents now pay for APIs, data, compute and other agents. To pay, an agent signs, and today that usually means it holds a key that can do anything: one prompt injection, one poisoned tool result or one leaked key empties the account. Baret is the security layer for agentic payments. **Before anything is signed**, it reads the transaction against the chain's current state, applies the owner's policy and answers `safe`, `caution` or `blocked`, with reasons. **On chain**, a Baret vault holds the money and bounds what the agent's key can pay, so even a compromised agent cannot go past the owner's limits.
+Your agent is about to sign a NEAR transaction. Its spending policy says: under 1 NEAR, to the shop, fine. But the same batch also adds a full access key. Or the "payment" is a call to its own vault that raises its own limit. Or the receiver is an account created an hour ago, or one other agents have already reported. Or the NEAR Intents quote it was handed pays out to someone else. A spending policy knows *how much and to whom*; it does not know *what the transaction does* or *who is on the other side*.
+
+Baret reads the transaction against NEAR's current state **before it is signed** and answers `safe`, `caution` or `blocked`, with a reason for each. The agent signs `safe`, asks its human on `caution` and refuses `blocked`. If the agent is compromised and skips the check, it still cannot overspend: it holds only a function call key to a **Baret vault**, an open-source contract whose account holds no key, whose code hash anyone can match to the CI build, and whose limits also bound the agent's EVM payments through NEAR Chain Signatures.
 
 > **Testnet.** Everything below runs on NEAR testnet and Monad testnet (the NEAR Intents check reads NEAR mainnet and signs nothing). Nothing is audited. Baret's earlier per-chain builds (Monad, Stellar, Casper, GOAT, Midnight, Solana) are being ported into this repository; their status is in [`docs/chains/README.md`](docs/chains/README.md).
 
@@ -33,10 +35,24 @@ agent ──function call key: 2 vault methods only─────────�
 
 Two independent lines of defence:
 
-1. **Baret before signing.** The agent sends the transaction to `/v1/analyze`. Baret reads the chain over RPC at one final block (accounts, the signing key's permissions, the vault's policy and remaining allowance) and finds what the transaction would do: a full access key added, the account deleted, a contract deployed, an NFT or token leaving, a receiver nobody listed, a payment over the limit, a swap quote 1Click never issued. It answers `safe`, `caution` or `blocked` with codes. The agent signs `safe`, stops and asks its human on `caution` (only an explicit yes signs), and refuses `blocked`; no answer means no signature.
+1. **Baret before signing.** The agent sends the transaction to `/v1/analyze`. Baret reads the chain over RPC at one final block (accounts, the signing key's permissions, the vault's policy and remaining allowance) and finds what the transaction would do: a full access key added, the account deleted, a contract deployed, an NFT or token leaving, a receiver nobody listed, a payment over the limit, a swap quote 1Click never issued, a receiver created in the last 72 hours or never paid before, a contract whose code just changed, an account on the shared NEAR blocklist. It answers `safe`, `caution` or `blocked` with codes. The agent signs `safe`, stops and asks its human on `caution` (only an explicit yes signs), and refuses `blocked`; no answer means no signature.
 2. **The vault on chain.** The agent holds only a function call key for two vault methods. The vault enforces, per asset, a per-transfer limit, a rolling 24-hour limit and its own receiver list, plus a pause switch. If the agent skips Baret, the vault still refuses. The vault's own account holds no access key, so nobody can redeploy it around the rules; only the owner's `update_contract` changes its code.
 
 The same vault pays on an EVM chain through **NEAR Chain Signatures**: it builds the EIP-1559 transfer itself (it never signs a hash it is handed), counts value plus the worst-case fee against the same limits, and only then asks NEAR's MPC network to sign. A **NEAR Intents** swap is checked against the quote 1Click registered for its deposit address: the swap must pay out and refund to the agent itself, and the deposit must match the quote, so a forged quote is caught.
+
+### How Baret differs
+
+Baret is a layer an agent's wallet can sit behind, not a replacement for one. Compared from each product's own documentation (read 2026-11-13; we have not integrated with either):
+
+| | NEAR Agent API | OutLayer agent custody | Baret |
+|---|---|---|---|
+| The agent holds | a partner API key and a grant token | a `wk_` API key | a NEAR function call key for two vault methods |
+| Where the limits run | the API server (receivers, budget, timelock) and the wallet provider (amounts, assets) | inside a TEE; cumulative caps read a counter the gateway supplies | in the vault contract's state: open source, reproducible build, code hash checkable against CI |
+| Before signing | rule checks; `dry: true` lists the rules a call would fail | rule checks; a withdrawal dry-run | what the transaction would do, read against chain state: a key added, the account deleted, a contract deployed, an NFT or token leaving, the vault's refusal predicted, an Intents quote matched with 1Click |
+| Human approval | `owner_approval` | multisig | the agent asks its human on `caution`; only an explicit yes signs (no second signer on chain) |
+| Network | mainnet beta, many chains | mainnet and testnet, many chains | testnet; NEAR, and EVM through Chain Signatures under the same vault limits |
+
+Baret also looks at the other side of the payment: how old the receiver's account is, whether this agent has paid it before, whether a contract's code changed in the last 72 hours, and whether other agents reported it, with evidence, on a shared blocklist contract on NEAR. A spending policy answers *may this amount go to this receiver?* Baret also answers *what will this transaction actually do, and to whom?*, and puts the limits where a compromised agent, or the service that runs it, cannot reach them.
 
 ### Try it without installing anything
 
@@ -97,6 +113,8 @@ The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI ru
 | Pay the shop 5 NEAR | Blocked (`E_PER_TRANSFER_LIMIT`) | `--force`: the vault panicked `E_PER_TRANSFER_LIMIT` |
 | Pay an account a prompt named | Blocked (`E_RECEIVER_NOT_ALLOWED`) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
 | Add a full access key | Blocked (`E_KEY_NOT_ALLOWED`, `AUTHORITY_CHANGE`) | `--force`: NEAR refused ("Access key requires full access") |
+| The owner deploys the shared blocklist, keyless (2026-11-13) | — | [deployed](https://testnet.nearblocks.io/txns/C1UvtYXmwWUGHVadHQNXaF6KKhF6uXvRCnoVT6PL1R6T), then [moved to the main CI build](https://testnet.nearblocks.io/txns/4hX6jXMSFksvhiVra1VNyK98UBg5YY33FX9o9uDhVwFJ) `7n1ZnuQv…MrFy` through `update_contract`, reports kept |
+| Pay a shop the owner just listed, never paid (2026-11-13) | Caution (`REPUTATION_FRESH_ACCOUNT`, `COUNTERPARTY_FIRST_PAYMENT`) | the agent asked its human; answered no, not signed |
 | Pay 0.01 MON on Monad testnet through Chain Signatures | Safe on both chains | [NEAR](https://testnet.nearblocks.io/txns/4LWi9nJoa5KS6H4RBNN9u21nxepBQZqcHgp4FLCjDB2r) · [Monad](https://testnet.monadexplorer.com/tx/0x736dd215f88f53ba709d44c28ed76ebb1d0403dd30e45659b296e601fb3b9004) |
 | Pay 0.01 MON to an address a prompt named | Blocked (`KNOWN_MALICIOUS_ADDRESS` on Monad) | `--force`: the vault panicked `E_RECEIVER_NOT_ALLOWED` |
 | NEAR Intents swap, the agent's own 1Click quote (mainnet) | Caution (`INTENTS_APP_FEE`) | not signed |
@@ -110,6 +128,8 @@ The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI ru
 | Baret vault | [`baret-vault.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-vault.aeztrest-baret.testnet) | [`contracts/near/vault`](contracts/near/vault) ([methods and trust model](contracts/near/README.md)) |
 | Demo agent | [`baret-agent.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-agent.aeztrest-baret.testnet) | the agent process holds only a function call key for the vault's two agent methods; the account's full access key is the owner's (it created the account) and never reaches the agent (`.env.agent` refuses it) |
 | Demo shop | [`baret-shop.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-shop.aeztrest-baret.testnet) | the vault's only NEAR receiver |
+| Demo new shop | [`baret-newshop.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-newshop.aeztrest-baret.testnet) | listed by the owner, never paid: the live `caution` (fresh account, first contact) |
+| Shared blocklist | [`baret-blocklist.aeztrest-baret.testnet`](https://testnet.nearblocks.io/address/baret-blocklist.aeztrest-baret.testnet) | [`contracts/near/blocklist`](contracts/near/blocklist); its account holds no key; `drain-it-all.testnet` reported with the transaction it tried, confirmed by the owner |
 | Vault's EVM address (Chain Signatures, path `eip155`) | `0x95689e53febe21bf2c12833ddca29d95b2ed5b27` on Monad testnet | derived by NEAR MPC |
 
 The record is [`packages/chains/deployments/near-testnet.json`](packages/chains/deployments/near-testnet.json).
@@ -120,7 +140,7 @@ Function call access keys and allowances · keyless contract accounts · near-sd
 
 ### Baseline and what was used
 
-Before the hackathon this repository held the chain-neutral core, the EVM adapter and the web app, ported from Baret's earlier builds (tag `pre-hackathon`). During the hackathon: the NEAR chain family (ADR-0011), the vault contract, the `chain-near` engine adapter, the NEAR demo agent and scripts, Chain Signatures, the NEAR Intents check, the Agent Market worker and the `/near` page. Libraries: near-sdk (Rust), near-api-js, zod, Fastify, React, Vite, Vitest, Biome, `@noble/hashes`, `@scure/base`. Much of the code was written with AI assistance (Claude Code) and reviewed by the author.
+Before the hackathon this repository held the chain-neutral core, the EVM adapter and the web app, ported from Baret's earlier builds (tag `pre-hackathon`). During the hackathon: the NEAR chain family (ADR-0011), the vault contract, the `chain-near` engine adapter, the NEAR demo agent and scripts, Chain Signatures, the NEAR Intents check, the Agent Market worker, the counterparty signals (FastNEAR transaction index, archival RPC), the shared blocklist contract, the agent's ask-a-human step and the `/near` page. Libraries: near-sdk (Rust), near-api-js, zod, Fastify, React, Vite, Vitest, Biome, `@noble/hashes`, `@scure/base`. Much of the code was written with AI assistance (Claude Code) and reviewed by the author.
 
 ### Limitations
 
