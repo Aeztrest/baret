@@ -282,8 +282,11 @@ export const home = {
     items: [
       { value: "10", label: "detector modules read every EVM transaction" },
       { value: "26", label: "rules you can switch on, off or tune" },
-      { value: "58", label: "findings, each with a plain sentence" },
-      { value: "3", label: "chain families on the plan: EVM, Stellar, Casper" },
+      { value: "78", label: "findings, each with a plain sentence" },
+      {
+        value: "4",
+        label: "chain families: EVM and NEAR on testnet, Stellar and Casper being ported",
+      },
     ],
     note: "No user counts and no totals. Baret is on testnet, so it counts only what it ships.",
   },
