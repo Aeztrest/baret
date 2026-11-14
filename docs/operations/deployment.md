@@ -23,7 +23,7 @@ Blueprint `render.yaml` at the repo root (pattern from `Baret-Metropolis/render.
 
 ## 2. Vercel — `apps/web`
 
-**Today:** `apps/web` has the landing (T2.4) and its own `apps/web/vercel.json`; the root `vercel.json` that kept Git deployments off is removed. The owner deleted the first Vercel project and created it again on 2026-11-08 with these settings; it serves https://baret-nine.vercel.app (checked live the same day: landing, 404, sitemap, `/api/health` through the rewrite with `viaEdge: true`):
+**Today:** `apps/web` has the landing (T2.4) and its own `apps/web/vercel.json`; the root `vercel.json` that kept Git deployments off is removed. The owner deleted the first Vercel project and created it again on 2026-11-08 with these settings; it serves https://baret-nine.vercel.app (checked live the same day: landing, 404, sitemap, `/api/health` through the rewrite with `viaEdge: true`). On 2026-11-14 the owner moved the custom domain `usebaret.com` (and its `www` redirect) here from the Metropolis project; `wallet.usebaret.com` stays on Metropolis's wallet project. DNS is unchanged (Cloudflare, pointing at Vercel); the canonical and og:url follow the production domain from the next build:
 
 | Setting | Value |
 |---|---|

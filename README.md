@@ -16,7 +16,7 @@ Baret reads the transaction against NEAR's current state **before it is signed**
 |---|---|
 | Reviewer guide (claims → evidence, threat model, what was built) | [`docs/hackathon/near-2026.md`](docs/hackathon/near-2026.md) |
 | Check every NEAR claim live, no account or key | `pnpm install && pnpm near:verify` |
-| Live panel (reads the vault from NEAR testnet in your browser) | [baret-nine.vercel.app/near](https://baret-nine.vercel.app/near) |
+| Live panel (reads the vault from NEAR testnet in your browser) | [usebaret.com/near](https://usebaret.com/near) |
 | Instructions for AI reviewers | [`AGENTS.md`](AGENTS.md) |
 
 ## NEAR HACKATHON 2026
