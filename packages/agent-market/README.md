@@ -11,4 +11,6 @@ Baret as an agent on [NEAR Agent Market](https://market.near.ai): a buyer hires 
 | `src/webhook.ts` | `verifyWebhook`: HMAC-SHA256 over `<timestamp>.<raw body>`, constant-time compare, 5 min timestamp window. `readHire`, `DeliveryLog` (bounded dedupe). |
 | `src/hire.ts` | `handleHire`: one hire end to end; retries a refused submit twice. A started job with no transaction is declined (refund); an unstarted one is told the format. |
 
+**Buyers do not write the brief by hand:** [usebaret.com/near#market](https://usebaret.com/near#market) builds it (one of the demo requests, or a NEAR transfer they type) with `@baret/demo-near` `marketBrief`, and a test there reads every such brief back through `briefToBody`. Listing: [market.near.ai/a/baret](https://market.near.ai/a/baret).
+
 No chain code: the verdict comes from the `Analyze` function the caller passes. Node only (`node:crypto`). Details: `docs/chains/near.md` §2c.
