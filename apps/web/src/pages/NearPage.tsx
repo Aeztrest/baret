@@ -205,8 +205,11 @@ async function ask(name: ScenarioName): Promise<Verdict> {
   return verdictSchema.parse(await res.json());
 }
 
-function titleOf(code: string): string {
-  return (findings as Record<string, { title: string } | undefined>)[code]?.title ?? code;
+/** A finding's title from @baret/content with its placeholders ({address}, …) filled
+ *  from the verdict's values; a value the verdict did not send stays as its name. */
+export function titleOf(code: string, values: Record<string, string> = {}): string {
+  const title = (findings as Record<string, { title: string } | undefined>)[code]?.title ?? code;
+  return title.replace(/\{(\w+)\}/g, (_, k: string) => values[k] ?? `{${k}}`);
 }
 
 function RequestCard({ item }: { item: (typeof near.requests.items)[number] }): JSX.Element {
@@ -251,7 +254,7 @@ function RequestCard({ item }: { item: (typeof near.requests.items)[number] }): 
                 const reason = (f.details as { reason?: unknown } | undefined)?.reason;
                 return (
                   <li key={f.code}>
-                    {titleOf(f.code)}
+                    {titleOf(f.code, f.values)}
                     {typeof reason === "string" ? (
                       <span className="font-mono text-[color:var(--fg-muted)]">{` (${copy.reason}: ${reason})`}</span>
                     ) : null}
