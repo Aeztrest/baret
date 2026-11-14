@@ -24,7 +24,15 @@ export {
   type TransferProblem,
   transferBody,
 } from "./market-brief.js";
-export { type AgentAction, buildAction, SCENARIOS, type ScenarioName } from "./scenarios.js";
+export {
+  type AgentAction,
+  buildAction,
+  DEMO_AMOUNTS,
+  DEMO_ATTACKER,
+  type DemoAmounts,
+  SCENARIOS,
+  type ScenarioName,
+} from "./scenarios.js";
 export {
   DEMO_CHAIN,
   demoAccounts,

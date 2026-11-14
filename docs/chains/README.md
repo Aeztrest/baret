@@ -18,7 +18,7 @@ The support matrix. Every chain that has a file in `packages/chains/chains/` mus
 | Casper testnet | `casper:casper-test` | Casper | testnet | to research | PaymentGuard | yes | planned (live in legacy repo) | 4 |
 | Casper | `casper:casper` | Casper | mainnet | to research | PaymentGuard | yes | planned | 6 |
 | NEAR testnet | `near:testnet` | NEAR | testnet | preflight | vault (`contracts/near`) | planned | **live (testnet)**: adapter on staging; vault 0.2 `baret-vault.aeztrest-baret.testnet`; USDC `3e2210…b8af` checked with `ft_metadata` 2026-11-08 (ADR-0011) | N |
-| NEAR | `near:mainnet` | NEAR | mainnet | preflight | vault | — | registry entry (USDC `172086…33a1` checked 2026-11-08); staging reads it for NEAR Intents quotes (confirmed with 1Click); no vault on mainnet | N/6 |
+| NEAR | `near:mainnet` | NEAR | mainnet | preflight | vault | — | registry entry (USDC `172086…33a1` checked 2026-11-08); staging reads it for NEAR Intents quotes (confirmed with 1Click); **live (mainnet)** since 2026-11-14: demo vault `vault.baret.near` and blocklist `blocklist.baret.near`, tiny limits, real payments (ADR-0014; `deployments/near-mainnet.json`) | N/6 |
 | GOAT testnet3 | `eip155:48816` | EVM | testnet | trace (batching off) | PaymentGuard | — | backlog | later |
 
 Family docs: `docs/chains/evm.md`, `docs/chains/stellar.md`, `docs/chains/casper.md`, `docs/chains/near.md`. Later families (Solana from BLACKTHORN, Midnight) get a doc when an ADR adds them.

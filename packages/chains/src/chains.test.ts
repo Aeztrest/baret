@@ -95,6 +95,10 @@ describe("deployments", () => {
     expect(vault?.address).toBe("baret-vault.aeztrest-baret.testnet");
     expect(blocklist?.address).toBe("baret-blocklist.aeztrest-baret.testnet");
     expect(knownAddresses("near:testnet")).toEqual([vault?.address, blocklist?.address]);
-    expect(knownAddresses("near:mainnet")).toEqual([]);
+  });
+
+  it("has the NEAR mainnet demo vault and blocklist (ADR-0014), known to the engine", () => {
+    expect(knownAddresses("near:mainnet")).toEqual(["vault.baret.near", "blocklist.baret.near"]);
+    expect(getShowcase("near:mainnet").DemoShop?.address).toBe("shop.baret.near");
   });
 });

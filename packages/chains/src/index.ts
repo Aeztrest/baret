@@ -11,6 +11,7 @@ import monadTestnet from "../chains/monad-testnet.json" with { type: "json" };
 import near from "../chains/near.json" with { type: "json" };
 import nearTestnet from "../chains/near-testnet.json" with { type: "json" };
 import monadTestnetDeployments from "../deployments/monad-testnet.json" with { type: "json" };
+import nearMainnetDeployments from "../deployments/near-mainnet.json" with { type: "json" };
 import nearTestnetDeployments from "../deployments/near-testnet.json" with { type: "json" };
 
 /**
@@ -63,7 +64,7 @@ export const deploymentsSchema = z
   .object({
     chain: caip2Schema,
     contracts: z.record(contractName, deployedContractSchema),
-    /** Demo-site contracts and wallets, testnets only. */
+    /** Demo-site contracts and wallets (NEAR mainnet: the ADR-0014 demo accounts). */
     showcase: z.record(contractName, showcaseEntrySchema).optional(),
   })
   .strict();
@@ -73,7 +74,11 @@ export type ShowcaseEntry = z.infer<typeof showcaseEntrySchema>;
 export type Deployments = z.infer<typeof deploymentsSchema>;
 
 const RAW_CHAINS: unknown[] = [monadTestnet, monad, nearTestnet, near];
-const RAW_DEPLOYMENTS: unknown[] = [monadTestnetDeployments, nearTestnetDeployments];
+const RAW_DEPLOYMENTS: unknown[] = [
+  monadTestnetDeployments,
+  nearTestnetDeployments,
+  nearMainnetDeployments,
+];
 
 export const CHAINS: readonly ChainConfig[] = RAW_CHAINS.map((c) => chainConfigSchema.parse(c));
 const DEPLOYMENTS: readonly Deployments[] = RAW_DEPLOYMENTS.map((d) => deploymentsSchema.parse(d));

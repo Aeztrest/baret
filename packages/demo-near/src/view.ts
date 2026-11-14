@@ -8,20 +8,19 @@ import { type AgentAction, buildAction, type ScenarioName } from "./scenarios.js
 
 export const DEMO_CHAIN = "near:testnet" as const;
 
-/** The demo accounts, from the registry (packages/chains/deployments/near-testnet.json). */
-export function demoAccounts(): {
+/** The demo accounts, from the registry (packages/chains/deployments/near-<network>.json). */
+export function demoAccounts(chain: "near:testnet" | "near:mainnet" = DEMO_CHAIN): {
   vault: string;
   shop: string;
   newShop: string | undefined;
   agent: string;
   owner: string;
 } {
-  const vault = getDeployment(DEMO_CHAIN, "BaretVault")?.address;
-  const shop = getShowcase(DEMO_CHAIN).DemoShop?.address;
-  const agent = getShowcase(DEMO_CHAIN).DemoAgent?.address;
-  if (!vault || !shop || !agent)
-    throw new Error("near:testnet demo accounts missing from registry");
-  const newShop = getShowcase(DEMO_CHAIN).DemoNewShop?.address;
+  const vault = getDeployment(chain, "BaretVault")?.address;
+  const shop = getShowcase(chain).DemoShop?.address;
+  const agent = getShowcase(chain).DemoAgent?.address;
+  if (!vault || !shop || !agent) throw new Error(`${chain} demo accounts missing from registry`);
+  const newShop = getShowcase(chain).DemoNewShop?.address;
   return { vault, shop, newShop, agent, owner: vault.slice(vault.indexOf(".") + 1) };
 }
 

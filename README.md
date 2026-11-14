@@ -10,7 +10,7 @@ Baret reads the transaction against NEAR's current state **before it is signed**
 
 **Why Baret.** Baret is not new to this. Its earlier per-chain builds, with the same safe / caution / blocked model, are public: [Monad](https://github.com/HackerFetch/Baret-Metropolis) (API, passkey wallet, browser extension, agent vaults; `@baret/guard` on [npm](https://www.npmjs.com/package/@baret/guard), wired into an outside developer's signing path in [Venue](https://github.com/brutaldevvin/venue/commit/cf3371607ccccca80e099b9718a6a16f7c730803)), [Stellar](https://github.com/Aeztrest/Baret-Stellar) (on **mainnet**, an agent key [paid a merchant](https://stellar.expert/explorer/public/tx/4d3d6490ff815fd5f942e9960d93d128c396b92e649de998d0122d7554868d60) within an on-chain cap without the wallet owner signing) and [Casper](https://github.com/Aeztrest/CasperBaret), plus Solana, GOAT and Midnight. Those builds received grants and support from Monad Blitz, Solana, Stellar and Casper; an Arc grant is in progress. This repository unifies them into one engine; NEAR is the first chain built in it end to end.
 
-> **Testnet.** Everything below runs on NEAR testnet and Monad testnet (the NEAR Intents check reads NEAR mainnet and signs nothing). Nothing is audited. Baret's earlier per-chain builds (Monad, Stellar, Casper, GOAT, Midnight, Solana) are being ported into this repository; their status is in [`docs/chains/README.md`](docs/chains/README.md).
+> **Testnet, and now NEAR mainnet.** The live panel and `near:verify` run on NEAR testnet and Monad testnet (the NEAR Intents check reads NEAR mainnet and signs nothing). Since 2026-11-14 the same vault and blocklist also run on **NEAR mainnet** with tiny limits and real payments ([below](#on-near-mainnet-2026-11-14), ADR-0014). Nothing is audited. Baret's earlier per-chain builds (Monad, Stellar, Casper, GOAT, Midnight, Solana) are being ported into this repository; their status is in [`docs/chains/README.md`](docs/chains/README.md).
 
 | For judges and reviewers | |
 |---|---|
@@ -125,6 +125,23 @@ The wasm is the `baret-near-vault-wasm` artifact of the "Contracts (NEAR)" CI ru
 | A real 1Click quote that pays out and refunds to another account | Blocked (`INTENTS_RECIPIENT_MISMATCH`) | not signed |
 | Forged: the agent's own quote with another quote's deposit address | Blocked (`INTENTS_QUOTE_UNVERIFIED`: 1Click holds a different quote) | not signed |
 
+### On NEAR mainnet (2026-11-14)
+
+The same code as testnet (vault `EzvurumZ…JbYF` = release `near-vault-v0.2.1`, blocklist `7n1ZnuQv…MrFy`), each contract account created, deployed and initialised in one transaction so it never held a key (`pnpm --filter @baret/demo-near mainnet`, ADR-0014). Limits: 0.05 NEAR a payment, 0.2 NEAR a day. Record: [`packages/chains/deployments/near-mainnet.json`](packages/chains/deployments/near-mainnet.json).
+
+| | Account / transaction | |
+|---|---|---|
+| Owner | [`baret.near`](https://nearblocks.io/address/baret.near) | |
+| Baret vault | [`vault.baret.near`](https://nearblocks.io/address/vault.baret.near) | [deployed](https://nearblocks.io/txns/92ickt3mcVs6Le9eNkd4coXGJXUHhubtCjQcjQLJKnuE), [policy](https://nearblocks.io/txns/7xs31hSX9PuTJ7nxy5dj3DbsALUFLg4zJEmwujrYuF9f); 0 keys |
+| Shared blocklist | [`blocklist.baret.near`](https://nearblocks.io/address/blocklist.baret.near) | [deployed](https://nearblocks.io/txns/7XMQWjvFihXbQNJxJZ3JeB7Fi7KhRBWcyAoTKEUVR5dZ); 0 keys |
+| Agent, shops | [`agent.baret.near`](https://nearblocks.io/address/agent.baret.near), [`shop.baret.near`](https://nearblocks.io/address/shop.baret.near), [`newshop.baret.near`](https://nearblocks.io/address/newshop.baret.near) | the agent holds only a function call key for the vault's two agent methods |
+| Pay the shop 0.02 NEAR | Baret: **Caution** (the shop and the vault are hours old, first payment); the human approved | [paid](https://nearblocks.io/txns/Ewif1BPyMtLFfjpMPf8Ys2APxJBXUWDUHMmFgpfcuqej) |
+| Pay the shop 1 NEAR, sent anyway | Baret: Blocked (`E_PER_TRANSFER_LIMIT`) | [refused by the vault](https://nearblocks.io/txns/8GQDHADK2YhfB2qK61h9iXwyYXa38LcavPLcH1vbeuZB) |
+| Pay `drain-it-all.baret.near`, sent anyway | Baret: Blocked (`E_RECEIVER_NOT_ALLOWED`) | [refused by the vault](https://nearblocks.io/txns/3STFuTQjWxauPbS9L9pyd9djTtHNCHoZALFgSMPzxaza) |
+| The owner reports that payee, with that transaction | flagged and confirmed | [report](https://nearblocks.io/txns/7q4YWw1qSp9BbPBkpRqXgeBd2jt7AtQRFVC5fDtHLoGD) |
+
+Why Caution and not Safe for an ordinary payment: Baret flags a receiver created less than 72 hours ago and a first payment. The mainnet shop was opened the same day, so it is Caution until 2026-11-17; that is the rule working, which is also why the live panel stays on testnet until then.
+
 ### Contracts (NEAR testnet)
 
 | | Account | Source |
@@ -148,7 +165,7 @@ Before the hackathon this repository held the chain-neutral core, the EVM adapte
 
 ### Limitations
 
-Testnet only, not audited. The vault holds native NEAR and NEP-141 tokens; its Chain Signatures path signs native EVM transfers only (no calldata). An EVM signature does not expire: the vault counts it when it signs, so an agent could hold signatures back and broadcast them later; the owner voids them by sweeping the EVM address with `withdraw_evm`. Limits are shared by every agent of a vault (no per-agent limits yet). The Intents check covers NEP-141 deposits on NEAR and does not yet allow cross-chain recipients. Counterparty history comes from FastNEAR's transaction index and archival node (third parties; when they fail the answer is Caution, never Safe); the shared NEAR blocklist takes reports from anyone (a deposit and a transaction hash each): below its threshold a report is only a warning, and its owner confirms or dismisses. Delegate actions (NEP-366 meta transactions) are refused as unsupported. The staging API is a free instance that sleeps when idle.
+Testnet, plus a NEAR mainnet deployment with tiny limits (0.05 NEAR a payment); not audited. On mainnet Chain Signatures are not used (ADR-0014). The vault holds native NEAR and NEP-141 tokens; its Chain Signatures path signs native EVM transfers only (no calldata). An EVM signature does not expire: the vault counts it when it signs, so an agent could hold signatures back and broadcast them later; the owner voids them by sweeping the EVM address with `withdraw_evm`. Limits are shared by every agent of a vault (no per-agent limits yet). The Intents check covers NEP-141 deposits on NEAR and does not yet allow cross-chain recipients. Counterparty history comes from FastNEAR's transaction index and archival node (third parties; when they fail the answer is Caution, never Safe); the shared NEAR blocklist takes reports from anyone (a deposit and a transaction hash each): below its threshold a report is only a warning, and its owner confirms or dismisses. Delegate actions (NEP-366 meta transactions) are refused as unsupported. The staging API is a free instance that sleeps when idle.
 
 ## Documentation
 

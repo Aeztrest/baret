@@ -26,7 +26,7 @@ export const near = {
       secondary: { label: "Hire it on Agent Market", href: "#market" },
     },
     notice:
-      "Everything on this page runs on NEAR testnet, where NEAR has no value. The page only reads; it never signs.",
+      "The vault and the requests on this page run on NEAR testnet, where NEAR has no value. The same contracts run on NEAR mainnet with tiny limits: see the runs below. The page only reads; it never signs.",
   },
 
   layers: {
@@ -159,9 +159,51 @@ export const near = {
 
   runs: {
     title: "What happened when the agent ran.",
-    body: "Recorded on 2026-11-08 and 2026-11-09 against Baret's staging API. With --force the agent sent blocked requests anyway, to show the chain refuse them too.",
+    body: "Recorded against Baret's staging API: on NEAR mainnet on 2026-11-14 (vault.baret.near, limits 0.05 NEAR a payment), on testnet on 2026-11-08 and 2026-11-09. With --force the agent sent blocked requests anyway, to show the chain refuse them too. On mainnet the shop was opened that day, so even an ordinary payment is Caution until it is 72 hours old.",
     head: { request: "Request", baret: "Baret", chain: "On chain" },
     rows: [
+      {
+        title: "Mainnet: pay the shop 0.02 NEAR",
+        baret: "Caution: a shop and a vault hours old, a first payment; the human said yes",
+        chain: "Paid 0.02 NEAR to shop.baret.near",
+        txs: [
+          {
+            chain: "near:mainnet",
+            hash: "Ewif1BPyMtLFfjpMPf8Ys2APxJBXUWDUHMmFgpfcuqej",
+            label: "NEAR mainnet",
+          },
+        ],
+      },
+      {
+        title: "Mainnet: pay the shop 1 NEAR",
+        baret: "Blocked",
+        chain: "Refused by the vault: E_PER_TRANSFER_LIMIT",
+        txs: [
+          {
+            chain: "near:mainnet",
+            hash: "8GQDHADK2YhfB2qK61h9iXwyYXa38LcavPLcH1vbeuZB",
+            label: "NEAR mainnet",
+          },
+        ],
+      },
+      {
+        title: "Mainnet: pay an account a prompt named",
+        baret: "Blocked",
+        chain:
+          "Refused by the vault: E_RECEIVER_NOT_ALLOWED; the owner then reported the account to the blocklist",
+        txs: [
+          {
+            chain: "near:mainnet",
+            hash: "3STFuTQjWxauPbS9L9pyd9djTtHNCHoZALFgSMPzxaza",
+            label: "NEAR mainnet",
+          },
+          {
+            chain: "near:mainnet",
+            hash: "7q4YWw1qSp9BbPBkpRqXgeBd2jt7AtQRFVC5fDtHLoGD",
+            label: "the report",
+          },
+        ],
+      },
       {
         title: "Pay the shop 0.1 NEAR",
         baret: "Safe",

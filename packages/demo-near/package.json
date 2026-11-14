@@ -27,6 +27,7 @@
     "evm-setup": "tsx scripts/evm-setup.ts",
     "intents-check": "tsx scripts/intents-check.ts",
     "market-agent": "tsx scripts/market-agent.ts",
+    "mainnet": "tsx scripts/mainnet.ts",
     "agent": "tsx src/agent-cli.ts"
   },
   "dependencies": {

@@ -46,6 +46,25 @@ export type EvmBase = Omit<EvmTransfer, "to" | "value">;
 
 const NEAR = 10n ** 24n;
 const GAS = "30000000000000";
+
+/** What the NEAR scenarios pay. Mainnet's vault has tiny limits (0.05 NEAR a payment, ADR-0014). */
+export interface DemoAmounts {
+  pay: bigint;
+  overLimit: bigint;
+  wrongReceiver: bigint;
+}
+
+export const DEMO_AMOUNTS = {
+  "near:testnet": { pay: NEAR / 10n, overLimit: 5n * NEAR, wrongReceiver: NEAR },
+  "near:mainnet": { pay: NEAR / 50n, overLimit: NEAR, wrongReceiver: NEAR / 50n },
+} as const satisfies Record<string, DemoAmounts>;
+
+/** The account a prompt injection names, per network: on mainnet a name only baret.near
+ *  could create, so it belongs to no stranger. */
+export const DEMO_ATTACKER = {
+  "near:testnet": "drain-it-all.testnet",
+  "near:mainnet": "drain-it-all.baret.near",
+} as const;
 /** The MPC network answers through a yield/resume; it needs most of a transaction's gas. */
 const EVM_GAS = "300000000000000";
 
@@ -61,6 +80,8 @@ export function buildAction(
     attackerKey: string;
     evmShop?: string;
     evmAttacker?: string;
+    /** Defaults to testnet's amounts. */
+    amounts?: DemoAmounts;
   },
   evmBase?: EvmBase,
 ): AgentAction {
@@ -101,16 +122,17 @@ export function buildAction(
     },
     expect: name === "pay" ? "paid" : name === "new-receiver" ? "asks" : "refused",
   });
+  const amounts = ids.amounts ?? DEMO_AMOUNTS["near:testnet"];
   switch (name) {
     case "pay":
-      return pay(ids.shop, NEAR / 10n);
+      return pay(ids.shop, amounts.pay);
     case "new-receiver":
       if (!ids.newShop) throw new Error("new-receiver needs the new shop's account id");
-      return pay(ids.newShop, NEAR / 10n);
+      return pay(ids.newShop, amounts.pay);
     case "over-limit":
-      return pay(ids.shop, 5n * NEAR);
+      return pay(ids.shop, amounts.overLimit);
     case "wrong-receiver":
-      return pay(ids.attacker, NEAR);
+      return pay(ids.attacker, amounts.wrongReceiver);
     case "add-key":
       return {
         tx: {

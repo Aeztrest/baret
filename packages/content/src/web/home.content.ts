@@ -3,7 +3,8 @@
  *
  * Ported from Baret-Metropolis (showcase/home.content.ts), with these changes:
  *  - Chain-neutral where the claim is about Baret, chain-named where it is a
- *    fact about one deployment: NEAR testnet and Monad testnet are live;
+ *    fact about one deployment: NEAR testnet and Monad testnet are live, and
+ *    NEAR mainnet with tiny limits (ADR-0014);
  *    Stellar and Casper are named as being ported, never as live.
  *  - Agent first (2026-11-14, owner): the opener, the hero, the agents block
  *    (moved up, right under the hero) and the closing speak to someone giving
@@ -27,7 +28,7 @@ export const home = {
   meta: {
     title: "Give your AI agent money, not the keys · Baret",
     description:
-      "Baret checks every transaction before your AI agent signs it: Safe, it pays; Caution, it asks you; Blocked, it stops. Limits live on chain, where the agent cannot reach them. Live on NEAR testnet and Monad testnet.",
+      "Baret checks every transaction before your AI agent signs it: Safe, it pays; Caution, it asks you; Blocked, it stops. Limits live on chain, where the agent cannot reach them. Live on NEAR mainnet and testnet, and Monad testnet.",
     /** og:image:alt for the static share card in index.html. */
     imageAlt: "The Baret logo: an orange helmet beside the BARET wordmark on a light grid",
   },
@@ -50,7 +51,7 @@ export const home = {
   },
 
   hero: {
-    status: "Live on NEAR testnet and Monad testnet.",
+    status: "Live on NEAR mainnet and testnet, and Monad testnet.",
     title: "Check it first. Then let it pay.",
     body: "An AI agent that pays needs a key, and one bad prompt can empty it. Baret reads each transaction before the agent signs and says what it would really do, in plain words. Its limits live in a vault on chain, so even an agent that skips the check cannot overspend.",
     actions: {
