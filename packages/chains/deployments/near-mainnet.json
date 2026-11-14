@@ -1,0 +1,47 @@
+{
+  "chain": "near:mainnet",
+  "contracts": {
+    "BaretVault": {
+      "address": "vault.baret.near",
+      "block": 224559868,
+      "txHash": "92ickt3mcVs6Le9eNkd4coXGJXUHhubtCjQcjQLJKnuE",
+      "source": "contracts/near/vault",
+      "sourceVerified": false,
+      "checkedOnChain": "2026-11-14"
+    },
+    "BaretBlocklist": {
+      "address": "blocklist.baret.near",
+      "block": 224559872,
+      "txHash": "7XMQWjvFihXbQNJxJZ3JeB7Fi7KhRBWcyAoTKEUVR5dZ",
+      "source": "contracts/near/blocklist",
+      "sourceVerified": false,
+      "checkedOnChain": "2026-11-14"
+    }
+  },
+  "showcase": {
+    "DemoShop": {
+      "address": "shop.baret.near",
+      "kind": "account",
+      "listed": false,
+      "role": "NEAR mainnet demo (ADR-0014): the shop the agent pays, on the vault's receiver list; opened 2026-11-14, so a fresh account until 2026-11-17",
+      "source": null,
+      "checkedOnChain": "2026-11-14"
+    },
+    "DemoAgent": {
+      "address": "agent.baret.near",
+      "kind": "account",
+      "listed": false,
+      "role": "NEAR mainnet demo (ADR-0014): the AI agent; the vault's only agent, holds a function call key limited to the vault's execute_transfer and request_evm_signature",
+      "source": null,
+      "checkedOnChain": "2026-11-14"
+    },
+    "DemoNewShop": {
+      "address": "newshop.baret.near",
+      "kind": "account",
+      "listed": false,
+      "role": "NEAR mainnet demo (ADR-0014): a second listed shop the agent has never paid; Baret answers Caution, so the agent asks its human",
+      "source": null,
+      "checkedOnChain": "2026-11-14"
+    }
+  }
+}

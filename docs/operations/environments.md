@@ -64,7 +64,7 @@ Last verified: 2026-11-07
 
 ## 4b. `packages/demo-near` (local only, `.env.near` and `.env.agent`, gitignored)
 
-The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only; the scripts stop on any other network. Two files for two parties: the owner's setup scripts read `.env.near` (all of the table below); `pnpm agent-key` writes `.env.agent` with `NEAR_NETWORK`, `NEAR_AGENT_ID`, `NEAR_AGENT_FC_KEY`, `NEAR_VAULT_ID`, `NEAR_SHOP_ID` and, when set, `NEAR_RPC_URL`, `BARET_API_URL`, `NEAR_ATTACKER_ID`, `NEAR_MARKET_TOKEN`, `NEAR_MARKET_API`. The agent process (`pnpm agent`, `pnpm market-agent`) reads only those names, from `.env.agent` or the environment (`src/agent-env.ts`), and refuses to start if `NEAR_OWNER_KEY`, `NEAR_VAULT_KEY` or `NEAR_AGENT_KEY` is in `.env.agent`.
+The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet; the scripts stop on any other network, except `pnpm mainnet` (ADR-0014), which runs only on mainnet and only with `--yes`. Two files for two parties: the owner's setup scripts read `.env.near` (all of the table below); `pnpm agent-key` writes `.env.agent` with `NEAR_NETWORK`, `NEAR_AGENT_ID`, `NEAR_AGENT_FC_KEY`, `NEAR_VAULT_ID`, `NEAR_SHOP_ID` and, when set, `NEAR_RPC_URL`, `BARET_API_URL`, `NEAR_ATTACKER_ID`, `NEAR_MARKET_TOKEN`, `NEAR_MARKET_API`. The agent process (`pnpm agent`, `pnpm market-agent`) reads only those names, from `.env.agent` or the environment (`src/agent-env.ts`), and refuses to start if `NEAR_OWNER_KEY`, `NEAR_VAULT_KEY` or `NEAR_AGENT_KEY` is in `.env.agent`.
 
 | Variable | Description |
 |---|---|
@@ -74,6 +74,10 @@ The NEAR demo's scripts and agent (`packages/demo-near/README.md`). Testnet only
 | `NEAR_OWNER_ID`, `NEAR_OWNER_KEY` | the funded testnet owner and its full access key (secret) |
 | `NEAR_VAULT_ID/KEY`, `NEAR_AGENT_ID/KEY`, `NEAR_SHOP_ID/KEY`, `NEAR_AGENT_FC_KEY` | written by `pnpm keys` (secrets) |
 | `NEAR_ATTACKER_ID` | optional: the account a prompt injection names |
+| `NEAR_MAINNET_OWNER_KEY` | `pnpm mainnet` only (ADR-0014): the full access key of `baret.near`, also of the implicit account that funded it (secret, real funds; back it up) |
+| `NEAR_MAINNET_OWNER_IMPLICIT` | `pnpm mainnet owner`: the implicit account (64 hex) that funded `baret.near` |
+| `NEAR_MAINNET_AGENT_FC_KEY` | `pnpm mainnet`: the mainnet agent's function call key (written by `pnpm mainnet keys`); the agent gets it as `NEAR_AGENT_FC_KEY` with `NEAR_NETWORK=mainnet` |
+| `NEAR_MAINNET_RPC_URL` | optional for `pnpm mainnet` (default `https://free.rpc.fastnear.com`) |
 | `NEAR_INTENTS_ACCOUNT` | `pnpm intents-check` only: a NEAR **mainnet** account holding some wNEAR; the check signs nothing |
 | `NEAR_INTENTS_OTHER` | optional, `pnpm intents-check` only: the mainnet account the hostile quote pays (default `relay.near`) |
 | `NEAR_INTENTS_API` | optional: the 1Click API (default `https://1click.chaindefuser.com`) |
