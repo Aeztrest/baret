@@ -23,7 +23,7 @@ export const near = {
     body: "The agent holds one key. It can call one method on one contract: the vault's payment. Before it signs, it asks Baret what the payment would do. If Baret says no, it does not sign. If it signs anyway, the vault says no.",
     actions: {
       primary: { label: "Ask Baret yourself", href: "#requests" },
-      secondary: { label: "Read the code", href: "https://github.com/Aeztrest/baret" },
+      secondary: { label: "Hire it on Agent Market", href: "#market" },
     },
     notice:
       "Everything on this page runs on NEAR testnet, where NEAR has no value. The page only reads; it never signs.",
@@ -120,6 +120,41 @@ export const near = {
       },
     ],
     reason: "Reason from the vault",
+  },
+
+  /** Hire Baret on NEAR Agent Market without writing JSON (TN.10, ADR-0013). The page
+   *  builds the brief from a request above or a typed NEAR transfer; the market agent
+   *  reads only its JSON block. */
+  market: {
+    title: "Hire Baret on Agent Market. No JSON to write.",
+    body: "Any person or agent can hire Baret on NEAR Agent Market to check one transaction before it is signed. Pick a request or type a NEAR transfer, copy the brief, and paste it into the hire. The verdict comes back in plain words, usually within seconds.",
+    steps: [
+      "Pick a request, or type your own NEAR transfer.",
+      "Copy the brief.",
+      "On market.near.ai, press Hire and paste it.",
+    ],
+    pick: "What should Baret check?",
+    custom: "My own NEAR transfer",
+    fields: {
+      network: "Network",
+      signer: "From (the account that signs)",
+      receiver: "To",
+      amount: "Amount in NEAR",
+    },
+    networks: { "near:testnet": "Testnet", "near:mainnet": "Mainnet" },
+    placeholders: { signer: "alice.near", receiver: "shop.near", amount: "0.1" },
+    problems: {
+      signer: "Type the account that signs, like alice.near.",
+      receiver: "Type the account that receives, like shop.near.",
+      amount: "Type an amount in NEAR above zero, like 0.1.",
+    },
+    briefLabel: "The brief to paste",
+    line: "Should my agent sign this? Check it before anything is signed.",
+    copy: "Copy the brief",
+    copied: "Copied. Now open the market and paste it.",
+    copyFailed: "Copy did not work here: select the brief and copy it.",
+    open: { label: "Open Baret on Agent Market", href: "https://market.near.ai/a/baret" },
+    note: "A hire costs $0.50 in USDC on the market. Baret only reads the chain: it never signs or sends anything, and the brief holds no key.",
   },
 
   runs: {

@@ -28,20 +28,21 @@ export const routes = defineRoutes({
     load: () => import("./pages/HomePage.js"),
   },
 
-  showcase: {
-    path: "/showcase",
-    title: "Baret showcase",
-    label: "Showcase",
-    group: "marketing",
-    load: () => import("./pages/HubPage.js"),
-  },
-
+  // Agent first (2026-11-14): the NEAR agent leads the header nav.
   near: {
     path: "/near",
     title: "NEAR agent vault · Baret",
-    label: "NEAR",
+    label: "NEAR agent",
     group: "marketing",
     load: () => import("./pages/NearPage.js"),
+  },
+
+  showcase: {
+    path: "/showcase",
+    title: "Baret showcase",
+    label: "Wallet showcase",
+    group: "marketing",
+    load: () => import("./pages/HubPage.js"),
   },
 
   scrybe: {

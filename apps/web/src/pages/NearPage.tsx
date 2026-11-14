@@ -6,8 +6,11 @@ import {
   demoAnalyzeBody,
   explorerAccount,
   formatNear,
+  type MarketNetwork,
+  marketBrief,
   readVault,
   type ScenarioName,
+  transferBody,
   type VaultState,
 } from "@baret/demo-near";
 import { Tag } from "@baret/ui/primitives/Tag";
@@ -21,9 +24,9 @@ import { PageHero } from "../shared/PageHero.js";
 import { ANALYZE_URL } from "../sites/kit/live.js";
 
 /**
- * /near, the NEAR agent demo panel (TASKS.md TN.9). Four blocks: the claim, the two
- * lines of defence, the vault read live from NEAR testnet, the agent's four requests
- * checked live by Baret, and the recorded runs. Every word comes from near.content.ts;
+ * /near, the NEAR agent demo panel (TASKS.md TN.9). The claim, the two lines of
+ * defence, the vault read live from NEAR testnet, the agent's requests checked live by
+ * Baret, hiring Baret on Agent Market with a brief built here, and the recorded runs. Every word comes from near.content.ts;
  * every account id from the registry (@baret/chains through @baret/demo-near).
  *
  * Fail-closed in the UI too: a vault that cannot be read shows no numbers, and a
@@ -276,6 +279,171 @@ function Requests(): JSX.Element {
   );
 }
 
+type Pick = ScenarioName | "custom";
+const FIELD =
+  "w-full border border-[color:var(--rule)] bg-transparent px-3 py-2 font-mono text-sm text-[color:var(--fg)]";
+
+/**
+ * Hire Baret on Agent Market without writing JSON: pick one of the requests above, or
+ * type a NEAR transfer, and the brief is built here (`marketBrief`, read back by the
+ * market agent's `briefToBody`). Nothing is sent from this block: the buyer copies the
+ * brief and hires on market.near.ai.
+ */
+function Market(): JSX.Element {
+  const { market: copy } = near;
+  const [pick, setPick] = useState<Pick>("pay");
+  const [network, setNetwork] = useState<MarketNetwork>("near:testnet");
+  const [signer, setSigner] = useState("");
+  const [receiver, setReceiver] = useState("");
+  const [amount, setAmount] = useState("");
+  const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
+
+  const custom = pick === "custom" ? transferBody({ network, signer, receiver, amount }) : null;
+  const brief =
+    pick === "custom"
+      ? custom?.ok
+        ? marketBrief(custom.body, copy.line)
+        : null
+      : marketBrief(demoAnalyzeBody(pick), copy.line);
+  const problem = custom && !custom.ok && (signer || receiver || amount) ? custom.problem : null;
+
+  const choose = (p: Pick) => {
+    setPick(p);
+    setCopied(null);
+  };
+  const copyBrief = () => {
+    if (!brief) return;
+    navigator.clipboard.writeText(brief).then(
+      () => setCopied("yes"),
+      () => setCopied("failed"),
+    );
+  };
+
+  return (
+    <Section id="market" ground="deep">
+      <Heading id="market" title={copy.title} body={copy.body} />
+      <ol className="mb-8 grid gap-3 md:grid-cols-3">
+        {copy.steps.map((step, i) => (
+          <li key={step} className={`${CARD} flex items-baseline gap-4`}>
+            <span className={`${T.label} ${T.num}`} data-numeric="">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className={T.body}>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <fieldset className={`${CARD} grid content-start gap-2`}>
+          <legend className={`${T.label} px-1`}>{copy.pick}</legend>
+          {near.requests.items.map((item) => (
+            <label key={item.id} className="flex cursor-pointer items-baseline gap-3 py-1">
+              <input
+                type="radio"
+                name="market-pick"
+                checked={pick === item.id}
+                onChange={() => choose(item.id)}
+              />
+              <span className="text-[color:var(--fg)]">{item.title}</span>
+              <Tag tone={item.expected} size="sm">
+                {common.verdicts[item.expected].short}
+              </Tag>
+            </label>
+          ))}
+          <label className="flex cursor-pointer items-baseline gap-3 py-1">
+            <input
+              type="radio"
+              name="market-pick"
+              checked={pick === "custom"}
+              onChange={() => choose("custom")}
+            />
+            <span className="text-[color:var(--fg)]">{copy.custom}</span>
+          </label>
+          {pick === "custom" ? (
+            <div className="mt-3 grid gap-3">
+              <label className="grid gap-1">
+                <span className={T.label}>{copy.fields.network}</span>
+                <select
+                  className={FIELD}
+                  value={network}
+                  onChange={(e) => setNetwork(e.target.value as MarketNetwork)}
+                >
+                  {(Object.keys(copy.networks) as MarketNetwork[]).map((n) => (
+                    <option key={n} value={n}>
+                      {copy.networks[n]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1">
+                <span className={T.label}>{copy.fields.signer}</span>
+                <input
+                  className={FIELD}
+                  value={signer}
+                  placeholder={copy.placeholders.signer}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(e) => setSigner(e.target.value)}
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className={T.label}>{copy.fields.receiver}</span>
+                <input
+                  className={FIELD}
+                  value={receiver}
+                  placeholder={copy.placeholders.receiver}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(e) => setReceiver(e.target.value)}
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className={T.label}>{copy.fields.amount}</span>
+                <input
+                  className={FIELD}
+                  value={amount}
+                  placeholder={copy.placeholders.amount}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </label>
+              {problem ? (
+                <p className={T.small} role="status">
+                  {copy.problems[problem]}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </fieldset>
+        <div className={`${CARD} grid content-start gap-4`}>
+          <p className={T.label}>{copy.briefLabel}</p>
+          <pre
+            className="max-h-80 overflow-auto whitespace-pre-wrap break-all font-mono text-xs text-[color:var(--fg)]"
+            data-testid="market-brief"
+          >
+            {brief ?? copy.problems.signer}
+          </pre>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={copyBrief}
+              disabled={!brief}
+              className="border border-[color:var(--fg)] px-4 py-2 font-mono text-sm uppercase disabled:opacity-60"
+            >
+              {copy.copy}
+            </button>
+            <LinkButton href={copy.open.href} label={copy.open.label} variant="primary" newTab />
+          </div>
+          <p className={T.small} aria-live="polite">
+            {copied === "yes" ? copy.copied : copied === "failed" ? copy.copyFailed : ""}
+          </p>
+          <p className={T.small}>{copy.note}</p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 /** A recorded transaction's explorer page, from its chain's registry entry. */
 function txHref(chain: string, hash: string): string | null {
   return getChain(chain)?.explorer.tx.replace("{hash}", hash) ?? null;
@@ -284,7 +452,7 @@ function txHref(chain: string, hash: string): string | null {
 function Runs(): JSX.Element {
   const { runs } = near;
   return (
-    <Section id="runs" ground="deep">
+    <Section id="runs">
       <Heading id="runs" title={runs.title} body={runs.body} />
       <div className="overflow-x-auto">
         <table className="w-full min-w-[36rem] border-collapse text-left">
@@ -358,6 +526,7 @@ export function Component(): JSX.Element {
       <Layers />
       <VaultPanel />
       <Requests />
+      <Market />
       <Runs />
       <ClosingBand
         title={cta.title}
