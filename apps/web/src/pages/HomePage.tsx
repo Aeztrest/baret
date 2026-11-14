@@ -10,7 +10,9 @@ import { VerdictsSection } from "../landing/sections/Verdicts.js";
 /**
  * The landing page. Every string comes from @baret/content and every section
  * lives in its own file under landing/sections, in scroll order: opener,
- * hero, checks, how it works, six dApps, verdicts, agents, closing.
+ * hero, agents, verdicts, checks, how it works, six dApps, closing. Agent
+ * first (2026-11-14): what an agent's owner needs comes right after the hero;
+ * the wallet half follows.
  *
  * No <title> or description here: RootLayout renders the one of each for
  * every route. The motion provider and the signature layer (Lenis and the
@@ -22,11 +24,11 @@ export function Component() {
       {/* Seam: no spacer. The opener's last photo hands straight to the hero photo. */}
       <OpenerSection />
       <HeroSection />
+      <AgentsSection />
+      <VerdictsSection />
       <MarqueeSection />
       <PillarsSection />
       <ShowcaseSection />
-      <VerdictsSection />
-      <AgentsSection />
       <FinalCtaSection />
     </div>
   );

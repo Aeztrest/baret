@@ -3,8 +3,11 @@
  *
  * Ported from Baret-Metropolis (showcase/home.content.ts), with these changes:
  *  - Chain-neutral where the claim is about Baret, chain-named where it is a
- *    fact about one deployment: today only Monad testnet is live (TASKS.md
- *    Phase 2); Stellar and Casper are named as next, never as live.
+ *    fact about one deployment: NEAR testnet and Monad testnet are live;
+ *    Stellar and Casper are named as being ported, never as live.
+ *  - Agent first (2026-11-14, owner): the opener, the hero, the agents block
+ *    (moved up, right under the hero) and the closing speak to someone giving
+ *    an AI agent money; the wallet showcase follows, for people who sign.
  *  - No provider is named (Alchemy, Nansen, Chainlink CRE, Envio, Dynamic,
  *    Mera): providers are optional per deployment (docs/architecture/providers.md).
  *  - Blocks Metropolis kept but no longer rendered (comparison, privacy, faq
@@ -22,9 +25,9 @@
 
 export const home = {
   meta: {
-    title: "Check every transaction before you sign · Baret",
+    title: "Give your AI agent money, not the keys · Baret",
     description:
-      "Baret simulates every transaction before you or your AI agent signs it, checks it against your rules, and explains the verdict in plain words. On Monad testnet today, Stellar and Casper next.",
+      "Baret checks every transaction before your AI agent signs it: Safe, it pays; Caution, it asks you; Blocked, it stops. Limits live on chain, where the agent cannot reach them. Live on NEAR testnet and Monad testnet.",
     /** og:image:alt for the static share card in index.html. */
     imageAlt: "The Baret logo: an orange helmet beside the BARET wordmark on a light grid",
   },
@@ -33,9 +36,9 @@ export const home = {
    *  never held: the first scroll reaches the hero. The page works without it. */
   opener: {
     lines: [
-      "Your wallet shows you a long address and a Confirm button.",
-      "Baret reads the transaction before you press it.",
-      "Then it hangs one tag on it: Safe, Caution or Blocked.",
+      "Your AI agent holds a key and pays on its own.",
+      "Baret reads every payment before the agent signs it.",
+      "Safe, it pays. Caution, it asks you. Blocked, it stops.",
     ],
     /** The loop's pause control (WCAG 2.2.2: moving content can be stopped). */
     pause: "Pause the intro",
@@ -47,16 +50,16 @@ export const home = {
   },
 
   hero: {
-    status: "On Monad testnet. Stellar and Casper next.",
-    title: "Check it first. Then sign.",
-    body: "Baret runs every transaction without sending it, before you sign. It checks the result against your rules. Then it tells you what it found, in plain words. The same check covers your AI agents, on every chain Baret supports.",
+    status: "Live on NEAR testnet and Monad testnet.",
+    title: "Check it first. Then let it pay.",
+    body: "An AI agent that pays needs a key, and one bad prompt can empty it. Baret reads each transaction before the agent signs and says what it would really do, in plain words. Its limits live in a vault on chain, so even an agent that skips the check cannot overspend.",
     actions: {
-      primary: { label: "Open the showcase", href: "/showcase" },
+      primary: { label: "Watch an agent pay on NEAR", href: "/near" },
       secondary: {
-        label: "Install the extension",
-        /** Below 768 px, same link: the install steps need a desktop. */
-        labelPhone: "Install on desktop",
-        href: "/install",
+        label: "Hire Baret on Agent Market",
+        /** Below 768 px, same link. */
+        labelPhone: "Hire on Agent Market",
+        href: "/near#market",
       },
     },
     /** Next to every sample widget on the landing. */
@@ -228,8 +231,8 @@ export const home = {
   /** The x402 wedge: what an agent should check before it pays. The three stories
    *  map to the leash, the budget and the kill switch. */
   agents: {
-    title: "x402 forgets every payment. Baret keeps count.",
-    body: "x402 lets an AI agent pay for an API by itself, in small payments. It is stateless on purpose: no running total, no cap, no way to revoke a key. Baret keeps the memory the protocol leaves out. Your agent gets a leash, a budget and a kill switch.",
+    title: "Give an agent money. Not the keys.",
+    body: "An agent that pays by itself, for an API through x402 or a shop on NEAR, keeps no running total and asks nobody. Baret keeps the count, checks every payment before it is signed, and holds the limits where the agent cannot change them. Your agent gets a budget, a leash, a second opinion and a kill switch.",
     /** Daily-cap presets inside "The budget" row. A deterministic sample run, no
      *  timers. `{amount}`, `{actual}` and `{cap}` are formatted with the asset. The
      *  capped sentence is the filled `X402_DAILY_CAP_EXCEEDED` finding. */
@@ -264,16 +267,21 @@ export const home = {
       {
         control: "The leash",
         answer:
-          "Baret checks the token contract against your list of allowed assets. A look-alike fails, even with a perfect name.",
+          "The agent pays only the receivers and assets you listed. A receiver named in a prompt, or a look-alike token with a perfect name, is refused.",
+      },
+      {
+        control: "The second opinion",
+        answer:
+          "Before it signs, the agent asks Baret what the transaction would do. Safe, it pays. Caution, such as a receiver it has never paid, it stops and asks you. Blocked, it refuses.",
       },
       {
         control: "The kill switch",
         answer:
-          "On Monad, the agent's key can only pay from your PaymentGuard vault, inside your caps. Revoke it in one transaction and every later payment from it fails on-chain.",
+          "The agent's key can only pay from your vault, inside your caps. Pause the vault or revoke the key in one transaction, and every later payment fails on chain.",
       },
     ],
-    note: "Per-payment and daily caps live on-chain in your PaymentGuard vault on Monad testnet. Stellar and Casper get their own on-chain limit as they land.",
-    action: { label: "Set up your agent", href: "/agents" },
+    note: "The caps live on chain: in the Baret vault on NEAR testnet, which also bounds EVM payments through Chain Signatures, and in PaymentGuard on Monad testnet. Stellar and Casper are being ported.",
+    action: { label: "Watch the NEAR agent", href: "/near" },
   },
 
   /** Only numbers that come from the code. No usage stats, ever. */
@@ -356,15 +364,15 @@ export const home = {
   },
 
   cta: {
-    title: "Sign with your eyes open.",
-    body: "Open the showcase and press Claim on a fake airdrop. Read what Baret finds before anything is signed.",
+    title: "Give your agent a budget, not your keys.",
+    body: "Watch an agent on NEAR ask Baret before every payment, or hire Baret on Agent Market to check one transaction. Signing yourself? The showcase has six fake sites to try.",
     actions: {
-      primary: { label: "Open the showcase", href: "/showcase" },
+      primary: { label: "Watch the NEAR agent", href: "/near" },
       secondary: {
-        label: "Install the extension",
+        label: "Open the showcase",
         /** Below 768 px, same link. */
-        labelPhone: "Install on desktop",
-        href: "/install",
+        labelPhone: "Open the showcase",
+        href: "/showcase",
       },
     },
     /** The trust line as facts. A fact links only where it has a real destination.

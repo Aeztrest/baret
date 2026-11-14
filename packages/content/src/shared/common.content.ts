@@ -248,9 +248,10 @@ export const common = {
       { label: "Partners", href: "/partners" },
       { label: "Install", href: "/install" },
     ],
-    /** The header's one primary action. Metropolis pointed it at its passkey web
-     *  wallet, which the multichain build does not carry (docs/architecture/frontend.md §5). */
-    cta: { label: "Install the extension", short: "Install", href: "/install" },
+    /** The header's one primary action. Agent first (2026-11-14): the NEAR agent demo.
+     *  Metropolis pointed it at its passkey web wallet, which the multichain build does
+     *  not carry (docs/architecture/frontend.md §5). */
+    cta: { label: "Watch the agent", short: "Agent", href: "/near" },
     /** The logo leads to this site's front page. */
     home: { label: "Baret home", href: "/" },
     /** The phone menu button and its sheet. */
@@ -270,6 +271,7 @@ export const common = {
       {
         title: "Product",
         links: [
+          { label: "NEAR agent", href: "/near" },
           { label: "Showcase", href: "/showcase" },
           { label: "Install", href: "/install" },
         ],

@@ -56,7 +56,7 @@ export function AgentsSection(): JSX.Element {
               href={agents.action.href}
               label={agents.action.label}
               variant="ghost"
-              newTab
+              newTab={agents.action.href.startsWith("http")}
             />
             <p className={`${T.small} mt-5 max-w-[60ch]`}>{agents.note}</p>
           </Reveal>
