@@ -35,9 +35,9 @@
     "@baret/chains": "workspace:*",
     "@baret/content": "workspace:*",
     "@baret/core": "workspace:*",
-    "@noble/hashes": "2.2.0",
-    "@scure/base": "2.2.0",
-    "near-api-js": "7.4.0"
+    "@noble/hashes": "2.4.0",
+    "@scure/base": "2.4.0",
+    "near-api-js": "7.5.3"
   },
   "devDependencies": {
     "tsx": "4.23.15"
