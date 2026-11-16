@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       # near-sdk 5.30 needs Rust 1.95+; cargo-near picks the wasm target NEAR's runtime accepts.
-      - uses: dtolnay/rust-toolchain@1.95.0
+      - uses: dtolnay/rust-toolchain@1.120.0
         with:
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown, wasm32v1-none
@@ -73,11 +73,11 @@ jobs:
             f.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `NEAR code hash of \`${file}\`: \`${s}\`\n`);
           ' "$(find target/near -name "$wasm" | head -1)"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: baret-near-vault-wasm
           path: contracts/near/target/near/**/baret_near_vault.wasm
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: baret-near-blocklist-wasm
           path: contracts/near/target/near/**/baret_near_blocklist.wasm
